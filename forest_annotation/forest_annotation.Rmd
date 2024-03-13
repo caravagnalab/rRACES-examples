@@ -1,0 +1,95 @@
+---
+title: "Plot and annotate a forest"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Plot and annotate a forest}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r message=FALSE, warning=FALSE}
+require(rRACES)
+```
+
+# Generate a simulation
+
+## Initialize a population
+
+Generate simulation with one population `A`, growth rate and death rates 0.08 and 0.01, respectively.
+Get a sample after 200 cell divisions.
+
+```{r}
+sim = new(Simulation)
+sim$add_mutant(name = "A", growth_rates = 0.08, death_rates = 0.01)
+sim$place_cell("A", 500, 500)
+sim$run_up_to_time(200)
+sim$sample_cells("MySample", c(500, 500), c(510, 510))
+```
+
+```{r}
+sim
+```
+
+
+## Add mutations
+
+Generate a demo mutation engine. Set the passenger rate of SNVs to 1e-9 and set a driver SNV and a driver CNA.
+```{r}
+m_engine = build_mutation_engine(setup_code = "demo")
+
+m_engine$add_mutant(mutant_name = "A",
+                    passenger_rates = c(SNV = 1e-9),
+                    driver_SNVs = c(SNV("22", 10510210, "C")),
+                    driver_CNAs = c(CNA(type = "A", "22", pos_in_chr = 10303470,
+                                        len = 200000)))
+
+m_engine
+```
+
+Add exposures SBS13 and SBS1 for the first 50 cell divisions, and SBS17b and SBS3 for the last 100.
+```{r}
+m_engine$add_exposure(coefficients = c(SBS13 = 0.2, SBS1 = 0.8))
+m_engine$add_exposure(time=50, coefficients = c(SBS17b = 0.2, SBS3 = 0.8))
+m_engine
+```
+
+## Sample a forest
+
+Sample a forest and place mutations caused by drivers and mutational signatures as well as 1000 pre-neoplastic mutations.
+```{r}
+forest = sim$get_samples_forest()
+forest
+
+forest_muts = m_engine$place_mutations(forest, 1000)
+forest_muts
+```
+
+# Plot the forest and annotate events
+
+First, plot the forest. Note that you can only plot a forest with no mutations.
+```{r message=FALSE, warning=FALSE}
+tree_plot = plot_forest(forest)
+tree_plot
+```
+
+## Annotate the forest with sampling time, MRCAs, signatures and drivers
+
+```{r message=FALSE, warning=FALSE}
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = F, exposures = F, drivers=F)
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = T, exposures = F, drivers=F)
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = T, exposures = T, drivers=F)
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = T, exposures = T, facet_signatures = F, drivers=F)
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = T, exposures = T, drivers=T, add_driver_label = F)
+annotate_forest(tree_plot, forest_muts, samples = T, MRCAs = T, exposures = T, drivers=T, add_driver_label = T)
+```
+
