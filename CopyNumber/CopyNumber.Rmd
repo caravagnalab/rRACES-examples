@@ -56,6 +56,11 @@ sim$update_tissue(100, 100)
 sim$add_mutant(name = "A", growth_rates = 0.1, death_rates = 0)
 sim$place_cell("A", 50, 50)
 sim$run_up_to_time(500)
+
+n_w <- n_h <- 40
+ncells <- 0.9*n_w*n_h
+bbox <- sim$search_sample(c("A" = ncells), n_w, n_h)
+sim$sample_cells("SA", bbox$lower_corner, bbox$upper_corner)
 plot_tissue(sim, num_of_bins = 100)
 
 # Add "B" mutant
@@ -78,7 +83,7 @@ n_w <- n_h <- 40
 ncells <- 0.9*n_w*n_h
 
 bbox <- sim$search_sample(c("C" = ncells), n_w, n_h)
-sim$sample_cells("S", bbox$lower_corner, bbox$upper_corner)
+sim$sample_cells("SC", bbox$lower_corner, bbox$upper_corner)
 plot_tissue(sim, num_of_bins = 100)
 
 forest <- sim$get_samples_forest()
@@ -147,7 +152,7 @@ m_engine$add_mutant(
 m_engine$add_exposure(coefficients = c(SBS13 = 0.4, SBS1 = 0.6))
 
 # Load sample forest and place 0 pre-neolpastic mutations
-phylo_forest <- m_engine$place_mutations(forest, 0)
+phylo_forest <- m_engine$place_mutations(forest, 1000)
 ```
 
 ## Sequencing results
@@ -176,49 +181,71 @@ seq_to_long <- function(seq_results) {
     dplyr::mutate(to = from) %>%
     dplyr::select(chr, from, to, ALT, NV, DP, VAF, sample_name)
 }
+```
 
-extract_cna <- function(phylo_forest) {
-  phylo_forest$get_sampled_cell_CNAs() %>%
-    dplyr::distinct(type, chromosome, begin, end, allele, src.allele) %>%
-    dplyr::rename(chr=chromosome, from=begin, to=end) %>%
-    dplyr::mutate(Major = ifelse(type=="A", allele, 1), minor=ifelse(type=="A", 1, allele)) %>%
-    dplyr::select(chr, from, to, Major, minor, type)
+```{r, warning=FALSE}
+all_CNA <- phylo_forest$get_sampled_cell_CNAs() 
+cna_segment <- all_CNA %>% 
+  distinct(begin, end, allele, src.allele, type) %>% 
+  mutate(id = paste(type, begin,end,allele,src.allele, sep = ':' )) %>% 
+  select(-allele, -src.allele)
+
+seq_df_gm <- seq_to_long(seq_results %>% dplyr::filter(classes == "germinal")) %>% filter(VAF < 0.99) 
+seq_df_gm <-  seq_df_gm %>% mutate(DR = seq_df_gm$DP /  (seq_df_gm %>% filter(sample_name == 'SA') %>% pull(DP))) 
+
+seq_df_gm <- bind_cols(seq_df_gm, cna_id = rep(NA, nrow(seq_df_gm)))
+for (cna in seq(1,nrow(cna_segment))){
+  seg <- cna_segment[cna,]
+  seq_df_gm <- seq_df_gm %>% mutate(cna_id = ifelse(from %in% seq(seg$begin, seg$end), seg$id, cna_id))
 }
-```
 
-Now identify the segments and plot the results. Remove the germinal mutations.
+germline <- seq_df_gm %>%
+  ggplot(mapping = aes(x=from, y=VAF, color = cna_id)) +
+  geom_point(size = 0.1) +
+  ylim(0,1) +
+  ylab('BAF') +
+  facet_wrap(~ sample_name) + 
 
-```{r}
-seq_df <- seq_to_long(seq_results %>% dplyr::filter(classes != "germinal"))
-seq_df <- seq_df %>%
-  dplyr::left_join(phylo_forest$get_sampled_cell_SNVs() %>% dplyr::rename(from = chr_pos), by = "from")
-cnas <- extract_cna(phylo_forest)
-
-cn <- cnas[1,]
-
-vaf_plot <- seq_df %>%
-  dplyr::sample_n(10000) %>%
-  ggplot(mapping = aes(x=from, y=VAF)) +
-  geom_point() +
+  seq_df_gm %>%
+  ggplot(mapping = aes(x=from, y=DR, color = cna_id)) +
+  geom_point(size = 0.1) +
+  ylab('DR') +
+  facet_wrap(~ sample_name) + 
+  
+seq_df_gm %>%
+  ggplot(mapping = aes(x=VAF, fill = cna_id)) +
+  geom_histogram(binwidth = 0.01,  position = 'identity', alpha = 0.6) +
+  xlim(-0.05, 1.05) +
+  xlab('BAF') +
   facet_wrap(~ sample_name) +
-  ylim(0,1)
-vaf_plot
-```
+   
+plot_layout(nrow = 3, guides = 'collect') & theme(legend.position = 'bottom') 
 
-```{r}
-cn <- cnas[1,]
-seq_df %>%
-  dplyr::filter(from >= cn$from, to<=cn$to) %>%
-  dplyr::filter(VAF >= .1) %>%
-  ggplot(mapping = aes(x=VAF)) +
-  geom_histogram(binwidth = .01) +
-  facet_wrap(~ sample_name)
+# Somatic stuff
+seq_df_som <- seq_to_long(seq_results %>% dplyr::filter(!(classes %in% c("germinal"))))
+seq_df <- bind_cols(seq_df_som, cna_id = rep(NA, nrow(seq_df_som)))
+for (cna in seq(1,nrow(cna_segment))){
+  seg <- cna_segment[cna,]
+  seq_df <- seq_df %>% mutate(cna_id = ifelse(from %in% seq(seg$begin, seg$end), seg$id, cna_id))
+}
 
-cn <- cnas[2,]
+seq_df <- seq_df %>%
+  #dplyr::left_join(phylo_forest$get_sampled_cell_SNVs() %>% dplyr::rename(from = chr_pos), by = "from") %>% 
+  filter(VAF >= 0.08) 
+
+somatic <- seq_df %>%
+  ggplot(mapping = aes(x=from, y=VAF, color = cna_id)) +
+  geom_point(size = 0.5) +
+  ylim(0, 1) +
+  facet_wrap(~ sample_name) + 
+  
 seq_df %>%
-  dplyr::filter(from >= cn$from, to<=cn$to) %>%
-  dplyr::filter(VAF >= .1) %>%
-  ggplot(mapping = aes(x=VAF)) +
-  geom_histogram(binwidth = .01) +
-  facet_wrap(~ sample_name)
+  ggplot(mapping = aes(x=VAF, fill = cna_id)) +
+  geom_histogram(binwidth = 0.01, alpha = 0.6, position = 'identity') +
+  xlim(-0.05, 1.05) +
+  facet_wrap(~ sample_name) +
+  plot_layout(nrow = 2, guides = 'collect') & theme(legend.position = 'bottom')
+
+germline
+somatic
 ```
