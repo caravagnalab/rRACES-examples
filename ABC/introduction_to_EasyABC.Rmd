@@ -1,0 +1,529 @@
+---
+title: "ABC Easy model"
+author: "Abdula Kalus"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.kable.NA = '')
+options(knitr.duplicate.label = "allow")
+```
+
+# Introduction to EasyABC
+
+In this tutorial we will show how to implement models with rRACES that can be used with EasyABC pakcage.
+Recall that the main steps of an ABC analysis follow the general scheme of any Bayesian analysis: formulating a model, fitting the model to data (parameter estimation), and improving the model by checking its fit (posterior predictive checks)
+
+Let's start importing the library, remember to install  *EasyABC* and *rRACES*, to do this just uncomment the first two lines.
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# install.packages(EasyABC)
+# devtools::install_github("caravagnalab/rRACES")
+library(EasyABC)
+library(rRACES)
+library(ggplot2)
+```
+
+## Parameter inference
+Suppose that we want to compute the posterior probability distribution of a univariate or multivariate parameter, $\theta$. A parameter value $\theta_{i}$, is sampled from its prior distribution to simulate a dataset $y_{i}$, for $i = 1, . . . , n$ where $n$ is the number of simulations. A set of summary statistics $S(y_{i})$ is computed from the simulated data and compared to the summary statistics obtained from the actual data $S(y_{0})$ using a distance measure $d$. We consider the Euclidean distance for $d$. If $d(S(y_{i}), S(y_{0}))$ (i.e. the distance between $S(yi)$ and $S(y0))$ is less than a given threshold, the parameter value $\theta_{i}$ is accepted. In order to set a threshold above which simulations are rejected, the user has to provide the tolerance rate, which is defined as the percentage of accepted simulation. The accepted $\theta_{i}$’s form a sample from an approximation of the posterior distribution.
+
+Particular attention must be paid to the model being used, as the summary statics change based on it. In the following examples we will show some examples.
+
+### Sumamry statics observed
+As we mentioned earlier, to estimate the parameter that interest us we must first have a summary statistic against which we can compare the results obtained.
+
+In the following example we simulate with *rRACES* the evolution of a mutant $A$, with the folowing parameters:
+
+- **growth_rates** as **gr** = 0.08
+
+- **death_rates** as **dr** = 0
+
+In general in models like this we can always imagine calculating the $\gamma$ growth rate, since we can impose $\gamma = gr - dr$
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Parameter of the model
+gr = 0.08
+dr = 0
+t=50
+
+# Create simulation
+sim <- new(Simulation, 'sim')
+sim$update_tissue(150,150)
+
+# Add the mutant A
+sim$add_mutant('A', gr, dr)
+
+# Place cell on the tissue
+dim <- sim$get_tissue_size()
+sim$place_cell('A', dim[1]/2, dim[2]/2)
+
+# Run the simulation for other t time units
+sim$run_up_to_time(sim$get_clock() + 1)
+sim$run_up_to_time(sim$get_clock() + t)
+
+# Summary statistic of the simulation (number of cells)
+sum_stat_obs = c(sim$get_counts()$counts[1])
+sum_stat_obs
+```
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+par(mfrow=c(1,2))
+plot_tissue(sim)
+plot_muller(sim)
+```
+
+Now we can obtain a summary statistic, in this case we will use the number of cells generated per 50 time units
+
+
+
+### Model
+In this model we assume we know:
+
+- the death rate is 0 
+
+- for how many units of time to run the simulation 
+
+and we want to infer the growth rate, so $\gamma = gr$
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+create_model <- function(t){
+    model=function(x){
+        if (x[1] > 0){
+            tmp <- new(Simulation, 'tmp')
+            tmp$add_mutant('A', x[1], 0)
+            
+            dim <- tmp$get_tissue_size()
+            tmp$place_cell("A", dim[1]/2, dim[2]/2)
+            
+            tmp$run_up_to_time(tmp$get_clock() + 1)
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            c(tmp$get_counts()$counts[1])
+        } else {
+            c(0)
+        }
+    }
+    print("The model has been created")
+    return(model)
+}
+```
+
+The function takes as input the precisely known parameters and creates another function called **gr_model** which will be used by the ABC algorithm to compute the set of summary statistics $S(y_{i})$.
+
+Once the **gr_model** has been created we can proceed with using the *ABC_rejection* algorithm.
+
+### ABC rejection
+This sampling scheme consists in drawing the model parameters in the prior distributions, in using these model parameter values to launch a simulation and in repeating this two-step procedure **nb_simul** times. At the end of the **nb_simul** simulations, the simulations closest to the target (or at a distance smaller than a tolerance threshold) in the space of the summary statistics are retained to form an approximate posterior distribution of the model parameters.
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Create the gr_model
+model = create_model(t)
+
+# Let's assume that the parameter is in a uniform distribution [0,0.1]
+prior = list(c("unif",0,0.1))
+
+set.seed(1)
+nb_simul=300
+tr=0.1
+
+ABC_rej <- ABC_rejection(
+    model=model,
+    prior=prior,
+    nb_simul=nb_simul,
+    summary_stat_target=sum_stat_obs,
+    tol=tr)
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+ABC_param = data.frame(ABC_rej$param)
+p = ggplot(ABC_param, aes(x=ABC_rej.param)) + geom_density() +
+    geom_vline(aes(xintercept = gr), color='blue') + 
+    geom_vline(aes(xintercept = mean(ABC_rej.param)), color='red')
+p
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+tab <- matrix(c(mean(ABC_rej$param[,1]), gr), ncol=2, byrow=TRUE)
+colnames(tab) <- c('Estimated','True')
+rownames(tab) <- c('gr')
+tab <- as.table(tab)
+tab
+```
+
+Now let's try to estimate $\gamma$ where the $dr \neq 0$ and see what happens
+
+To obtain the summary statistic for this example we simulate the model with $gr=0.08$ and $dr=0.0135$
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Parameter of the model
+gr = 0.08
+dr = 0.00135
+t=50
+
+# Create simulation
+sim <- new(Simulation, 'sim')
+sim$update_tissue(150,150)
+
+# Add the mutant A
+sim$add_mutant('A', gr, dr)
+
+# Place cell on the tissue
+dim <- sim$get_tissue_size()
+sim$place_cell('A', dim[1]/2, dim[2]/2)
+
+# Run the simulation for other t time units
+sim$run_up_to_time(sim$get_clock() + 1)
+sim$run_up_to_time(sim$get_clock() + t)
+
+# Summary statistic of the simulation (number of cells)
+sum_stat_obs = c(sim$get_counts()$counts[1])
+sum_stat_obs
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+par(mfrow=c(1,2))
+plot_tissue(sim)
+plot_muller(sim)
+```
+
+Now we can obtain a summary statistic, in this case we will use the number of cells generated per 50 time units
+
+
+
+### Model
+In this model we assume we know:
+
+- for how many units of time to run the simulation 
+
+and we want to infer the growth rate, so $\gamma = gr - dr$
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+create_model <- function(t){
+    model=function(x){
+        if (x[1] > 0 & x[2] > 0){
+            tmp <- new(Simulation, 'tmp')
+            tmp$add_mutant('A', x[1], x[2])
+            
+            dim <- tmp$get_tissue_size()
+            tmp$place_cell("A", dim[1]/2, dim[2]/2)
+            
+            tmp$run_up_to_time(tmp$get_clock() + 1)
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            c(tmp$get_counts()$counts[1])
+        } else {
+            c(0)
+        }
+    }
+    print("The model has been created")
+    return(model)
+}
+```
+
+The function takes as input the precisely known parameters and creates another function called **gr_model** which will be used by the ABC algorithm to compute the set of summary statistics $S(y_{i})$.
+
+Once the **gr_model** has been created we can proceed with using the *ABC_rejection* algorithm.
+
+### ABC rejection
+This sampling scheme consists in drawing the model parameters in the prior distributions, in using these model parameter values to launch a simulation and in repeating this two-step procedure **nb_simul** times. At the end of the **nb_simul** simulations, the simulations closest to the target (or at a distance smaller than a tolerance threshold) in the space of the summary statistics are retained to form an approximate posterior distribution of the model parameters.
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Create the gr_model
+model = create_model(t)
+
+# Let's assume that the gr is in a uniform distribution [0,0.1] and
+# dr in a unform [0,0.05]
+prior = list(c("unif",0,0.1),
+             c("unif",0,0.05))
+
+set.seed(1)
+nb_simul=300
+tr=0.1
+
+ABC_rej <- ABC_rejection(
+    model=model,
+    prior=prior,
+    nb_simul=nb_simul,
+    summary_stat_target=sum_stat_obs,
+    tol=tr)
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+ABC_param = data.frame(ABC_rej$param)
+p = ggplot(ABC_param, aes(x=X1)) + geom_density() +
+    geom_vline(aes(xintercept = gr), color='blue') + 
+    geom_vline(aes(xintercept = mean(X1)), color='red') +
+    labs(size= "Nitrogen",
+       x = "gr",
+       y = "dr")
+p
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+p = ggplot(ABC_param, aes(x=X2)) + geom_density() +
+    geom_vline(aes(xintercept = dr), color='blue') + 
+    geom_vline(aes(xintercept = mean(X2)), color='red') +
+    labs(size= "Nitrogen",
+       x = "gr",
+       y = "dr")
+p
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+ggplot(ABC_param, aes(x=X1,y=X2)) + 
+    geom_point(aes(colour= factor(kmeans(scale(cbind(X1,X2)),
+                                         centers=2)$cluster))) +
+    scale_colour_brewer('Cluster', palette = 'Set2') +
+    labs(size= "Nitrogen",
+       x = "gr",
+       y = "dr")
+```
+
+```{r include=TRUE, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+tab <- matrix(c(mean(ABC_rej$param[,1]), gr), ncol=2, byrow=TRUE)
+colnames(tab) <- c('Estimated','True')
+rownames(tab) <- c('gr')
+tab <- as.table(tab)
+tab
+```
+### More examples
+ 
+#### Infer growth rate of sub mutant
+In the following example we simulate with *rRACES* the evolution of a mutant $A$ with subclonal expansion $B$, with the folowing parameters:
+
+- **gr1** = 0.0568 (mutant $A$)
+
+- **dr1** = 0 (mutant $A$)
+
+- **gr2** = 0.0897 (mutant $B$)
+
+- **dr2** = 0 (mutant $B$)
+
+Pay attention to the statistics used in this example, to make a good inference of the parameter we use the number of $A$ cells and the number of $B$ cells, so a vector of summary statistics.
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Parameter of the model
+gr1 = 0.0568
+dr1 = 0
+
+gr2 = 0.0897
+dr2 = 0
+
+t=25
+
+# Create simulation
+sim <- new(Simulation, 'sim')
+
+# Add the mutant A
+sim$add_mutant('A', gr, dr)
+
+# Place cell on the tissue
+dim <- sim$get_tissue_size()
+sim$place_cell("A", dim[1]/2, dim[2]/2)
+
+# Run the simulation for other t time units
+sim$run_up_to_time(sim$get_clock() + t)
+
+# Add the mutant B
+sim$add_mutant('B', gr2, dr2)
+
+# Mutant injection
+sim$mutate_progeny(sim$choose_cell_in('A'), 'B')
+
+sim$run_up_to_time(sim$get_clock() + t)
+
+
+# Summary statistic of the simulation (number of cells)
+sum_stat_obs = c(sim$get_counts()$counts[1],
+                 sim$get_counts()$counts[2])
+sum_stat_obs
+```
+
+### Model
+In this model we assume we know:
+
+- the growth rate of the mutant $A$
+
+- the death rate of both mutant
+
+- for how many units of time to run the simulation 
+
+and we want to infer the growth rate of mutant $B$
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+create_model <- function(gr1, dr1, dr2, t){
+    model=function(x){
+        if (x[1] > 0){
+            tmp <- new(Simulation, 'tmp')
+            tmp$add_mutant('A', gr1, dr1)
+            
+            dim <- tmp$get_tissue_size()
+            tmp$place_cell("A", dim[1]/2, dim[2]/2)
+            
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            tmp$add_mutant('B', x[1], dr2)
+            tmp$mutate_progeny(tmp$choose_cell_in('A'), 'B')
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            c(tmp$get_counts()$counts[1], 
+              tmp$get_counts()$counts[2])
+        } else {
+            c(0,0)
+        }
+    }
+    assign("sub_gr_model",model, envir = .GlobalEnv)
+    print("The model has been created")
+    return(invisible())
+}
+```
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Create the sub_gr_model
+create_model(gr1, dr1, dr2, t)
+
+# Let's assume that the parameter is around a norm with mean 0.1 and var 0.08
+prior = list(c("normal",0.1,0.08))
+
+set.seed(1)
+nb_simul=100
+tr=0.05
+
+ABC_rej <- ABC_rejection(
+    model=sub_gr_model,
+    prior=prior,
+    nb_simul=nb_simul,
+    summary_stat_target=sum_stat_obs,
+    tol=tr)
+```
+
+```{r include=TRUE, echo=FALSE}
+ABC_rej$param
+```
+
+```{r include=TRUE, echo=FALSE}
+tab <- matrix(c(NA, gr1, mean(ABC_rej$param[,1]), gr2), ncol=2, byrow=TRUE)
+colnames(tab) <- c('Estimated','True')
+rownames(tab) <- c('gr A', 'gr B')
+tab <- as.table(tab)
+tab
+```
+
+#### Infer growth rate of one mutant and sub mutant
+In the following example we simulate with *rRACES* the evolution of a mutant $A$ with subclonal expansion $B$, with the following parameters:
+
+- **gr1** = 0.0777 (mutant $A$)
+
+- **dr1** = 0 (mutant $A$)
+
+- **gr2** = 0.0987 (mutant $B$)
+
+- **dr2** = 0 (mutant $B$)
+
+In this example we will use the relationship between $\frac{\#cell B}{\#cell A}$
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Parameter of the model
+gr1 = 0.0777
+dr1 = 0
+
+gr2 = 0.0987
+dr2 = 0
+
+t=25
+
+# Create simulation
+sim <- new(Simulation, 'sim')
+
+# Add the mutant A
+sim$add_mutant('A', gr, dr)
+
+# Place cell on the tissue
+dim <- sim$get_tissue_size()
+sim$place_cell("A", dim[1]/2, dim[2]/2)
+
+# Run the simulation for other t time units
+sim$run_up_to_time(sim$get_clock() + t)
+
+# Add the mutant B
+sim$add_mutant('B', gr2, dr2)
+
+# Mutant injection
+sim$mutate_progeny(sim$choose_cell_in('A'), 'B')
+
+sim$run_up_to_time(sim$get_clock() + t)
+
+
+# Summary statistic of the simulation (number of cells)
+sum_stat_obs = c(sim$get_counts()$counts[2]/sim$get_counts()$counts[1])
+sum_stat_obs
+```
+
+### Model
+In this model we assume we know:
+
+- the growth rate of the mutant $A$
+
+- the death rate of both mutant
+
+- for how many units of time to run the simulation 
+
+and we want to infer the growth rate of mutant $B$
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+create_model <- function(dr1, dr2, t){
+    model=function(x){
+        if (x[1] > 0){
+            tmp <- new(Simulation, 'tmp')
+            tmp$add_mutant('A', x[1], dr1)
+            
+            dim <- tmp$get_tissue_size()
+            tmp$place_cell("A", dim[1]/2, dim[2]/2)
+            
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            tmp$add_mutant('B', x[2], dr2)
+            tmp$mutate_progeny(tmp$choose_cell_in('A'), 'B')
+            tmp$run_up_to_time(tmp$get_clock() + t)
+            
+            c(tmp$get_counts()$counts[2]/tmp$get_counts()$counts[1])
+        } else {
+            c(0)
+        }
+    }
+    assign("two_param_model",model, envir = .GlobalEnv)
+    print("The model has been created")
+    return(invisible())
+}
+```
+
+```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
+# Create the sub_gr_model
+create_model(dr1, dr2, t)
+
+# Let's assume that the parameter is around a norm with mean 0.1 and var 0.08
+prior = list(c("normal",0.1,0.04), c("normal",0.12,0.04))
+
+set.seed(1)
+nb_simul=100
+tr=0.05
+
+ABC_rej <- ABC_rejection(
+    model=two_param_model,
+    prior=prior,
+    nb_simul=nb_simul,
+    summary_stat_target=sum_stat_obs,
+    tol=tr)
+```
+
+```{r include=TRUE, echo=FALSE}
+ABC_rej$param
+```
+
+```{r include=TRUE, echo=FALSE}
+tab <- matrix(c(mean(ABC_rej$param[,1]), gr1, mean(ABC_rej$param[,2]), gr2), ncol=2, byrow=TRUE)
+colnames(tab) <- c('Estimated','True')
+rownames(tab) <- c('gr A', 'gr B')
+tab <- as.table(tab)
+tab
+```
