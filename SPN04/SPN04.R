@@ -138,21 +138,17 @@ germline_url <- paste0("https://www.dropbox.com/scl/fi/3rs2put4wde3objxmhvjc/ger
 
 
 # build a mutation engine and place all the files in the directory "Test"
-m_engine <- build_mutation_engine(directory = "Test_SPN04",
-                                  reference_src = reference_url,
-                                  SBS_src = sbs_url,
-                                  drivers_src = drivers_url,
-                                  passenger_CNAs_src = passenger_cnas_url,
-                                  germline_src = germline_url)
+get_mutation_engine_codes()
+m_engine <- build_mutation_engine(setup_code = "GRCh37", context_sampling = 50)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 1e-7, CNA = 0),
-                    driver_SNVs = c(SNV("2", 209113113, "T")))
+                    driver_SNVs = c(SNV("2", 209113113, "A")))
                     
 
 m_engine$add_mutant("Clone 2",
                     passenger_rates = c(SNV=1e-7, CNA=1e-9),
-                    driver_SNVs = c(SNV("2", 209113113, "T"))
+                    driver_SNVs = c(SNV("2", 209113113, "A"))
                     #driver_SNVs = c(SNV("2", 209113113, "A"))#,
                     #driver_SNVs = c(SNV("2", 25457163, "T"))
                     #driver_CNAs = c(CNA(type = "A", "2", pos_in_chr = 209113113,len = 100))
@@ -160,7 +156,7 @@ m_engine$add_mutant("Clone 2",
 
 m_engine$add_mutant("Clone 3",
                     passenger_rates = c(SNV=1e-7, CNA=1e-9),
-                    driver_SNVs = c(SNV("2", 209113113, "T"))
+                    driver_SNVs = c(SNV("2", 209113113, "A"))
                     #driver_SNVs = c(SNV("2", 209113113, "A"), SNV("2", 209113112, "T"))#,
                     #driver_SNVs = c(SNV("2", 25457163, "T"))
                     #driver_CNAs = c(CNA(type = "A", "2", pos_in_chr = 209113113,len = 100))
