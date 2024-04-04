@@ -62,6 +62,7 @@ sim$update_rates("Clone 1",rates = c(growth = 0, death=5))
 sim$update_rates("Clone 2",rates = c(growth = 0, death=5))
 sim$update_rates("Clone 3",rates = c(growth = 0, death=5))
 sim <- run_down_to_size_by_steps(sim, "Clone 3", 1e3, delta_time = .1)
+treatment_end <- sim$get_clock()
 
 plot_tissue(sim, num_of_bins = 300)
 ggsave("tissue/tissue_02.pdf", dpi=300, width = 8, height = 8)
@@ -69,6 +70,7 @@ plot_muller(sim) + xlim(20, NA)
 ggsave("tissue/muller_02.pdf", dpi=300, width = 8, height = 8)
 
 # Relapse ####
+
 sim$update_rates("Clone 3",rates = c(growth = 2, death=0.01))
 sim <- run_up_to_size_by_steps(sim, "Clone 3", .75e5, delta_time = .1)
 
@@ -87,8 +89,6 @@ plot_tissue(sim, num_of_bins = 300)
 ggsave("tissue/tissue_04.pdf", dpi=300, width = 8, height = 8)
 plot_muller(sim) + xlim(20, NA)
 ggsave("tissue/muller_04.pdf", dpi=300, width = 8, height = 8)
-
-plot_timeseries()
 
 sampled_phylogeny <- sim$get_samples_forest()
 
@@ -134,9 +134,8 @@ passenger_cnas_url <- paste0("https://raw.githubusercontent.com/",
                              "caravagnalab/rRACES/main/inst/extdata/",
                              "passenger_CNAs_hg19.csv")
 
-germline_url <- paste0("https://www.dropbox.com/scl/fi/g9oloxkip18tr1r",
-                       "m6wjve/germline_data_demo.tar.gz?rlkey=15jshul",
-                       "d3bqgyfcs7fa0bzqeo&dl=1")
+germline_url <- paste0("https://www.dropbox.com/scl/fi/3rs2put4wde3objxmhvjc/germline_data_hg19.tar.gz?rlkey=imawitklf8d6zphz9ugriv4qm&dl=1")
+
 
 # build a mutation engine and place all the files in the directory "Test"
 m_engine <- build_mutation_engine(directory = "Test_SPN04",
@@ -145,3 +144,35 @@ m_engine <- build_mutation_engine(directory = "Test_SPN04",
                                   drivers_src = drivers_url,
                                   passenger_CNAs_src = passenger_cnas_url,
                                   germline_src = germline_url)
+
+m_engine$add_mutant(mutant_name = "Clone 1",
+                    passenger_rates = c(SNV = 1e-7, CNA = 0),
+                    driver_SNVs = c(SNV("2", 209113113, "T")))
+                    
+
+m_engine$add_mutant("Clone 2",
+                    passenger_rates = c(SNV=1e-7, CNA=1e-9),
+                    driver_SNVs = c(SNV("2", 209113113, "T"))
+                    #driver_SNVs = c(SNV("2", 209113113, "A"))#,
+                    #driver_SNVs = c(SNV("2", 25457163, "T"))
+                    #driver_CNAs = c(CNA(type = "A", "2", pos_in_chr = 209113113,len = 100))
+)
+
+m_engine$add_mutant("Clone 3",
+                    passenger_rates = c(SNV=1e-7, CNA=1e-9),
+                    driver_SNVs = c(SNV("2", 209113113, "T"))
+                    #driver_SNVs = c(SNV("2", 209113113, "A"), SNV("2", 209113112, "T"))#,
+                    #driver_SNVs = c(SNV("2", 25457163, "T"))
+                    #driver_CNAs = c(CNA(type = "A", "2", pos_in_chr = 209113113,len = 100))
+)
+
+# Mutational exposures ####
+m_engine$add_exposure(coefficients = c(SBS5 = 0.5, SBS1 = 0.5)) # ID1 is missing
+m_engine$add_exposure(time = treatment_start, c(SBS5 = 0.4, SBS1 = 0.4, SBS25 = 0.2))
+m_engine$add_exposure(time = treatment_end, coefficients = c(SBS5 = 0.5, SBS1 = 0.5))
+
+# Sequence mutations ####
+phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 0)
+
+tree_plot <- plot_forest(sampled_phylogeny)
+annotate_forest(tree_plot, forest = NULL, exposures = TRUE)
