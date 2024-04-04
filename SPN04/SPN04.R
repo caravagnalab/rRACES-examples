@@ -1,4 +1,4 @@
-setwd("~/GitHub/rRACES-examples/SPN04")
+#setwd("~/GitHub/rRACES-examples/SPN04")
 
 rm(list = ls())
 library(rRACES)
@@ -171,4 +171,5 @@ m_engine$add_exposure(time = treatment_end, coefficients = c(SBS5 = 0.5, SBS1 = 
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 0)
 
 tree_plot <- plot_forest(sampled_phylogeny)
-annotate_forest(tree_plot, forest = NULL, exposures = TRUE)
+tree_plot <- annotate_forest(tree_plot, forest = phylo_forest, exposures = TRUE)
+ggsave("tissue/tree.pdf", dpi=300, width=12, height=12, plot=tree_plot)
