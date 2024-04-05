@@ -116,23 +116,7 @@ sim$sample_cells("B", bbox$lower_corner, bbox$upper_corner)
 plot_tissue(sim)
 ```
 
-### Forest generation
-
-Here, we generate the sampled forest:
-
-```{r samples_forest, results='hide', message=FALSE, warning=FALSE}
-sampled_phylogeny <- sim$get_samples_forest()
-plot_forest(sampled_phylogeny) %>%
-  annotate_forest(sampled_phylogeny, 
-                  samples = TRUE, 
-                  MRCAs = TRUE, 
-                  exposures = FALSE, 
-                  facet_signatures = FALSE, 
-                  drivers = FALSE, 
-                  add_driver_label = FALSE)
-```
-
-### Summary plot
+### Summary plots
 
 Here we report a muller plot summarizing the evolution of our tumor.
 
@@ -140,3 +124,6 @@ Here we report a muller plot summarizing the evolution of our tumor.
 plot_muller(sim) + xlim(20, NA) + geom_vline(xintercept = c(treatment_start, treatment_end), color="indianred", linetype = "dashed")
 ```
 
+Here we report the annotated tree:
+
+![](tissue/tree.pdf)
