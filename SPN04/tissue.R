@@ -90,6 +90,8 @@ ggsave("tissue/muller_04.pdf", dpi=300, width = 8, height = 8)
 
 sampled_phylogeny <- sim$get_samples_forest()
 sampled_phylogeny$save("data/samples_forest.sff")
+treatment_info <- list(treatment_start=treatment_start, treatment_end=treatment_end)
+saveRDS(treatment_info, "data/treatment_info.rds")
 
 # Recap Plot ####
 muller_plot <- plot_muller(sim)
