@@ -34,17 +34,17 @@ get_mutation_engine_codes()
 m_engine <- build_mutation_engine(setup_code = "GRCh37", context_sampling = 20)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 1e-7, CNA = 1e-9),
+                    passenger_rates = c(SNV = 1e-8, CNA = 1e-9),
                     driver_SNVs = c(SNV("2", 209113113, "A")))
 
 
 m_engine$add_mutant("Clone 2",
-                    passenger_rates = c(SNV=1e-7, CNA=1e-9),
+                    passenger_rates = c(SNV=1e-8, CNA=1e-9),
                     driver_SNVs = c(SNV("2", 209113113, "A")),
                     driver_CNAs = c(CNA(type = "A", "6", pos_in_chr = 25100000,len = 1e7)))
 
 m_engine$add_mutant("Clone 3",
-                    passenger_rates = c(SNV=1e-7, CNA=1e-9),
+                    passenger_rates = c(SNV=1e-8, CNA=1e-9),
                     driver_SNVs = c(SNV("2", 209113113, "A"), SNV("1", 115256530, "T")),
                     driver_CNAs = c(CNA(type = "A", "6", pos_in_chr = 25100000,len = 1e7)))
 

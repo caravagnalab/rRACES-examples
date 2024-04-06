@@ -44,7 +44,7 @@ plot_muller(sim)
 ggsave("tissue/muller_00.pdf", dpi=300, width = 8, height = 8)
 
 # First sampling ####
-n_w <- n_h <- 50
+n_w <- n_h <- 15
 ncells <- .99*n_w*n_h
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
 sim$sample_cells("A", bbox$lower_corner, bbox$upper_corner)
@@ -78,7 +78,7 @@ plot_muller(sim) + xlim(20, NA)
 ggsave("tissue/muller_03.pdf", dpi=300, width = 8, height = 8)
 
 # Second sampling ####
-n_w <- n_h <- 50
+n_w <- n_h <- 15
 ncells <- .99*n_w*n_h
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
 sim$sample_cells("B", bbox$lower_corner, bbox$upper_corner)
