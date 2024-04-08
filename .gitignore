@@ -5,3 +5,6 @@
 .DS_Store
 *Test*
 *GRCh37*
+*data*
+*.log
+*.sh
