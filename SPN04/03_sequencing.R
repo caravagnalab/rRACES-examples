@@ -11,7 +11,7 @@ set.seed(seed)
 phylo_forest <- rRACES::load_phylogenetic_forest("data/phylo_forest.sff")
 
 # Simulate sequencing ####
-seq_results <- simulate_seq(phylo_forest, coverage = 80)
+seq_results <- simulate_seq(phylo_forest, coverage = 40)
 
 seq_to_long <- function(seq_results) {
   # get names of samples
@@ -32,4 +32,4 @@ seq_to_long <- function(seq_results) {
     dplyr::select(chr, from, to, ALT, NV, DP, VAF, sample_name)
 }
 
-saveRDS(seq_to_long(seq_results, "data/sequencing.rds"))
+saveRDS(seq_results, "data/sequencing.rds")
