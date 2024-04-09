@@ -19,20 +19,20 @@ sim$duplicate_internal_cells <- TRUE
 sim$death_activation_level <- 50
 
 # First and Second mutant ####
-sim$add_mutant(name = "Clone 1", growth_rates = .5, death_rates = 0.01)
+sim$add_mutant(name = "Clone 1", growth_rates = .05, death_rates = .001)
 
 sim$place_cell("Clone 1", 500, 500)
 # Let the simulation evolve until "A+" consists of 1000 cells
 #sim$run_up_to_size("Clone 1", 1) # to observe muller from beginning
 sim <- run_up_to_size_by_steps(sim, "Clone 1", 1000, dt)
 
-sim$add_mutant("Clone 2",growth_rates = 1, death_rates = 0.01)
+sim$add_mutant("Clone 2",growth_rates = .1, death_rates = .001)
 sim$mutate_progeny(sim$choose_cell_in("Clone 1"), "Clone 2")
 sim$get_species()
 sim <- sweep_population(sim, "Clone 1", "Clone 2", .5, first_reduction = 10, delta_time = dt)
 
 # Third mutant ####
-sim$add_mutant("Clone 3",growth_rates = 2, death_rates = 0.01)
+sim$add_mutant("Clone 3",growth_rates = .2, death_rates = .001)
 sim$mutate_progeny(sim$choose_cell_in("Clone 2"), "Clone 3")
 
 sim <- sweep_population(sim, "Clone 2", "Clone 3", .75, first_reduction = 10, delta_time = dt)
@@ -56,9 +56,9 @@ ggsave("tissue/muller_01.pdf", dpi=300, width = 8, height = 8)
 
 # Treatment ####
 treatment_start <- sim$get_clock()
-sim$update_rates("Clone 1",rates = c(growth = 0, death=5))
-sim$update_rates("Clone 2",rates = c(growth = 0, death=5))
-sim$update_rates("Clone 3",rates = c(growth = 0, death=5))
+sim$update_rates("Clone 1",rates = c(growth = 0, death=.5))
+sim$update_rates("Clone 2",rates = c(growth = 0, death=.5))
+sim$update_rates("Clone 3",rates = c(growth = 0, death=.5))
 sim <- run_down_to_size_by_steps(sim, "Clone 3", 1e3, delta_time = .1)
 treatment_end <- sim$get_clock()
 
@@ -69,7 +69,7 @@ ggsave("tissue/muller_02.pdf", dpi=300, width = 8, height = 8)
 
 # Relapse ####
 
-sim$update_rates("Clone 3",rates = c(growth = 2, death=0.01))
+sim$update_rates("Clone 3",rates = c(growth = .2, death=.001))
 sim <- run_up_to_size_by_steps(sim, "Clone 3", .75e5, delta_time = .1)
 
 plot_tissue(sim, num_of_bins = 300)
@@ -116,4 +116,5 @@ summary_patchwork = patchwork::wrap_plots(
   guides = 'auto', design = layout
 )
 summary_patchwork
+
 
