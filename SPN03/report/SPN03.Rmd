@@ -1,6 +1,9 @@
 ---
 title: "SPN03_Homogenous_Growth"
-output: html_document
+output: 
+  html_document:
+    theme: united
+    highlight: tango 
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
