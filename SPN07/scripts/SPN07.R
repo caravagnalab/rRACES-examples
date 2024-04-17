@@ -6,7 +6,7 @@ library(dplyr)
 
 sim <- new(Simulation, "SPN07",
            seed = 3,
-           save_snapshot = T)
+           save_snapshot = F)
 
 sim$duplicate_internal_cells <- T
 
@@ -157,9 +157,9 @@ tissue_rel = plot_tissue(sim)
 
 time_series = plot_timeseries(sim)
 
-plot_muller(sim)
+muller = plot_muller(sim)
 
-sim = recover_simulation("SPN07")
+# sim = recover_simulation("SPN07")
 
 bbox = sim$search_sample(c("5" = 100),nw = 100,nh = 100)
 
@@ -175,7 +175,7 @@ sim$sample_cells("D", bbox$lower_corner, bbox$upper_corner)
 
 forest <- sim$get_samples_forest()
 
-annotate_forest(tree_plot = plot_forest(forest),forest = forest)
+# annotate_forest(tree_plot = plot_forest(forest),forest = forest)
 
 bbox = sim$search_sample(c("6" = 100),nw = 70,nh = 70)
 
@@ -183,9 +183,19 @@ sim$sample_cells("E", bbox$lower_corner, bbox$upper_corner)
 
 forest <- sim$get_samples_forest()
 
-annotate_forest(tree_plot = plot_forest(forest),forest = forest)
+plot_forest = annotate_forest(tree_plot = plot_forest(forest),forest = forest)
 
 
+tissue_pre
 
+tissue_post
+
+tissue_rel
+
+plot_forest
+
+time_series 
+
+muller
 
 
