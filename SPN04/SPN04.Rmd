@@ -1,5 +1,5 @@
 ---
-title: 'rRACES: SPN05'
+title: 'rRACES: SPN04'
 author: "Giovanni Santacatterina"
 date: "`r Sys.Date()`"
 output: 
@@ -125,5 +125,3 @@ plot_muller(sim) + xlim(20, NA) + geom_vline(xintercept = c(treatment_start, tre
 ```
 
 Here we report the annotated tree:
-
-![](tissue/tree.pdf)
