@@ -1,6 +1,9 @@
 ---
 title: "SPN03_Homogenous_Growth"
-output: html_document
+output: 
+  html_document:
+    theme: united
+    highlight: tango 
 ---
 
 ```{r setup, include=FALSE, warning=FALSE}
@@ -45,7 +48,7 @@ Add Clone2
 ```{r}
 sim$add_mutant(name = "Clone 2", growth_rates = 0.5, death_rates = 0.01)
 sim$mutate_progeny(sim$choose_cell_in("Clone 1"), "Clone 2")
-sim$run_up_to_size(species = 'Clone 2', 1000)
+sim$run_up_to_size(species = 'Clone 2', 2000)
 ```
 
 Get SampleB: 80% Clone 1, 20% Clone 2
@@ -64,8 +67,8 @@ plot_muller(sim)
 Continue growth on Clone2
 
 ```{r}
-sim$update_rates(species = "Clone 1", rates = c(growth = 0.01, death = 0.1))
-sim$run_up_to_size(species = 'Clone 2', 5000)
+sim$update_rates(species = "Clone 1", rates = c(growth = 0, death = 2))
+sim$run_up_to_size(species = 'Clone 2', 8000)
 plot_muller(sim)
 ```
 
@@ -83,7 +86,7 @@ Add Clone3
 ```{r}
 sim$add_mutant(name = "Clone 3", growth_rates = 2, death_rates = 0.01)
 sim$mutate_progeny(sim$choose_cell_in("Clone 2"), "Clone 3")
-sim$run_up_to_size("Clone 3", 7000)
+sim$run_up_to_size("Clone 3", 10000)
 ```
 
 Get SampleD: 60% Clone 2, 40% Clone 3

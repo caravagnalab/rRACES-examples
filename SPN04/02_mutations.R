@@ -34,17 +34,17 @@ get_mutation_engine_codes()
 m_engine <- build_mutation_engine(setup_code = "GRCh37", context_sampling = 20)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 5e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 2e-8, CNA = 1e-11),
                     driver_SNVs = c(SNV("2", 209113113, "A")))
 
 
 m_engine$add_mutant("Clone 2",
-                    passenger_rates = c(SNV=5e-8, CNA=1e-11),
+                    passenger_rates = c(SNV=2e-8, CNA=1e-11),
                     driver_SNVs = c(),
                     driver_CNAs = c(CNA(type = "A", "6", pos_in_chr = 25100000,len = 1e7)))
 
 m_engine$add_mutant("Clone 3",
-                    passenger_rates = c(SNV=5e-8, CNA=1e-11),
+                    passenger_rates = c(SNV=2e-8, CNA=1e-11),
                     driver_SNVs = c(SNV("1", 115256530, "T")),
                     driver_CNAs = c())
 
@@ -57,6 +57,17 @@ m_engine$add_exposure(time = treatment_info$treatment_end, coefficients = c(SBS5
 # Sequence mutations ####
 sampled_phylogeny <- load_samples_forest("data/samples_forest.sff")
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 1000)
+
+all_SNV <- phylo_forest$get_sampled_cell_SNVs() %>% as_tibble()
+all_SNV %>%
+  group_by(cause) %>%
+  summarise(nPos = n_distinct(chr_pos)) %>%
+  print()
+
+all_SNV %>%
+  group_by(class) %>%
+  summarise(nPos = n_distinct(chr_pos)) %>%
+  print()
 
 tree_plot <- plot_forest(sampled_phylogeny)
 tree_plot <- annotate_forest(tree_plot, forest = phylo_forest, exposures = TRUE, MRCAs = FALSE, samples = FALSE, facet_signatures = TRUE, drivers = TRUE, add_driver_label = FALSE)

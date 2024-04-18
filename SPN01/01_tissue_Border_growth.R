@@ -122,3 +122,4 @@ summary_patchwork = patchwork::wrap_plots(
   guides = 'auto', design = layout
 )
 ggsave("tissue/summary_plot.pdf",summary_patchwork)
+sampled_phylogeny$save("samples_forest_border_growth.sff")
