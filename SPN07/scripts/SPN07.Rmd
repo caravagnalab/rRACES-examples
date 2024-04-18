@@ -38,7 +38,7 @@ sim <- new(Simulation, "SPN07",
 
 sim$duplicate_internal_cells <- T
 
-sim$history_delta <- 0.5
+sim$history_delta <- 0.1
 
 sim$update_tissue("Liver", 2e3, 2e3)
 
@@ -84,7 +84,7 @@ sim$add_mutant(name = "4",
                death_rates = 0)
 
 sim$mutate_progeny(sim$choose_cell_in("2"), "4")
-
+sim$update_rates("1", c(death = 10))
 
 sim$run_up_to_size("4",1.1e5)
 
@@ -98,8 +98,8 @@ tissue_pre
 ### Sampling at Diagnosis
 
 We take 3 samples from the tumor with different CCFs of the 3 clones: 
-Sample A (Clone 2 ~ 18 %,Clone 3 ~ 82 %), Sample B (Clone 2 ~ 73 %,Clone 3 ~  7 %,Clone 4 ~ 20 %), 
-Sample C (Clone 2: 17 %,Clone 4: 73%)
+Sample A (Clone 2 ~ 16 %,Clone 3 ~ 84 %), Sample B (Clone 2 ~ 60 %,Clone 3 ~  5 %,Clone 4 ~ 35 %), 
+Sample C (Clone 2: 28 %,Clone 4: 72 %)
 
 ```{r last_mutant, results='hide', message=FALSE, warning=FALSE}
 
@@ -139,12 +139,12 @@ annotate_forest(forest = forest,tree_plot = plot_forest(forest),MRCAs = T)
 We increase the death rates of all mutants to simulate the effect of the treatment.
 
 ```{r sampling_A, results='hide', message=FALSE, warning=FALSE}
-sim$update_rates("1", c(death = 10))
+
 sim$update_rates("2", c(death = 10))
 sim$update_rates("3", c(death = 10))
 sim$update_rates("4", c(death = 10))
 
-sim$run_up_to_time(sim$get_clock() + 3.1)
+sim$run_up_to_time(sim$get_clock() + 3)
 
 plot_tissue(sim)
 
@@ -165,12 +165,15 @@ sim$mutate_progeny(sim$choose_cell_in("4"), "5")
 sim$run_up_to_size("5",1e2)
 
 sim$add_mutant(name = "6",
-               growth_rates = 11,
+               growth_rates = 10.6,
                death_rates = 0)
+
 
 sim$mutate_progeny(sim$choose_cell_in("5"), "6")
 
-sim$run_up_to_size("6",1.8e5)
+sim$update_rates("4", c(death = 1e6))
+
+sim$run_up_to_size("6",1.2e5)
 
 plot_tissue(sim)
 
@@ -180,7 +183,7 @@ plot_tissue(sim)
 
 We take 2 samples from the tumor with different CCFs of the 2 resistant clones: 
 Sample D (Clone 5 ~ 100 %,Clone 6  ~ 0 %)
-Sample E (Clone 5 ~ 77 %,Clone 6 ~  23 %)
+Sample E (Clone 5 ~ 76 %,Clone 6 ~  24 %)
 
 ```{r relapse, results='hide', message=FALSE, warning=FALSE}
 
