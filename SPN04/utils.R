@@ -37,17 +37,16 @@ seq_to_long <- function(seq_results) {
   # get names of samples
   sample_names <- strsplit(colnames(seq_results)[grepl(".VAF", colnames(seq_results), fixed = TRUE)], ".VAF") %>% unlist()
 
-  sn <- sample_names[1]
   seq_df <- lapply(sample_names, function(sn) {
-    cc <- c("chromosome", "chr_pos", "ref", "alt", "causes", "classes", colnames(seq_results)[grepl(paste0(sn, "."), colnames(seq_results), fixed = T)])
+    cc <- c("chr", "chr_pos", "ref", "alt", "causes", "classes", colnames(seq_results)[grepl(paste0(sn, "."), colnames(seq_results), fixed = T)])
 
     seq_results[, cc] %>%
-      `colnames<-`(c("chromosome", "chr_pos", "ref", "alt", "causes", "classes", "occurences", "coverage", "VAF")) %>%
+      `colnames<-`(c("chr", "chr_pos", "ref", "alt", "causes", "classes", "occurences", "coverage", "VAF")) %>%
       dplyr::mutate(sample_name = sn)
   }) %>% do.call("bind_rows", .)
 
   seq_df %>%
-    dplyr::rename(chr = chromosome, from = chr_pos, DP = coverage, NV = occurences, ALT = alt) %>%
+    dplyr::rename(chr = chr, from = chr_pos, DP = coverage, NV = occurences, ALT = alt) %>%
     dplyr::mutate(to = from)
     #dplyr::select(chr, from, to, ALT, NV, DP, VAF, sample_name)
 }
