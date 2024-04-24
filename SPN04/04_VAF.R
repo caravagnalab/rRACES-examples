@@ -47,7 +47,7 @@ for (curr_chr in data$chr %>% unique()) {
   VAF_plot <- dd %>%
     dplyr::filter(classes.normal != "germinal") %>%
     ggplot(mapping = aes(x = from / BASE_FACTOR, y=VAF.tumour)) +
-    geom_point(size = .5) +
+    geom_point(size = .2, alpha = .2) +
     labs(x = "MegaBase", y = "VAF") +
     lims(y = c(0,1)) +
     facet_wrap(~ sample_name.tumour) +
