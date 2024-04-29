@@ -79,6 +79,7 @@ ncells <- 0.8*n_w*n_h
 sim$sample_cells("A", c(501,501), c(550,550))
 sim$sample_cells("B", c(470,283), c(519,332))
 sim$sample_cells("C", c(700,500), c(749,549))
+plot_tissue(sim)
 ggsave("tissue_homo/tissue_04.pdf", dpi=300, width = 8, height = 8)
 sampled_phylogeny <- sim$get_samples_forest()
 sampled_phylogeny$save("data/samples_forest_homogeneous_growth.sff")
