@@ -4,16 +4,16 @@ library(dplyr)
 library(ggplot2)
 library(patchwork)
 # Set directories
-dir.create(path = "data", recursive = TRUE)
+# dir.create(path = "data", recursive = TRUE)
 
 # load the samples forest from "samples_forest.sff" and store it in `forest`
-forest <- load_samples_forest("samples_forest_border_growth.sff")
+forest <- load_samples_forest("data/samples_forest_homogeneous_growth.sff")
 # building a mutation engine by using the "GRCh38" set-up configuration
 m_engine <- build_mutation_engine(setup_code = "GRCh38")
 m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 50)
 
 ## Drivers for the tumors
-SNV_Clone1 = SNV("5", 112839942, "T") ## APC R1450*
+SNV_Clone1 = SNV("5", 112839942, "T",allele = 1) ## APC R1450*
 CNA_Clone2 = CNA(type = "D", "5",
                  pos_in_chr = 67522671, len = 1e7,allele = 0)
 SNV_Clone3 = SNV("12", 25245350, "A")
@@ -61,4 +61,4 @@ seq_results <- parallel::mclapply(chromosomes, function(c) {
         simulate_seq(phylo_forest, coverage = 80, chromosomes = c, write_SAM = FALSE)
 }, mc.cores = parallel::detectCores()) %>% do.call("bind_rows", .)
 
-saveRDS(object =seq_results ,file = paste0("data/m_engine_border_growth_allele0.rds"))
+saveRDS(object =seq_results ,file = paste0("data/m_engine_homogeneous_growth.rds"))
