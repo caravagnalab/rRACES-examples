@@ -5,6 +5,7 @@
 .DS_Store
 *Test*
 *GRCh37*
+*GRCh38*
 *data*
 *.log
 *.err

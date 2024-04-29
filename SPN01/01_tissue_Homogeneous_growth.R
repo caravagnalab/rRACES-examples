@@ -76,26 +76,8 @@ ggsave("tissue_homo/muller_04.pdf", clone4_muller,dpi=300, width = 8, height = 8
 # Three boxes with 'ncells' cells each
 n_w <- n_h <- 50
 ncells <- 0.8*n_w*n_h
-bbox <- sim$search_sample(c("Clone 4" = ncells), n_w, n_h)
-
-plot_tissue(sim) +
-  geom_rect(xmin = 501, xmax = 550,
-            ymin = 501, ymax = 550,
-            fill = NA, color = "black")
 sim$sample_cells("A", c(501,501), c(550,550))
-plot_tissue(sim)
-bbox <- sim$search_sample(c("Clone 4" = ncells), n_w, n_h)
-plot_tissue(sim) +
-  geom_rect(xmin = bbox$lower_corner[1], xmax = bbox$upper_corner[1],
-            ymin = bbox$lower_corner[2], ymax = bbox$upper_corner[2],
-            fill = NA, color = "black")
-sim$sample_cells("B", bbox$lower_corner, bbox$upper_corner)
-plot_tissue(sim)
-bbox <- sim$search_sample(c("Clone 4" = ncells), n_w, n_h)
-plot_tissue(sim) +
-  geom_rect(xmin = 700, xmax = 749,
-            ymin = 500, ymax = 549,
-            fill = NA, color = "black")
+sim$sample_cells("B", c(470,283), c(519,332))
 sim$sample_cells("C", c(700,500), c(749,549))
 ggsave("tissue_homo/tissue_04.pdf", dpi=300, width = 8, height = 8)
 sampled_phylogeny <- sim$get_samples_forest()
