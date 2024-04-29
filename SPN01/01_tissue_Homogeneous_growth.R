@@ -110,3 +110,4 @@ plot_forest(sampled_phylogeny) %>%
                   facet_signatures = FALSE, 
                   drivers = FALSE, 
                   add_driver_label = FALSE)
+ggsave("tissue_homo/forest.pdf", dpi=300, width = 8, height = 8)
