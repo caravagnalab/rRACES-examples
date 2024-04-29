@@ -7,4 +7,6 @@
 *GRCh37*
 *data*
 *.log
+*.err
+*.out
 *.sh
