@@ -131,5 +131,5 @@ plot_forest(sampled_phylogeny) %>%
 ```{r}
 # m_engine$add_mutant(mutant_name = "Clone 1",
 #                     passenger_rates = c(SNV = 3e-8, CNA = 1e-11),
-#                     driver_SNVs = SNV("7", 10510210, "A")) 
+#                     drivers = list(SNV("7", 10510210, "A")))
 ```

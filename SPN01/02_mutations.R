@@ -25,23 +25,20 @@ mu_CNA = 1e-11
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = mu_SNV),
-                    driver_SNVs = c(SNV_Clone1),
-                    driver_CNAs = c())
+                    drivers = list(SNV_Clone1))
 
 m_engine$add_mutant(mutant_name = "Clone 2",
                     passenger_rates = c(CNA = mu_CNA),
-                    driver_SNVs = c(),
-                    driver_CNAs = c(CNA_Clone2))
+                    drivers = list(CNA_Clone2))
 
 m_engine$add_mutant(mutant_name = "Clone 3",
                     passenger_rates = c(SNV = mu_SNV),
-                    driver_SNVs = c(SNV_Clone3), 
-                    driver_CNAs = c())
+                    drivers = list(SNV_Clone3))
 
 m_engine$add_mutant(mutant_name = "Clone 4",
                     passenger_rates = c(SNV = mu_SNV),
-                    driver_SNVs = c(SNV_Clone4),
-                    driver_CNAs = c())
+                    drivers = list(SNV_Clone4))
+
 # Mutational signatures
 m_engine$add_exposure(
   time = 0,
@@ -55,7 +52,6 @@ phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_mutations =
 phylo_forest$save("data/phylo_forest.sff")
 
 chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
-
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
 	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, write_SAM = FALSE)

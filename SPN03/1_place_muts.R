@@ -14,7 +14,7 @@ plot_forest <- F
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 3e-8,
                                         CNA = 1e-10),
-                    driver_SNVs = c(SNV("9", 136496197, "C"))
+                    drivers = list(SNV("9", 136496197, "C"))
 )
 
 # Clone 2 
@@ -23,7 +23,7 @@ m_engine$add_mutant(mutant_name = "Clone 1",
 m_engine$add_mutant(mutant_name = "Clone 2",
                     passenger_rates = c(SNV = 3e-8, 
                                         CNA = 1e-10),
-                    driver_SNVs = c(SNV("12", 25398284, "T"))
+                    drivers = list(SNV("12", 25398284, "T"))
 )
 
 # Clone 3
@@ -31,7 +31,7 @@ m_engine$add_mutant(mutant_name = "Clone 2",
 m_engine$add_mutant(mutant_name = "Clone 3",
                     passenger_rates = c(SNV = 3e-8, 
                                         CNA = 1e-10),
-                    driver_SNVs = c(SNV("1", 59550210, "A"))
+                    drivers = list(SNV("1", 59550210, "A"))
 )
 
 # Signatures
