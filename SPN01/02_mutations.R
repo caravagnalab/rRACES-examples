@@ -15,7 +15,7 @@ m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 50)
 ## Drivers for the tumors
 SNV_Clone1 = SNV("5", 112839942, "T",allele = 1) ## APC R1450*
 CNA_Clone2 = CNA(type = "D", "5",
-                 pos_in_chr = 67522671, len = 1e7,allele = 0)
+                 chr_pos = 67522671, len = 1e7,allele = 0)
 SNV_Clone3 = SNV("12", 25245350, "A")
 SNV_Clone4 = SNV("3",179218303, "A") # NC_000003.12:179218302:G:A
 
