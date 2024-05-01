@@ -50,16 +50,16 @@ m_engine$add_exposure(
     SBS5 = 0.3,
     SBS13 = 0.3)
 )
-
+print("Mutation engine created")
 phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_mutations = 1000)
 phylo_forest$save("data/phylo_forest.sff")
-
+print("Mutations placed")
 chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
 
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
-	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, write_SAM = FALSE)
+	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, write_SAM = TRUE)
 }, mc.cores = parallel::detectCores()) %>% do.call("bind_rows", .)
 
-saveRDS(object =seq_results ,file = paste0("data/sequencing_homogeneous_growth.rds"))
+#saveRDS(object =seq_results ,file = paste0("data/sequencing_homogeneous_growth.rds"))
 
