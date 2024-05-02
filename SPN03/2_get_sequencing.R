@@ -2,7 +2,7 @@ library(rRACES)
 library(tidyverse)
 
 phylo_forest <- load_phylogenetic_forest("./results/phylo_forest.sff")
-all_SNV <- phylo_forest$get_sampled_cell_SNVs() %>% as_tibble()
+all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
 
 all_SNV %>%
   group_by(cause) %>%
