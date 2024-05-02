@@ -52,7 +52,7 @@ seq_to_long <- function(seq_results) {
 #' @return A ggplot2 object showing the DR distribution across the genome.
 #'
 #' @export
-plot_DR_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y")), n = 5000) {
+plot_DR_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y")), cuts = c(0.01, 0.99), n = 5000) {
   if (any(!chromosomes %in% paste0(c(1:22, "X", "Y"))))
     stop("Invalid chromosome passed as input")
 
@@ -67,15 +67,15 @@ plot_DR_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y")),
     stop(paste("Inserted 'sample' is not available, available samples are:",
                paste0(unique(data$sample_name), collapse = ", ")))
   }
-  tumour_data <- data %>% dplyr::filter(sample_name == sample)
+  tumour_data <- data %>% dplyr::filter(sample_name == sample) %>% dplyr::filter(VAF <= max(cuts), VAF >= min(cuts)) 
 
   d <- tumour_data %>%
     dplyr::left_join(normal_data, suffix = c(".tumour", ".normal"), by = "mut_id") %>%
     dplyr::mutate(DR = DP.tumour / DP.normal) %>%
     dplyr::group_by(chr.tumour) %>%
-    dplyr::sample_n(n) %>%
+    dplyr::sample_n(n, replace = T) %>%
     dplyr::ungroup() %>%
-    dplyr::arrange(desc(chr.tumour), desc(from.tumour)) %>%
+    dplyr::arrange(chr.tumour, from.tumour) %>%
     dplyr::mutate(abs_pos = 1:n())
 
   chr_limits <- d %>%
@@ -91,14 +91,15 @@ plot_DR_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y")),
 
   d %>%
     ggplot2::ggplot(mapping = ggplot2::aes(x = abs_pos, y = DR)) +
-    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed") +
-    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid") +
-    ggplot2::geom_point(size = 0.2, alpha = 0.2) +
+    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed", alpha = 0.2) +
+    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid", alpha = 0.4) +
+    ggplot2::geom_point(size = 0.2, alpha = 0.3) +
     ggplot2::labs(x = "", y = "DR") +
     ggplot2::lims(y = c(0, NA)) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = chr_means, labels = unique(d$chr.tumour)) +
-    ggplot2::geom_hline(yintercept = stats::median(d$DR), col = "indianred", linetype = "dashed")
+    ggplot2::geom_hline(yintercept = stats::median(d$DR), col = "indianred", linetype = "dashed", linewidth = 1) +
+    ggplot2::ggtitle(sample)
 }
 
 
@@ -133,9 +134,9 @@ plot_BAF_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y"))
 
   d <- tumour_data %>%
     dplyr::group_by(chr) %>%
-    dplyr::sample_n(n) %>%
+    dplyr::sample_n(n, replace = T) %>%
     dplyr::ungroup() %>%
-    dplyr::arrange(desc(chr), desc(from)) %>%
+    dplyr::arrange(chr, from) %>%
     dplyr::mutate(abs_pos = 1:n()) %>%
     dplyr::filter(VAF <= max(cuts), VAF >= min(cuts))
 
@@ -152,14 +153,15 @@ plot_BAF_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y"))
 
   d %>%
     ggplot2::ggplot(mapping = ggplot2::aes(x = abs_pos, y = VAF)) +
-    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed") +
-    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid") +
-    ggplot2::geom_point(size = 0.2, alpha = 0.2) +
+    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed", alpha = 0.2) +
+    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid", alpha = 0.4) +
+    ggplot2::geom_point(size = 0.2, alpha = 0.3) +
     ggplot2::labs(x = "", y = "BAF") +
     ggplot2::lims(y = c(0, 1)) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = chr_means, labels = unique(d$chr)) +
-    ggplot2::geom_hline(yintercept = stats::median(d$VAF), col = "indianred", linetype = "dashed")
+    ggplot2::geom_hline(yintercept = stats::median(d$VAF), col = "indianred", linetype = "dashed", linewidth = 1) +
+    ggplot2::ggtitle(sample)
 }
 
 
@@ -193,9 +195,9 @@ plot_VAF_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y"))
   tumour_data <- data %>% dplyr::filter(sample_name == sample)
 
   d <- tumour_data %>%
-    dplyr::arrange(desc(chr), desc(from)) %>%
+    dplyr::arrange(chr, from) %>%
     dplyr::group_by(chr) %>%
-    dplyr::sample_n(n, replace = TRUE) %>%
+    dplyr::sample_n(n, replace = T) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(abs_pos = 1:n()) %>%
     dplyr::filter(VAF <= max(cuts), VAF >= min(cuts))
@@ -213,14 +215,15 @@ plot_VAF_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y"))
 
   d %>%
     ggplot2::ggplot(mapping = ggplot2::aes(x = abs_pos, y = VAF)) +
-    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed") +
-    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid") +
+    ggplot2::geom_vline(xintercept = chr_means, linetype = "dashed", alpha = 0.2) +
+    ggplot2::geom_vline(xintercept = chr_limits, linetype = "solid", alpha = 0.4) +
     ggplot2::geom_point(size = 0.5, alpha = 0.4) +
     ggplot2::labs(x = "", y = "VAF") +
     ggplot2::lims(y = c(0, 1)) +
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(breaks = chr_means, labels = unique(d$chr)) +
-    ggplot2::geom_hline(yintercept = stats::median(d$VAF), col = "indianred", linetype = "dashed")
+    ggplot2::geom_hline(yintercept = stats::median(d$VAF), col = "indianred", linetype = "dashed", linewidth = 1) +
+    ggplot2::ggtitle(sample)
 }
 
 #' Plot Histogram of Variant Allele Frequency (VAF)
@@ -268,12 +271,14 @@ plot_histogram_vaf <- function(
 
   data %>%
     ggplot2::ggplot(mapping = ggplot2::aes(x = VAF, col = col, fill = col)) +
-    ggplot2::geom_histogram(bins = 100) +
+    ggplot2::geom_histogram(bins = 100, alpha = 0.8) +
     ggplot2::xlim(x = c(-0.01, 1.01)) +
-    ggplot2::facet_grid(sample_name ~ chr, scales = 'free') +
+    ggplot2::facet_grid(sample_name ~ chr, scales = 'free_y') +
     ggplot2::theme_bw() +
     ggplot2::labs(col = colour_by, fill = colour_by) +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::scale_x_continuous(labels = scales::label_number(accuracy = 0.1)) +
+    ggplot2::theme(legend.position = "bottom", 
+                   axis.text.x = element_text(size = 5))
 }
 
 #' Plot Marginals of Variant Allele Frequency (VAF)
@@ -321,7 +326,7 @@ plot_marginals <- function(seq_res, chromosome, colour_by = "causes", samples = 
 
     djoin %>%
       ggplot2::ggplot(mapping = ggplot2::aes(x = VAF.x, y = VAF.y, col = col)) +
-      ggplot2::geom_point() +
+      ggplot2::geom_point(alpha = 0.7) +
       ggplot2::xlim(c(-0.01, 1.01)) +
       ggplot2::ylim(c(-0.01, 1.01)) +
       ggplot2::labs(x = couple[1], y = couple[2], col = colour_by) +
