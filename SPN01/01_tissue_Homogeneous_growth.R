@@ -29,6 +29,7 @@ clone1_tissue <-plot_tissue(sim)
 clone1_muller <- plot_muller(sim)
 
 # Add second mutant
+print("Add Clone 2")
 sim$add_mutant("Clone 2",growth_rates = 2,
                death_rates = 0.01)
 sim$mutate_progeny(sim$choose_cell_in("Clone 1"), "Clone 2")
@@ -46,6 +47,7 @@ clone2_muller <- plot_muller(sim)
 ggsave("tissue_homo/muller_02.pdf", clone2_muller,dpi=300, width = 8, height = 8)
 
 # Add third mutant
+print("Add Clone 3")
 sim$add_mutant("Clone 3",growth_rates = 5,
                death_rates = 0.01)
 sim$mutate_progeny(sim$choose_cell_in("Clone 2"), "Clone 3")
@@ -58,6 +60,7 @@ clone3_tissue <-plot_tissue(sim)
 clone3_muller <- plot_muller(sim)
 ggsave("tissue_homo/muller_03.pdf", clone3_muller,dpi=300, width = 8, height = 8)
 # Add last mutant
+print("Add Clone 4")
 sim$add_mutant("Clone 4",growth_rates = 15,
                death_rates = 0.01)
 sim$mutate_progeny(sim$choose_cell_in("Clone 3"), "Clone 4")
@@ -74,6 +77,7 @@ ggsave("tissue_homo/muller_04.pdf", clone4_muller,dpi=300, width = 8, height = 8
 
 ## Sampling
 # Three boxes with 'ncells' cells each
+print("Sampling")
 n_w <- n_h <- 50
 ncells <- 0.8*n_w*n_h
 sim$sample_cells("A", c(501,501), c(550,550))

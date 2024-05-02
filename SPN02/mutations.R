@@ -24,4 +24,5 @@ m_engine$add_mutant(mutant_name = "Clone 3",
                     drivers = list(SNV("2", 47799065, "A")))
 
 m_engine$add_exposure(c(SBS1 = 0.5,SBS5 = 0.5))
-m_engine$add_exposure(clone3_born, c(SBS1 = 0.3,SBS5 = 0.3, SBS6 = 0.4))
+m_engine$add_exposure(22, c(SBS1 = 0.3,SBS5 = 0.3, SBS6 = 0.4))
+
