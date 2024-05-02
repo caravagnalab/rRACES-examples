@@ -1,5 +1,5 @@
 ---
-title: 'rRACES: SPN07'
+title: 'rRACES: SPN07 - part 1'
 author: "Alice and Riccardo"
 date: "`r Sys.Date()`"
 output: 
@@ -36,11 +36,11 @@ sim <- new(Simulation, "SPN07",
            seed = 3,
            save_snapshot = F)
 
+sim$update_tissue("Brain", 2e3, 2e3)
+
 sim$duplicate_internal_cells <- T
 
 sim$history_delta <- 0.1
-
-sim$update_tissue("Liver", 2e3, 2e3)
 
 ```
 
@@ -132,6 +132,7 @@ forest <- sim$get_samples_forest()
 
 annotate_forest(forest = forest,tree_plot = plot_forest(forest),MRCAs = T)
 
+forest$save('forest_sampling_1.sff')
 ```
 
 ### Apply Chemotherapy
@@ -201,6 +202,8 @@ forest <- sim$get_samples_forest()
 
 annotate_forest(tree_plot = plot_forest(forest),forest = forest)
 
+forest$save('forest_sampling_2.sff')
+
 ```
 
 
@@ -213,6 +216,7 @@ Here we report a muller plot summarizing the evolution of the tumor and the cell
 plot_muller(sim)
 
 ```
+
 ```{r time series, results='hide', message=FALSE, warning=FALSE}
 
 plot_timeseries(sim)
