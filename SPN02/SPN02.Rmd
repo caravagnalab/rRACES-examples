@@ -3,8 +3,8 @@ title: "SPN02"
 author: "Virginia Gazziero"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup}
@@ -54,7 +54,7 @@ sim$add_mutant(name = "Clone 2",
                death_rates = 0.01)
 
 sim$mutate_progeny(sim$choose_cell_in("Clone 1"), "Clone 2")
-sim$update_rates("Clone 1", rates = c(growth = 0, death = 0.2))
+sim$update_rates("Clone 1", rates = c(growth = 0, death = 1))
 sim$run_up_to_size("Clone 2", 3000)
 ```
 
@@ -72,13 +72,14 @@ sim$add_mutant(name = "Clone 3",
 
 sim$mutate_progeny(sim$choose_cell_in("Clone 2"), "Clone 3")
 
-sim$update_rates("Clone 2", rates = c(growth = 0, death = 0.5))
-sim$run_up_to_size("Clone 3", 8000)
+sim$update_rates("Clone 2", rates = c(growth = 0, death = 5))
+sim$run_up_to_size("Clone 3", 12000)
 ```
 
 ```{r, warning=FALSE}
 plot_muller(sim)
 plot_tissue(sim)
+plot_state(sim)
 ```
 
 ## Sampling and phylogeny
@@ -131,5 +132,5 @@ plot_forest(sampled_phylogeny) %>%
 ```{r}
 # m_engine$add_mutant(mutant_name = "Clone 1",
 #                     passenger_rates = c(SNV = 3e-8, CNA = 1e-11),
-#                     driver_SNVs = SNV("7", 10510210, "A")) 
+#                     drivers = list(SNV("7", 10510210, "A")))
 ```

@@ -35,18 +35,17 @@ m_engine <- build_mutation_engine(setup_code = "GRCh37", context_sampling = 20)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 2e-8, CNA = 1e-11),
-                    driver_SNVs = c(SNV("2", 209113113, "A")))
+                    drivers = list(SNV("2", 209113113, "A")))
 
 
 m_engine$add_mutant("Clone 2",
                     passenger_rates = c(SNV=2e-8, CNA=1e-11),
-                    driver_SNVs = c(),
-                    driver_CNAs = c(CNA(type = "A", "6", pos_in_chr = 25100000,len = 1e7)))
+                    drivers = list(CNA(type = "A", chr = "6",
+                                       chr_pos = 25100000, len = 1e7)))
 
 m_engine$add_mutant("Clone 3",
                     passenger_rates = c(SNV=2e-8, CNA=1e-11),
-                    driver_SNVs = c(SNV("1", 115256530, "T")),
-                    driver_CNAs = c())
+                    drivers = list(SNV("1", 115256530, "T")))
 
 # Mutational exposures ####
 treatment_info <- readRDS("data/treatment_info.rds")

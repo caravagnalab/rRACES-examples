@@ -49,9 +49,9 @@ m_engine = build_mutation_engine(setup_code = "demo")
 
 m_engine$add_mutant(mutant_name = "A",
                     passenger_rates = c(SNV = 1e-9),
-                    driver_SNVs = c(SNV("22", 10510210, "C")),
-                    driver_CNAs = c(CNA(type = "A", "22", pos_in_chr = 10303470,
-                                        len = 200000)))
+                    drivers = list(SNV("22", 10510210, "C"), 
+                                   CNA(type = "A", chr = "22",
+                                       chr_pos = 10303470, len = 200000)))
 
 m_engine
 ```

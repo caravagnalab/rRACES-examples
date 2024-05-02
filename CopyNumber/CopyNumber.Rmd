@@ -131,22 +131,22 @@ To observe the different nature of the two events will make the deletion span a 
 m_engine$add_mutant(
   mutant_name = "A",
   passenger_rates = c(SNV = 1e-7, CNA = 0),
-  driver_SNVs = c(SNV("22", 10510210, "C"))
-  #driver_CNAs = c(CNA(type = "A", "22", pos_in_chr = 10303470,len = 1e7))
+  drivers = list(SNV("22", 10510210, "C"))
+  #driver_CNAs = c(CNA(type = "A", "22", chr_pos = 10303470,len = 1e7))
 )
 
 m_engine$add_mutant("B",
   passenger_rates = c(SNV=1e-7, CNA=1e-9),
-  driver_SNVs = c(SNV("22", 10510210, "C")),
-  driver_CNAs = c(CNA(type = "A", "22", pos_in_chr = 20303470,len = 2e7),
-                  CNA(type = "D", "22", pos_in_chr = 20303470,len = 1e7))
+  drivers = list(SNV("22", 10510210, "C"),
+                 CNA(type = "A", chr = "22", chr_pos = 20303470, len = 2e7),
+                 CNA(type = "D", chr = "22", chr_pos = 20303470, len = 1e7))
 )
 
 m_engine$add_mutant(
   mutant_name = "C",
   passenger_rates = c(SNV=1e-7, CNA = 1e-9),
-  driver_SNVs = c(SNV("22", 10510210, "C"))
-  #driver_CNAs = c(CNA(type = "A", "22", pos_in_chr = 10303470,len = 1e7))
+  drivers = list(SNV("22", 10510210, "C"))
+  #driver_CNAs = c(CNA(type = "A", chr = "22", chr_pos = 10303470, len = 1e7))
 )
 
 m_engine$add_exposure(coefficients = c(SBS13 = 0.4, SBS1 = 0.6))
@@ -169,15 +169,15 @@ seq_to_long <- function(seq_results) {
 
   sn <- sample_names[1]
   seq_df <- lapply(sample_names, function(sn) {
-    cc <- c("chromosome", "chr_pos", "ref", "alt", colnames(seq_results)[grepl(sn, colnames(seq_results), fixed = T)])
+    cc <- c("chr", "chr_pos", "ref", "alt", colnames(seq_results)[grepl(sn, colnames(seq_results), fixed = T)])
 
     seq_results[, cc] %>%
-      `colnames<-`(c("chromosome", "chr_pos", "ref", "alt", "occurences", "coverage", "VAF")) %>%
+      `colnames<-`(c("chr", "chr_pos", "ref", "alt", "occurences", "coverage", "VAF")) %>%
       dplyr::mutate(sample_name = sn)
   }) %>% do.call("bind_rows", .)
 
   seq_df %>%
-    dplyr::rename(chr = chromosome, from = chr_pos, DP = coverage, NV = occurences, ALT = alt) %>%
+    dplyr::rename(from = chr_pos, DP = coverage, NV = occurences, ALT = alt) %>%
     dplyr::mutate(to = from) %>%
     dplyr::select(chr, from, to, ALT, NV, DP, VAF, sample_name)
 }
