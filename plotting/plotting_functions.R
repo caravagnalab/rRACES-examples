@@ -197,7 +197,7 @@ plot_VAF_gw <- function(seq_res, sample, chromosomes = paste0(c(1:22, "X", "Y"))
   d <- tumour_data %>%
     dplyr::arrange(chr, from) %>%
     dplyr::group_by(chr) %>%
-    dplyr::sample_n(n, replace = T) %>%
+    #dplyr::sample_n(n, replace = T) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(abs_pos = 1:n()) %>%
     dplyr::filter(VAF <= max(cuts), VAF >= min(cuts))
@@ -271,7 +271,7 @@ plot_histogram_vaf <- function(
   
   data %>%
     ggplot2::ggplot(mapping = ggplot2::aes(x = VAF, col = col, fill = col)) +
-    ggplot2::geom_histogram(bins = 100, alpha = 0.8) +
+    ggplot2::geom_histogram(binwidth=0.01, alpha = 0.8) +
     ggplot2::xlim(x = c(-0.01, 1.01)) +
     ggplot2::facet_grid(sample_name ~ chr, scales = 'free_y') +
     ggplot2::theme_bw() +
