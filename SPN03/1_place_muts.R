@@ -8,22 +8,18 @@ plot_forest <- F
 
 # Clone 1 
 # NOTCH1p2514*fs*4 
-# 2 bp frameshift deletion
-# GRCh37.p13 chr:9	NC_000009.11:g.139390649_139390650del
-# GRCh38.p14 chr:9	NC_000009.12:g.136496197_136496198del
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 3e-8,
                                         CNA = 1e-10),
-                    drivers = list(SNV("9", 136496197, "C"))
+                    driver_SNVs = list("NOTCH1 D545V")
 )
 
 # Clone 2 
 # KRAS G12D
-# GRCh37 chr:12 start:25398284 end:25398284 C>T
 m_engine$add_mutant(mutant_name = "Clone 2",
                     passenger_rates = c(SNV = 3e-8, 
                                         CNA = 1e-10),
-                    drivers = list(SNV("12", 25398284, "T"))
+                    driver_SNVs = list("KRAS G12D")
 )
 
 # Clone 3
@@ -41,7 +37,7 @@ m_engine
 
 phylo_forest <- m_engine$place_mutations(forest, 1000)
 
-all_SNV <- phylo_forest$get_sampled_cell_SNVs() %>% as_tibble()
+all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
 all_SNV %>%
   group_by(cause) %>%
   summarise(nPos = n_distinct(chr_pos))
