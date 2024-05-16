@@ -18,7 +18,7 @@ mu_SNV <- 2e-8
 mu_CNA <- 1e-11
 
 ###### MUTATION ENGINE ######
-m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 50)
+m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 20)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV=mu_SNV, CNA=mu_CNA),
@@ -43,7 +43,7 @@ m_engine$add_exposure(time = treatment_info$treatment_end, coefficients = c(SBS5
 sampled_phylogeny <- load_samples_forest("data/samples_forest.sff")
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 1000)
 
-all_SNV <- phylo_forest$get_sampled_cell_SNVs() %>% as_tibble()
+all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
 all_SNV %>%
   group_by(cause) %>%
   summarise(nPos = n_distinct(chr_pos)) %>%
