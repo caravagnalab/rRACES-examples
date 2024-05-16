@@ -3,7 +3,7 @@
 # =================================== SPN06 ====================================
 # ==============================================================================
 
-devtools::install_github("caravagnalab/rRACES")
+#devtools::install_github("caravagnalab/rRACES")
 #devtools::load_all("/Users/azadsadr/Documents/packages/rRACES")
 
 # loading the library
@@ -154,15 +154,15 @@ sim$sample_cells("E", bbox$lower_corner, bbox$upper_corner)
 #-------------------------------------------------------------------------------
 
 forest <- sim$get_samples_forest()
-forest$save("~/Documents/packages/rRACES-examples/SPN06/forest.sff")
+forest$save("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/forest.sff")
 
 chemo_timing <- list(
-  chemo1_start = chemo1_start,
-  chemo1_end = chemo1_end,
-  chemo2_start = chemo2_start,
-  chemo2_end = chemo2_end
+  chemo1_start = round(chemo1_start, 0), 
+  chemo1_end = round(chemo1_end, 0), 
+  chemo2_start = round(chemo2_start, 0), 
+  chemo2_end = round(chemo2_end, 0)
 )
-saveRDS(chemo_timing, "~/Documents/packages/rRACES-examples/SPN06/chemo_timing.rds")
+saveRDS(chemo_timing, "/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/chemo_timing.rds")
 
 
 #-------------------------------------------------------------------------------
@@ -172,19 +172,39 @@ saveRDS(chemo_timing, "~/Documents/packages/rRACES-examples/SPN06/chemo_timing.r
 print(sim)
 sim$get_cells()
 sim$get_counts()
+forest$get_samples_info()
+forest$get_nodes() %>% filter(!is.na(sample)) %>% group_by(mutant) %>% summarize(n = length(cell_id))
 
 plot_state(sim)
-
-plot_tissue(sim)
-plot_tissue(sim, num_of_bins  = 50)
-plot_tissue(sim, num_of_bins = 250) + facet_wrap(~species)
-
-plot_muller(sim)
 plot_timeseries(sim)
 
-forest$get_samples_info()
 
-forest$get_nodes() %>% filter(!is.na(sample)) %>% group_by(mutant) %>% summarize(n = length(cell_id))
+#--- [MULLER PLOT] -------------------------------------------------------------
+muller <- plot_muller(sim)
+ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/muller_04.pdf", muller, dpi=300, width = 16, height = 8)
+
+#--- [TISSUE PLOT] -------------------------------------------------------------
+tissue <- plot_tissue(sim)
+#plot_tissue(sim, num_of_bins  = 50)
+#plot_tissue(sim, num_of_bins = 250) + facet_wrap(~species)
+ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/tissue_04.pdf", tissue, dpi=300, width = 16, height = 8)
+
+#--- [FOREST PLOT] -------------------------------------------------------------
+plot_forest(forest) %>%
+  annotate_forest(forest, 
+                  samples = TRUE, 
+                  MRCAs = TRUE, 
+                  exposures = FALSE, 
+                  facet_signatures = FALSE, 
+                  drivers = FALSE, 
+                  add_driver_label = FALSE)
+ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/forest.pdf", dpi=300, width = 12, height = 8)
+
+
+
+
+
+
 
 
 
