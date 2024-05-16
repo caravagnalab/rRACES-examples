@@ -10,6 +10,7 @@ set.seed(seed)
 
 # Prep simulation ####
 sim <- new(Simulation, seed = seed, save_snapshot = F)
+sim$duplicate_internal_cells <- TRUE
 sim$history_delta <- 1
 sim$update_tissue(1e3, 1e3)
 
