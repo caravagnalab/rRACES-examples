@@ -2,16 +2,17 @@ library(rRACES)
 library(dplyr)
 library(ggplot2)
 
-forest <- load_samples_forest("./results/samples_forest.sff")
+setwd('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/')
+forest <- load_samples_forest("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/results/samples_forest.sff")
 m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 20)
-plot_forest <- F
+plot_forest <- T
 
 # Clone 1 
 # NOTCH1p2514*fs*4 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 3e-8,
                                         CNA = 1e-10),
-                    driver_SNVs = list("NOTCH1 D545V")
+                    driver_SNVs = list("NOTCH1 FY357Y")
 )
 
 # Clone 2 
@@ -51,11 +52,11 @@ all_CNV %>%
   group_by(class) %>%
   summarise(nPos = n_distinct(begin))
 
-phylo_forest$save("./results/phylo_forest.sff")
+phylo_forest$save("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/results/phylo_forest.sff")
 
 if (plot_forest == T){
   annot_forest <- plot_forest(forest) %>%
     annotate_forest(phylo_forest, exposures = F)
-  ggsave('./plots/SPN03_ann_forest.png', plot = annot_forest,   height = 12, width = 10, dpi = 300, units = 'in')
+  ggsave('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/plots/SPN03_ann_forest.png', plot = annot_forest,   height = 12, width = 10, dpi = 300, units = 'in')
 }
 
