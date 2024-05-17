@@ -10,7 +10,7 @@ set.seed(seed)
 
 # Prep simulation ####
 sim <- new(Simulation, seed = seed, save_snapshot = F)
-sim$duplicate_internal_cells <- TRUE
+sim$duplicate_internal_cells <- T
 sim$history_delta <- 1
 sim$update_tissue(1e3, 1e3)
 
@@ -117,7 +117,12 @@ ggsave("tissue/tissue_04.pdf", dpi=300, width = 8, height = 8)
 plot_muller(sim) + xlim(20, NA) + geom_vline(xintercept = c(treatment_start, treatment_end), color="indianred", linewidth=.3)
 ggsave("tissue/muller_04.pdf", dpi=300, width = 8, height = 8)
 
-sampled_phylogeny <- sim$get_samples_forest()
-sampled_phylogeny$save("data/samples_forest.sff")
+forest <- sim$get_samples_forest()
+forest$save("data/samples_forest.sff")
 treatment_info <- list(treatment_start=treatment_start, treatment_end=treatment_end)
 saveRDS(treatment_info, "data/treatment_info.rds")
+
+plt_forest <- plot_forest(forest) %>%
+  annotate_forest(forest)
+ggsave("tissue/forestt.pdf", dpi=300, width = 8, height = 8, plot=plt_forest)
+
