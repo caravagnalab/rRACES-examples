@@ -11,3 +11,4 @@
 *.err
 *.out
 *.sh
+*._.DS_Store

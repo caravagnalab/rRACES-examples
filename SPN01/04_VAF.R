@@ -40,7 +40,7 @@ for (curr_chr in data$chr %>% unique()) {
     ggplot(mapping = aes(x = from / BASE_FACTOR, y=VAF.tumour)) +
     geom_point(size = .2, alpha = .2) +
     labs(x = "", y = "BAF") +
-    lims(y = c(0,1)) +
+    lims(y = c(0,1.001)) +
     facet_wrap(~ sample_name.tumour) +
     theme_bw()
 
@@ -49,7 +49,7 @@ for (curr_chr in data$chr %>% unique()) {
     ggplot(mapping = aes(x = from / BASE_FACTOR, y=VAF.tumour)) +
     geom_point(size = .2, alpha = .2) +
     labs(x = "MegaBase", y = "VAF") +
-    lims(y = c(0,1)) +
+    lims(y = c(0,1.001)) +
     facet_wrap(~ sample_name.tumour) +
     theme_bw()
 
@@ -58,7 +58,7 @@ for (curr_chr in data$chr %>% unique()) {
     ggplot(mapping = aes(x = VAF.tumour)) +
     geom_histogram(bins = 100) +
     labs(x = "VAF", y = "Counts") +
-    lims(x = c(0,1)) +
+    lims(x = c(0,1.001)) +
     facet_wrap(~ sample_name.tumour) +
     theme_bw()
 

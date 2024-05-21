@@ -8,56 +8,42 @@ source("utils.R")
 seed <- 12345
 set.seed(seed)
 
-# Mutation generation ####
-# mutation engine
-# work on chr2
-reference_url <- paste0("https://ftp.ensembl.org/pub/grch37/current/",
-                        "fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.",
-                        "dna.chromosome.2.fa.gz")
+###### DRIVERS ######
 
-sbs_url <- paste0("https://cancer.sanger.ac.uk/signatures/documents/2123/",
-                  "COSMIC_v3.4_SBS_GRCh37.txt")
+SNV_Clone1 = SNV(chr="2", chr_pos=209113113, alt="A")
+CNA_Clone2 = CNA(type='A', chr='6', chr_pos=25100000, len=1e7 )
+SNV_Clone3 = SNV(chr='1', chr_pos=115256530, alt='T')
 
-drivers_url <- paste0("https://raw.githubusercontent.com/",
-                      "caravagnalab/rRACES/main/inst/extdata/",
-                      "driver_mutations_hg19.csv")
+mu_SNV <- 2e-8
+mu_CNA <- 1e-11
 
-passenger_cnas_url <- paste0("https://raw.githubusercontent.com/",
-                             "caravagnalab/rRACES/main/inst/extdata/",
-                             "passenger_CNAs_hg19.csv")
-
-germline_url <- paste0("https://www.dropbox.com/scl/fi/3rs2put4wde3objxmhvjc/germline_data_hg19.tar.gz?rlkey=imawitklf8d6zphz9ugriv4qm&dl=1")
-
-
-# build a mutation engine and place all the files in the directory "Test"
-get_mutation_engine_codes()
-m_engine <- build_mutation_engine(setup_code = "GRCh37", context_sampling = 20)
+###### MUTATION ENGINE ######
+m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 20)
 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 2e-8, CNA = 1e-11),
-                    drivers = list(SNV("2", 209113113, "A")))
+                    passenger_rates = c(SNV=mu_SNV, CNA=mu_CNA),
+                    drivers = list(SNV_Clone1))
+
+m_engine$add_mutant(mutant_name = "Clone 2",
+                    passenger_rates = c(SNV=mu_SNV, CNA=mu_CNA),
+                    drivers = list(CNA_Clone2))
+
+m_engine$add_mutant(mutant_name = "Clone 3",
+                    passenger_rates = c(SNV=mu_SNV, CNA=mu_CNA),
+                    drivers = list(SNV_Clone3))
 
 
-m_engine$add_mutant("Clone 2",
-                    passenger_rates = c(SNV=2e-8, CNA=1e-11),
-                    drivers = list(CNA(type = "A", chr = "6",
-                                       chr_pos = 25100000, len = 1e7)))
-
-m_engine$add_mutant("Clone 3",
-                    passenger_rates = c(SNV=2e-8, CNA=1e-11),
-                    drivers = list(SNV("1", 115256530, "T")))
-
-# Mutational exposures ####
+###### SIGNATURE ######
 treatment_info <- readRDS("data/treatment_info.rds")
 m_engine$add_exposure(coefficients = c(SBS5 = 0.5, SBS1 = 0.5)) # ID1 is missing
 m_engine$add_exposure(time = treatment_info$treatment_start, c(SBS5 = 0.4, SBS1 = 0.4, SBS25 = 0.2))
 m_engine$add_exposure(time = treatment_info$treatment_end, coefficients = c(SBS5 = 0.5, SBS1 = 0.5))
 
-# Sequence mutations ####
+###### PHYLO FOREST ######
 sampled_phylogeny <- load_samples_forest("data/samples_forest.sff")
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 1000)
 
-all_SNV <- phylo_forest$get_sampled_cell_SNVs() %>% as_tibble()
+all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
 all_SNV %>%
   group_by(cause) %>%
   summarise(nPos = n_distinct(chr_pos)) %>%
