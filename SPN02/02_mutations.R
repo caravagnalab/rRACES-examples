@@ -10,7 +10,7 @@ curr_dir = getwd()
 setwd("/orfeo/cephfs/scratch/cdslab/shared/races")
 m_engine <- build_mutation_engine(setup_code = "GRCh38", 
                 context_sampling = 50)
-setwd(curr_dir)
+
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 1e-8, CNA = 1e-11),
                     drivers = list("BRAF V600E"))
@@ -45,7 +45,7 @@ phylo_forest <- m_engine$place_mutations(sampled_phylogeny, num_of_preneoplatic_
 Sys.time()
 print("Mutations placed")
 # save the phylogenetic forest in the file "phylo_forest.sff"
-phylo_forest$save("test/SPN02/phylo_forest.sff")
+phylo_forest$save(paste0(curr_dir, "/test/SPN02/phylo_forest.sff"))
 
 # plotting
 tree_plot = plot_forest(sampled_phylogeny) 
@@ -56,8 +56,8 @@ mut_forest = annotate_forest(tree_plot,
                 exposures = T,
                 facet_signatures = T,
                 drivers = T,
-                add_driver_label = T) +
-                ylim(0,10)
+                add_driver_label = T) #+
+            # ylim(0,10)
 
-ggsave(filename = "test/SPN02/phylogenetic_forest_cycles.pdf", plot = mut_forest, width = 15, height = 10)
+ggsave(filename = paste0(curr_dir, "/test/SPN02/phylogenetic_forest_cycles.pdf"), plot = mut_forest, width = 15, height = 10)
 print("done everything")
