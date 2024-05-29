@@ -5,7 +5,7 @@ phylo_forest <- load_phylogenetic_forest("/Users/azadsadr/Documents/packages/rRA
 seq_results <- simulate_seq(phylo_forest, coverage = 2.5)
 
 
-seq_results <- simulate_seq(phylo_forest, coverage = 2.5, write_SAM = TRUE)
+seq_results <- simulate_seq(phylo_forest, coverage = 2.5, write_SAM = FALSE)
 
 
 data <- seq_to_long(seq_results)
@@ -68,4 +68,7 @@ for (curr_chr in data$chr %>% unique()) {
   pp <- DR_plot / BAF_plot / VAF_plot / VAF_spectrum
   ggsave(paste0("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/chromosomes/", curr_chr, ".png"), dpi = 400, width = 6, height = 8, plot = pp)
 }
-  
+
+
+
+

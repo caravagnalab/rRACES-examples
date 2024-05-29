@@ -140,13 +140,43 @@ sim$run_up_to_size("C6", 1e5)
 #----------------------------- Sampling [D, E] ---------------------------------
 #-------------------------------------------------------------------------------
 
-# sample C
-bbox = sim$search_sample(c("C6" = 200), nw = 20, nh = 20)
-sim$sample_cells("D", bbox$lower_corner, bbox$upper_corner)
+# sample D
+#bbox = sim$search_sample(c("C6" = 200), nw = 20, nh = 20)
+#sim$sample_cells("D", bbox$lower_corner, bbox$upper_corner)
 
-# sample C
-bbox = sim$search_sample(c("C6" = 200), nw = 20, nh = 20)
-sim$sample_cells("E", bbox$lower_corner, bbox$upper_corner)
+# sample E
+#bbox = sim$search_sample(c("C6" = 200), nw = 20, nh = 20)
+#sim$sample_cells("E", bbox$lower_corner, bbox$upper_corner)
+
+#-------------------------------------------------------------------------------
+
+#current <- plot_tissue(sim)
+
+# We collect a squared box of (bbox_width x bbox_width) cells
+bbox_width <- 20
+
+# Box A1
+bbox1_p <- c(5, 250)
+bbox1_q <- bbox1_p + bbox_width
+
+# Box B1
+bbox2_p <- c(250, 375)
+bbox2_q <- bbox2_p + bbox_width
+
+# View the boxes
+#current +
+#  geom_rect(xmin = bbox1_p[1], xmax = bbox1_q[1],
+#            ymin = bbox1_p[2], ymax = bbox1_q[2],
+#            fill = NA, color = "black") +
+#  geom_rect(xmin = bbox2_p[1], xmax = bbox2_q[1],
+#            ymin = bbox2_p[2], ymax = bbox2_q[2],
+#            fill = NA, color = "black")
+
+# sample D
+sim$sample_cells("D", bottom_left = bbox1_p, top_right = bbox1_q)
+
+# sample E
+sim$sample_cells("E", bottom_left = bbox2_p, top_right = bbox2_q)
 
 
 #-------------------------------------------------------------------------------
@@ -169,25 +199,25 @@ saveRDS(chemo_timing, "/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/
 #----------------------------------- Plots -------------------------------------
 #-------------------------------------------------------------------------------
 
-print(sim)
-sim$get_cells()
-sim$get_counts()
-forest$get_samples_info()
-forest$get_nodes() %>% filter(!is.na(sample)) %>% group_by(mutant) %>% summarize(n = length(cell_id))
+#print(sim)
+#sim$get_cells()
+#sim$get_counts()
+#forest$get_samples_info()
+#forest$get_nodes() %>% filter(!is.na(sample)) %>% group_by(mutant) %>% summarize(n = length(cell_id))
 
-plot_state(sim)
-plot_timeseries(sim)
+#plot_state(sim)
+#plot_timeseries(sim)
 
 
 #--- [MULLER PLOT] -------------------------------------------------------------
 muller <- plot_muller(sim)
-ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/muller_04.pdf", muller, dpi=300, width = 16, height = 8)
+ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/muller.pdf", muller, dpi=300, width = 16, height = 8)
 
 #--- [TISSUE PLOT] -------------------------------------------------------------
 tissue <- plot_tissue(sim)
 #plot_tissue(sim, num_of_bins  = 50)
 #plot_tissue(sim, num_of_bins = 250) + facet_wrap(~species)
-ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/tissue_04.pdf", tissue, dpi=300, width = 16, height = 8)
+ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/tissue.pdf", tissue, dpi=300, width = 16, height = 8)
 
 #--- [FOREST PLOT] -------------------------------------------------------------
 plot_forest(forest) %>%
