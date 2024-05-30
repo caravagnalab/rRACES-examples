@@ -34,7 +34,7 @@ CNA_C2 <- CNA(
   type = "D", 
   chr = "19", 
   chr_pos = 1177558, 
-  len = 1e7, 
+  len = 50873, 
   allele = 0, 
   #src_allele = NULL
 )
@@ -44,7 +44,7 @@ CNA_C3 <- CNA(
   type = "A", 
   chr = "7", 
   chr_pos = 55019017,  
-  len = 1e7, 
+  len = 192611, 
   allele = 0, 
   #src_allele = NULL
 )
@@ -74,7 +74,7 @@ CNA_C6 <- CNA(
   type = "A", 
   chr = "12", 
   chr_pos = 25205246, 
-  len = 1e7, 
+  len = 45690, 
   allele = 0, 
   #src_allele = NULL
 )
