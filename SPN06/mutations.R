@@ -141,7 +141,9 @@ m_engine$add_mutant(
 #----------------------------- mutational signatures ---------------------------
 #-------------------------------------------------------------------------------
 
-timing <- readRDS("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/chemo_timing.rds")
+setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/")
+
+timing <- readRDS("data/chemo_timing.rds")
 
 # SBS1, SBS4 and SBS5 are always active
 m_engine$add_exposure(
@@ -164,11 +166,11 @@ m_engine$add_exposure(
 #------------------------------ place mutations --------------------------------
 #-------------------------------------------------------------------------------
 
-samples_forest <- load_samples_forest("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/forest.sff")
+samples_forest <- load_samples_forest("data/forest.sff")
 
 phylo_forest <- m_engine$place_mutations(samples_forest, 1000)
 
-phylo_forest$save("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/phylo_forest.sff")
+phylo_forest$save("data/phylo_forest.sff")
 
 
 

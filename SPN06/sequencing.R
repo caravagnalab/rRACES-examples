@@ -1,6 +1,10 @@
 
+
+setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06")
+
+
 # load phylogenetic forest
-phylo_forest <- load_phylogenetic_forest("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/phylo_forest.sff")
+phylo_forest <- load_phylogenetic_forest("data/phylo_forest.sff")
 
 seq_results <- simulate_seq(phylo_forest, coverage = 2.5)
 
@@ -66,7 +70,7 @@ for (curr_chr in data$chr %>% unique()) {
     theme_bw()
   
   pp <- DR_plot / BAF_plot / VAF_plot / VAF_spectrum
-  ggsave(paste0("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/chromosomes/", curr_chr, ".png"), dpi = 400, width = 6, height = 8, plot = pp)
+  ggsave(paste0("plots/", curr_chr, ".png"), dpi = 400, width = 6, height = 8, plot = pp)
 }
 
 

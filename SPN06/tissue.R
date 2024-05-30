@@ -183,8 +183,10 @@ sim$sample_cells("E", bottom_left = bbox2_p, top_right = bbox2_q)
 #----------------------------------- Save --------------------------------------
 #-------------------------------------------------------------------------------
 
+setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06")
+
 forest <- sim$get_samples_forest()
-forest$save("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/forest.sff")
+forest$save("data/forest.sff")
 
 chemo_timing <- list(
   chemo1_start = round(chemo1_start, 0), 
@@ -192,7 +194,7 @@ chemo_timing <- list(
   chemo2_start = round(chemo2_start, 0), 
   chemo2_end = round(chemo2_end, 0)
 )
-saveRDS(chemo_timing, "/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/chemo_timing.rds")
+saveRDS(chemo_timing, "data/chemo_timing.rds")
 
 
 #-------------------------------------------------------------------------------
@@ -211,13 +213,13 @@ saveRDS(chemo_timing, "/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/
 
 #--- [MULLER PLOT] -------------------------------------------------------------
 muller <- plot_muller(sim)
-ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/muller.pdf", muller, dpi=300, width = 16, height = 8)
+ggsave("plots/muller.pdf", muller, dpi=300, width = 16, height = 8)
 
 #--- [TISSUE PLOT] -------------------------------------------------------------
 tissue <- plot_tissue(sim)
 #plot_tissue(sim, num_of_bins  = 50)
 #plot_tissue(sim, num_of_bins = 250) + facet_wrap(~species)
-ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/tissue.pdf", tissue, dpi=300, width = 16, height = 8)
+ggsave("plots/tissue.pdf", tissue, dpi=300, width = 16, height = 8)
 
 #--- [FOREST PLOT] -------------------------------------------------------------
 plot_forest(forest) %>%
@@ -228,7 +230,7 @@ plot_forest(forest) %>%
                   facet_signatures = FALSE, 
                   drivers = FALSE, 
                   add_driver_label = FALSE)
-ggsave("/Users/azadsadr/Documents/packages/rRACES-examples/SPN06/forest.pdf", dpi=300, width = 12, height = 8)
+ggsave("plots/forest.pdf", dpi=300, width = 12, height = 8)
 
 
 
