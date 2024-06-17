@@ -1,14 +1,13 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=THIN
 #SBATCH --account=cdslab
 #SBATCH --job-name=02_mutations
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=2
-#SBATCH --cpus-per-task=24
 #SBATCH --mem=200gb
 #SBATCH --time=03:00:00
 #SBATCH --output=02_mutations_%j.out
 
-cd /u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo
+#cd /u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo
+#cd /orfeo/cephfs/scratch/cdslab/shared/races/GRCh38
 module load R
-Rscript 02_mutations.R
+Rscript /u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/02_mutations.R

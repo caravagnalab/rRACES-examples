@@ -1,9 +1,15 @@
 library(rRACES)
 library(dplyr)
 library(ggplot2)
-#library(ggpubr)
 
-m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling= 20)
+# sshfs Orfeo:/ dati_Orfeo 
+
+#library(ggpubr)
+#setwd("~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo")
+#setwd("~/dati_Orfeo/orfeo/cephfs/scratch/cdslab/shared/races/")
+setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
+
+m_engine <- build_mutation_engine(setup_code = "GRCh38")
 
 ## 1. Add Drivers
 m_engine$add_mutant(mutant_name = "1",
@@ -50,13 +56,13 @@ m_engine$add_exposure(time = 10.85,
                       c(SBS1 = .8, SBS5 = .2))
 
 
-samples_forest <- load_samples_forest("forest_sampling_2.sff")
+samples_forest <- load_samples_forest("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling_2.sff")
 phylo_forest <- m_engine$place_mutations(samples_forest, 1000)
 
 # phylo_forest$get_sampled_cell_mutations() %>% head()
 # phylo_forest$get_sampled_cell_CNAs() %>% head()
 # phylo_forest$get_germline_mutations() %>% head()
-phylo_forest$save("phyloforest.sff")
+phylo_forest$save("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/phyloforest.sff")
 
 #phylo_forest <- load_phylogenetic_forest("phyloforest.sff")
 #seq_results <- simulate_seq(phylo_forest, coverage = 50)
