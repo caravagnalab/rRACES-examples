@@ -12,3 +12,6 @@
 *.out
 *.sh
 *._.DS_Store
+/SPN06/demo
+/SPN06/data
+

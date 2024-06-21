@@ -7,7 +7,9 @@ library(ggplot2)
 #-------------------------- set up Mutation Engine -----------------------------
 #-------------------------------------------------------------------------------
 
-setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
+
+curr_dir <- getwd()
+setwd("/orfeo/cephfs/scratch/cdslab/shared/mutation_engine/")
 
 m_engine <- build_mutation_engine(
   setup_code = "GRCh38", context_sampling = 20
@@ -15,11 +17,21 @@ m_engine <- build_mutation_engine(
 #plot_forest <- F
 #get_mutation_engine_codes()
 
+
+#-------------------------------------------------------------------------------
+#---------------------------- passenger mutations ------------------------------
+#-------------------------------------------------------------------------------
+passengers <- c(SNV = 1e-8, CNA = 1e-11)
+
+#SNV(chr = 0, chr_pos = 0, alt = 0, ref = "?", allele = NULL, cause = "")
+
 #-------------------------------------------------------------------------------
 #------------------------------ driver mutations -------------------------------
 #-------------------------------------------------------------------------------
 
 # TP53 R248Q/W/L
+SNV_C1 = "TP53 R248W"
+'
 SNV_C1 <- SNV(
   chr = "17", 
   chr_pos = 7661779,  
@@ -28,6 +40,7 @@ SNV_C1 <- SNV(
   allele = 0, 
   #cause = ""
 )
+'
 
 # STK11 LOH
 CNA_C2 <- CNA(
@@ -50,16 +63,21 @@ CNA_C3 <- CNA(
 )
 
 # KEAP1 R413C/H/L
+SNV_C4 <- "KEAP1 R460M"
+'
 SNV_C4 <- SNV(
   chr = "19", 
   chr_pos = 10486125, 
-  #alt = "C", 
-  #ref = "G", 
+  alt = "C", 
+  ref = "G", 
   allele = 0, 
   #cause = "?"
 )
+'
 
 # KRAS G12D
+SNV_C5 <- "KRAS G12D"
+'
 SNV_C5 <- SNV(
   chr = "12", 
   chr_pos = 25205246, 
@@ -68,6 +86,7 @@ SNV_C5 <- SNV(
   allele = 0, 
   #cause = "?"
 )
+'
 
 # KRAS amp (mutant)
 CNA_C6 <- CNA(
@@ -79,10 +98,6 @@ CNA_C6 <- CNA(
   #src_allele = NULL
 )
 
-#-------------------------------------------------------------------------------
-#---------------------------- passenger mutations ------------------------------
-#-------------------------------------------------------------------------------
-passengers <- c(SNV = 2e-8, CNA = 1e-11)
 
 #-------------------------------------------------------------------------------
 #-------------------------- add mutations to mutants ---------------------------
@@ -141,23 +156,22 @@ m_engine$add_mutant(
 #----------------------------- mutational signatures ---------------------------
 #-------------------------------------------------------------------------------
 
-setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/")
 
-timing <- readRDS("data/chemo_timing.rds")
+timing <- readRDS( paste(curr_dir, "/data/chemo_timing.rds", sep = "") )
 
 # SBS1, SBS4 and SBS5 are always active
 m_engine$add_exposure(
-  coefficients = c(SBS1 = 0.35, SBS4 = 0.3, SBS5 = 0.2, ID1 = 0.15)
+  coefficients = c(SBS1 = 0.35, SBS4 = 0.45, SBS5 = 0.2, ID1 = 1)
   )
 
 m_engine$add_exposure(
   time = timing$chemo1_start, 
-  coefficients = c(SBS1 = 0.35, SBS4 = 0.05, SBS5 = 0.15, SBS11 = 0.2, SBS25 = 0.13, ID1 = 0.12)
+  coefficients = c(SBS1 = 0.35, SBS4 = 0.05, SBS5 = 0.15, SBS11 = 0.2, SBS25 = 0.25, ID1 = 1)
   )
 
 m_engine$add_exposure(
   time = timing$chemo1_end, 
-  coefficients = c(SBS1 = 0.4, SBS4 = 0.3, SBS5 = 0.1, SBS11 = 0.08, ID1 = 0.12)
+  coefficients = c(SBS1 = 0.4, SBS4 = 0.3, SBS5 = 0.1, SBS11 = 0.2, ID1 = 1)
 )
 
 #m_engine
@@ -166,11 +180,11 @@ m_engine$add_exposure(
 #------------------------------ place mutations --------------------------------
 #-------------------------------------------------------------------------------
 
-samples_forest <- load_samples_forest("data/forest.sff")
+samples_forest <- load_samples_forest( paste(curr_dir, "/data/forest.sff", sep = "") )
 
-phylo_forest <- m_engine$place_mutations(samples_forest, 1000)
+phylo_forest <- m_engine$place_mutations(samples_forest, num_of_preneoplatic_SNVs = 800, num_of_preneoplatic_indels = 200)
 
-phylo_forest$save("data/phylo_forest.sff")
+phylo_forest$save( paste(curr_dir, "/data/phylo_forest.sff", sep = "") )
 
 
 
