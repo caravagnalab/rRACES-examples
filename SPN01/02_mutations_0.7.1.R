@@ -51,3 +51,12 @@ print("Mutation engine created")
 phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_mutations = 1000)
 phylo_forest$save("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/data/phylo_forest.sff")
 print("Mutations placed")
+
+
+#chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
+#seq_results <- parallel::mclapply(chromosomes, function(c) {
+#					          simulate_seq(phylo_forest, coverage = 80, chromosomes = c, 
+#							         write_SAM = TRUE, 
+#					                         output_dir = "/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations",rnd_seed = seed)
+#}, mc.cores = parallel::detectCores()) 
+
