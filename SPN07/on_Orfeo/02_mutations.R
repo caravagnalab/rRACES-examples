@@ -9,7 +9,7 @@ library(ggplot2)
 #setwd("~/dati_Orfeo/orfeo/cephfs/scratch/cdslab/shared/races/")
 setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
-m_engine <- build_mutation_engine(setup_code = "GRCh38")
+m_engine <- MutationEngine(setup_code = "GRCh38")
 
 ## 1. Add Drivers
 m_engine$add_mutant(mutant_name = "1",
@@ -56,7 +56,7 @@ m_engine$add_exposure(time = 10.85,
                       c(SBS1 = .8, SBS5 = .2))
 
 
-samples_forest <- load_samples_forest("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling_2.sff")
+samples_forest <- load_samples_forest("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff")
 phylo_forest <- m_engine$place_mutations(samples_forest, 1000)
 
 # phylo_forest$get_sampled_cell_mutations() %>% head()
