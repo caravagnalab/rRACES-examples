@@ -104,7 +104,9 @@ m<-plot_muller(sim)
 t<-plot_tissue(sim)
 m+t
 ggsave("tissue/muller.pdf", plot=m,height = 12, width = 10, dpi = 300, units = 'in')
-n_w <- n_h <- 15
+#n_w <- n_h <- 15
+
+n_w <- n_h <- 50
 ncells <- 0.9 * n_w * n_h
 
 # Sampling ncells with random box sampling of boxes of size n_w x n_h
@@ -125,6 +127,5 @@ for (bbox in bboxes) {
 forest <- sim$get_samples_forest()
 plot_forest(forest) %>%
   annotate_forest(forest,samples = T,MRCAs = T)
-#forest$save("/orfeo/cephfs/scratch/cdslab/ggandolfi/races/Use_Cases/SPN01/samples_forest.sff")
 forest$save("data/samples_forest.sff")
 ggsave("tissue/forest.pdf", height = 12, width = 10, dpi = 300, units = 'in')
