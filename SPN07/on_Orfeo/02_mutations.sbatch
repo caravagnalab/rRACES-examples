@@ -4,7 +4,7 @@
 #SBATCH --job-name=02_mutations
 #SBATCH --nodes=2
 #SBATCH --mem=200gb
-#SBATCH --time=03:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=02_mutations_%j.out
 
 #cd /u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo
