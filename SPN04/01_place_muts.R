@@ -14,11 +14,11 @@ SNV_Clone1 = SNV(chr="2", chr_pos=209113113, alt="A")
 CNA_Clone2 = CNA(type='A', chr='6', chr_pos=25100000, len=1e7 )
 SNV_Clone3 = SNV(chr='1', chr_pos=115256530, alt='T')
 
-mu_SNV <- 2e-8
-mu_CNA <- 1e-11
+mu_SNV <- 5e-8
+mu_CNA <- 5e-11
 
 ###### MUTATION ENGINE ######
-m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 20)
+m_engine <- MutationEngine(setup_code = "GRCh38")
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV=mu_SNV, CNA=mu_CNA),
@@ -41,7 +41,10 @@ m_engine$add_exposure(time = treatment_info$treatment_end, coefficients = c(SBS5
 
 ###### PHYLO FOREST ######
 sampled_phylogeny <- load_samples_forest("data/samples_forest.sff")
-phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 1000)
+phylo_forest <- m_engine$place_mutations(forest,
+                                         num_of_preneoplatic_SNVs = 800,
+                                         num_of_preneoplatic_indels = 200)
+phylo_forest$save("data/phylo_forest.sff")
 
 all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
 all_SNV %>%
@@ -54,8 +57,19 @@ all_SNV %>%
   summarise(nPos = n_distinct(chr_pos)) %>%
   print()
 
-tree_plot <- plot_forest(sampled_phylogeny)
-tree_plot <- annotate_forest(tree_plot, forest = phylo_forest, exposures = TRUE, MRCAs = FALSE, samples = FALSE, facet_signatures = TRUE, drivers = TRUE, add_driver_label = FALSE)
+annot_forest <- plot_forest(forest) %>%
+  annotate_forest(phylo_forest,
+                  samples = T,
+                  MRCAs = T,
+                  exposures = T,
+                  drivers=T,
+                  add_driver_label = T)
 
-phylo_forest$save("data/phylo_forest.sff")
-ggsave("tissue/tree.pdf", dpi=300, width = 12, height = 12, plot = tree_plot)
+exp_timeline <- plot_exposure_timeline(phylo_forest)
+
+labels <- get_relevant_branches(forest)
+sticks <- plot_sticks(forest, labels)
+
+pl <- annot_forest + sticks + exp_timeline + plot_layout(nrow = 3, design = 'A\nA\nB\nB\nC')
+ggplot2::ggsave('plots/mutations.png', plot = pl, width = 210, height = 297, units = "mm", dpi=300)
+ggplot2::ggsave('plots/mutations.pdf', plot = pl, width = 210, height = 297, units = "mm", dpi=300)

@@ -9,13 +9,11 @@ seed <- 777
 set.seed(seed)
 
 # Prep simulation ####
-sim <- new(Simulation, seed = seed, save_snapshot = F)
-sim$duplicate_internal_cells <- T
+sim <- SpatialSimulation("SPN01", width=1e3, height=1e3, seed = seed)
 sim$history_delta <- 1
-sim$update_tissue(1e3, 1e3)
-
-# Set the death activation level to avoid drift
 sim$death_activation_level <- 50
+#sim <- new(Simulation, seed = seed, save_snapshot = F)
+#sim$duplicate_internal_cells <- T
 
 # First and Second mutant ####
 sim$add_mutant(name = "Clone 1", growth_rates = .1, death_rates = .01)
@@ -24,7 +22,7 @@ sim$add_mutant(name = "Clone 1", growth_rates = .1, death_rates = .01)
 
 sim$place_cell("Clone 1", 500, 500)
 sim$run_up_to_size("Clone 1", 1000)
-plot_muller(sim)
+#plot_muller(sim)
 
 ####### CLONE 2 #######
 
@@ -39,8 +37,7 @@ sim$run_up_to_size("Clone 2", 4000)
 
 sim$update_rates("Clone 1", rates = c(growth = 0, death = .05))
 sim$run_up_to_size("Clone 2", 8000)
-
-plot_muller(sim)
+#plot_muller(sim)
 
 ####### CLONE 3 #######
 
@@ -62,22 +59,22 @@ sim$update_rates("Clone 2", rates = c(growth = 0, death = 100))
 
 sim$run_up_to_size("Clone 3", 70000)
 
-plot_tissue(sim)
-ggsave("tissue/tissue_00.pdf", dpi=300, width = 8, height = 8)
-plot_muller(sim)
-ggsave("tissue/muller_00.pdf", dpi=300, width = 8, height = 8)
+#plot_tissue(sim)
+#ggsave("tissue/tissue_00.pdf", dpi=300, width = 8, height = 8)
+#plot_muller(sim)
+#ggsave("tissue/muller_00.pdf", dpi=300, width = 8, height = 8)
 
 
 ####### SAMPLE A #######
-n_w <- n_h <- 15
+n_w <- n_h <- 20
 ncells <- .99*n_w*n_h
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
-sim$sample_cells("A", bbox$lower_corner, bbox$upper_corner)
+sim$sample_cells("Sample A", bbox$lower_corner, bbox$upper_corner)
 
-plot_tissue(sim, num_of_bins = 300)
-ggsave("tissue/tissue_01.pdf", dpi=300, width = 8, height = 8)
-plot_muller(sim)
-ggsave("tissue/muller_01.pdf", dpi=300, width = 8, height = 8)
+t1 <- plot_tissue(sim, num_of_bins = 300)
+#ggsave("tissue/tissue_01.pdf", dpi=300, width = 8, height = 8)
+#plot_muller(sim)
+#ggsave("tissue/muller_01.pdf", dpi=300, width = 8, height = 8)
 
 ####### TREATMENT #######
 treatment_start <- sim$get_clock()
@@ -92,37 +89,46 @@ sim$run_up_to_size("Clone 3", 1100)
 
 treatment_end <- sim$get_clock()
 
-plot_tissue(sim, num_of_bins = 300)
-ggsave("tissue/tissue_02.pdf", dpi=300, width = 8, height = 8)
-plot_muller(sim) + xlim(20, NA)
-ggsave("tissue/muller_02.pdf", dpi=300, width = 8, height = 8)
+#plot_tissue(sim, num_of_bins = 300)
+#ggsave("tissue/tissue_02.pdf", dpi=300, width = 8, height = 8)
+#plot_muller(sim) + xlim(20, NA)
+#ggsave("tissue/muller_02.pdf", dpi=300, width = 8, height = 8)
 
 ####### RELAPSE #######
 sim$update_rates("Clone 3",rates = c(growth = .5, death=.001))
 sim$run_up_to_size("Clone 3", 60000)
 
-plot_tissue(sim, num_of_bins = 300)
-ggsave("tissue/tissue_03.pdf", dpi=300, width = 8, height = 8)
-plot_muller(sim) + xlim(20, NA)
-ggsave("tissue/muller_03.pdf", dpi=300, width = 8, height = 8)
+#plot_tissue(sim, num_of_bins = 300)
+#ggsave("tissue/tissue_03.pdf", dpi=300, width = 8, height = 8)
+#plot_muller(sim) + xlim(20, NA)
+#ggsave("tissue/muller_03.pdf", dpi=300, width = 8, height = 8)
 
 ####### SAMPLE B #######
-n_w <- n_h <- 15
+n_w <- n_h <- 20
 ncells <- .99*n_w*n_h
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
-sim$sample_cells("B", bbox$lower_corner, bbox$upper_corner)
+sim$sample_cells("Sample B", bbox$lower_corner, bbox$upper_corner)
 
-plot_tissue(sim, num_of_bins = 300)
-ggsave("tissue/tissue_04.pdf", dpi=300, width = 8, height = 8)
-plot_muller(sim) + xlim(20, NA) + geom_vline(xintercept = c(treatment_start, treatment_end), color="indianred", linewidth=.3)
-ggsave("tissue/muller_04.pdf", dpi=300, width = 8, height = 8)
+t2 <- plot_tissue(sim, num_of_bins = 300)
+#ggsave("tissue/tissue_04.pdf", dpi=300, width = 8, height = 8)
+#plot_muller(sim) + xlim(20, NA) + geom_vline(xintercept = c(treatment_start, treatment_end), color="indianred", linewidth=.3)
+#ggsave("tissue/muller_04.pdf", dpi=300, width = 8, height = 8)
 
+# Save
+muller <- plot_muller(sim)
 forest <- sim$get_samples_forest()
 forest$save("data/samples_forest.sff")
+
 treatment_info <- list(treatment_start=treatment_start, treatment_end=treatment_end)
 saveRDS(treatment_info, "data/treatment_info.rds")
 
 plt_forest <- plot_forest(forest) %>%
   annotate_forest(forest)
-ggsave("tissue/forestt.pdf", dpi=300, width = 8, height = 8, plot=plt_forest)
+
+piechart <- plot_state(sim)
+timeseries <- plot_timeseries(sim)
+
+pl <- t1 + t2 + piechart + timeseries + muller + plt_forest + plot_layout(design = 'AABB\nEFGG\nHHHH\nHHHH\nHHHH')
+ggsave('plots/SPN04_tissue.png', plot = pl, width = 210, height = 297, units = "mm", dpi = 300)
+ggsave('plots/SPN04_tissue.pdf', plot = pl, width = 210, height = 297, units = "mm", dpi = 300)
 
