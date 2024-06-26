@@ -11,24 +11,24 @@ m_engine <- MutationEngine(setup_code = "GRCh38")
 # Clone 1 
 # NOTCH1p2514*fs*4 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 10e-8,
-                                        CNA = 10e-11),
+                    passenger_rates = c(SNV = 1e-8,
+                                        CNA = 1e-11),
                     driver_SNVs = list("NOTCH1 FY357Y")
 )
 
 # Clone 2 
 # KRAS G12D
 m_engine$add_mutant(mutant_name = "Clone 2",
-                    passenger_rates = c(SNV = 10e-8, 
-                                        CNA = 10e-11),
+                    passenger_rates = c(SNV = 1e-8, 
+                                        CNA = 1e-11),
                     driver_SNVs = list("KRAS G12D")
 )
 
 # Clone 3
 # Unknown
 m_engine$add_mutant(mutant_name = "Clone 3",
-                    passenger_rates = c(SNV = 10e-8, 
-                                        CNA = 10e-11),
+                    passenger_rates = c(SNV = 1e-8, 
+                                        CNA = 1e-11),
                     # 13q14 deletion 
                     drivers = list(CNA(chr = "13", 
                                        chr_pos = 39500001, 
