@@ -5,7 +5,7 @@ library(patchwork)
 
 #seq_results <- readRDS('/Users/lucreziavaleriani/Desktop/orfeo_LTS/races/SPN03/results/seq_80X.RDS')
 seq_results <- readRDS('data/seq_80X.RDS')
-samples <- c('Sample.A', 'Sample.B')
+samples <- c('A', 'B')
 
 gw_plots_baf <- lapply(samples, function(s){
   rRACES::plot_BAF(seq_results, sample = s, cuts = c(0, 1))
@@ -42,10 +42,10 @@ ggsave(filename = 'plots/histogram.png', plot = hist, dpi = 300,  width = 210, h
 
 # Marginals
 marg_class <- patchwork::wrap_plots(rRACES::plot_VAF_marginals(seq_results,
-                                                               chromosome = '1',
+                                                               chromosome = '6',
                                                                labels = seq_results["classes"]), guides = 'collect') & theme_bw() + theme(legend.position = 'bottom')
 marg_cause <-patchwork::wrap_plots(rRACES::plot_VAF_marginals(seq_results,
-                                                              chromosome = '1',
+                                                              chromosome = '6',
                                                               labels = seq_results["causes"]), guides = 'collect') & theme_bw() + theme(legend.position = 'bottom')
 
 marg <- patchwork::wrap_plots(marg_class, marg_cause, nrow = 2)
