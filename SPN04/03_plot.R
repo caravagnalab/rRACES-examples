@@ -22,7 +22,7 @@ gw_plots_vaf <- lapply(samples, function(s){
 })
 vaf <- patchwork::wrap_plots(gw_plots_vaf, nrow = 4)
 gw_plot <- patchwork::wrap_plots(baf, dr, vaf)
-ggsave(filename = 'plots/seq_plot.png', dpi = 300, plot = gw_plot,  width = 210, height = 297, units = "mm")
+ggsave(filename = 'plots/seq_plot.png', dpi = 300, plot = gw_plot,  width = 410, height = 297, units = "mm")
 
 seq_results <- seq_results %>%
   select(!starts_with("normal")) %>%
@@ -37,7 +37,7 @@ hist_cause <- rRACES::plot_VAF_histogram(seq_results,
                                          cuts = c(0.05, 1),
                                          labels = seq_results["causes"])
 hist <- hist_class + hist_cause + patchwork::plot_layout(nrow =2)
-ggsave(filename = 'plots/histogram.png', plot = hist, dpi = 300,  width = 210, height = 297, units = "mm")
+ggsave(filename = 'plots/histogram.png', plot = hist, dpi = 300,  width = 410, height = 297, units = "mm")
 
 
 # Marginals
