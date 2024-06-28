@@ -71,9 +71,28 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     geom_miss_point() +
     ggtitle(paste0("Comparison between rRACES VAF and ",caller," VAF"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
                                                                                          round(precision,digits=3),
-                                                                                         "\nVAF RMSE: ", round(acc_vaf,3),
-                                                                                         "\nNV RMSE: ", round(acc_nv,3),
+                                                                                         "\nVAF RMSE: ", round(acc_vaf,3)))
+
+  p_dp <- merged_df %>% ggplot(aes(x=DP.races,y=DP.caller, color=classes))+
+    geom_point(na.rm = T) +
+    facet_wrap(~classes) +
+    my_ggplot_theme()+
+    labs(x = "DP races", y = paste0("DP ",caller))+
+    geom_miss_point() +
+    ggtitle(paste0("Comparison between rRACES DP and ",caller," DP"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
+                                                                                        round(precision,digits=3),
                                                                                          "\nDP RMSE: ", round(acc_dp,3)))
+  p_nv <- merged_df %>% ggplot(aes(x=NV.races,y=NV.caller, color=classes))+
+    geom_point(na.rm = T) +
+    facet_wrap(~classes) +
+    my_ggplot_theme()+
+    labs(x = "NV races", y = paste0("NV ",caller))+
+    geom_miss_point() +
+    ggtitle(paste0("Comparison between rRACES NV and ",caller," NV"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
+                                                                                         round(precision,digits=3),
+                                                                                         "\nNV RMSE: ", round(acc_nv,3)))
+
+
   filter_counts <- merged_df %>%
     dplyr::filter(type=="TP") %>%
     count(FILTER) %>%
@@ -85,7 +104,7 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     geom_bar(stat = "identity") +
     labs(x = paste0(caller," filter"), title = "Most frequent filtering label") +
     my_ggplot_theme() + coord_flip()
-  pl <- p+p_filter_tp + plot_layout(design ='AABBB\nAABBB')
+  pl <- p+p_filter_tp+p_dp+p_nv + plot_layout(design ='AAABBB\nAAABBB\nCCCDDD\nCCCDDD')
   return(pl)
 
 }
