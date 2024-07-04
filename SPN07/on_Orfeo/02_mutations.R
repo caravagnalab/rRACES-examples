@@ -50,10 +50,13 @@ m_engine$add_mutant(mutant_name = "6",
 
 ## 2. Add exposures
 m_engine$add_exposure(c(SBS1 = .8, SBS5 = .2))
+m_engine$add_exposure(c(ID1 = 1))
 m_engine$add_exposure(time = 7.85,
                       c(SBS11= 1)) # Chemotherapy active from 7.85 to 10.85
-m_engine$add_exposure(time = 10.85,
-                      c(SBS1 = .8, SBS5 = .2))
+m_engine$add_exposure(time = 10.85, c(ID1 = 1))
+# Hypermutant signatures : SBS6, SBS14, SBS15, SBS20, SBS21, and SBS44.
+m_engine$add_exposure(time = 10.85, c(SBS1 = .1, SBS5 = .1,SBS6=.4,
+                                      SBS21=.2, SBS44=.2))
 
 
 samples_forest <- load_samples_forest("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff")

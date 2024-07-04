@@ -18,7 +18,7 @@ sim$add_mutant(name = "1",
                growth_rates = .1,
                death_rates = .03)
 sim$place_cell("1", 1000, 1000)
-sim$run_up_to_size("1",1e2) #1e2
+sim$run_up_to_size("1",10) #1e2
 p1 = plot_tissue(sim)
 ggsave(p1, filename='./plots/tissue1.png')
 
@@ -46,7 +46,7 @@ sim$add_mutant(name = "4",
                death_rates = .03)
 sim$mutate_progeny(sim$choose_cell_in("2"), "4")
 #sim$update_rates("1", c(death = 1))
-sim$run_up_to_size("4",1e3)
+sim$run_up_to_size("4",1e5)
 p4 = plot_tissue(sim, num_of_bins=100)
 ggsave(p4, filename='./plots/tissue4.png')
 
@@ -104,7 +104,7 @@ sim$add_mutant(name = "5",
                growth_rates = .3,
                death_rates = .03)
 sim$mutate_progeny(sim$choose_cell_in("4"), "5")
-sim$run_up_to_size("5",1e3)
+sim$run_up_to_size("5",1e2)
 
 sim$add_mutant(name = "6",
                growth_rates = .5,
