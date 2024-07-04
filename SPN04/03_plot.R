@@ -50,3 +50,28 @@ marg_cause <-patchwork::wrap_plots(rRACES::plot_VAF_marginals(seq_results,
 
 marg <- patchwork::wrap_plots(marg_class, marg_cause, nrow = 2)
 ggsave(filename = 'plots/marginal.png', plot = marg, dpi = 300,  width = 210, height = 297, units = "mm")
+
+### MARGINALS ###
+pdf("plots/chromosome_vaf_marginals_report.pdf", width = 16, height = 5)
+seq_res <- seq_results
+seq_res$chr %>% unique()
+s_seq <- seq_res %>% filter(classes!="germinal")
+for (c in unique(seq_res$chr)) {
+    print(c)
+    p_marg <- plot_VAF_marginals(s_seq, chromosomes = c, samples = samples, labels = s_seq["classes"])
+    p_hist <- plot_VAF_histogram(s_seq, chromosomes = c, samples = samples, labels = s_seq["classes"], cuts = c(0.02, 1))
+    p <- (wrap_plots(p_marg, ncol=4)+p_hist)+ plot_layout(guides = 'collect') & theme(legend.position = 'bottom') & ggtitle(paste("Chromosome", c))
+    #p_marg <- lapply(p_marg, function(p) p + ggtitle(paste("Chromosome", c)))
+    #p <- wrap_plots(list(p_marg,p_hist),ncol = 3, nrow=2) + plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
+    print(p)
+}
+
+dev.off()
+#marginals <- lapply(unique(seq_res$chr), function(c) {
+#			    print(c)
+#			    p_marg <-plot_VAF_marginals(s_seq, chromosomes=c, samples = samples, labels = s_seq["classes"])
+#			    p_marg <- lapply(p_marg, function(p) p + ggtitle(paste("Chromosome", c)))
+#			    p <- wrap_plots(p_marg, ncol = 3) + plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
+#			    print(p)
+#			    #ggsave(paste0("chr_",c,"_vaf_marginals.pdf"), dpi=300, width = 16, height = 8,plot=p)
+#})
