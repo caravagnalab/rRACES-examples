@@ -3,9 +3,7 @@ library(rRACES)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
-# source("utils.R")
 
-# seed <- 777
 seed = 12345
 set.seed(seed)
 
@@ -105,15 +103,17 @@ sim$run_up_to_size("Clone 4", 4e5)
 m<-plot_muller(sim)
 t<-plot_tissue(sim)
 m+t
+ggsave("tissue/muller.pdf", plot=m,height = 12, width = 10, dpi = 300, units = 'in')
+#n_w <- n_h <- 15
 
-n_w <- n_h <- 15
+n_w <- n_h <- 50
 ncells <- 0.9 * n_w * n_h
 
 # Sampling ncells with random box sampling of boxes of size n_w x n_h
 bboxes <- sim$search_samples(c("Clone 4" = ncells), n_w, n_h,n_samples=3)
 counter <- 1
 for (bbox in bboxes) {
-  sample_name <-paste0("Sample_",counter)
+  sample_name <-paste0("SPN01_Sample_",counter)
   plot <- plot +
     ggplot2::geom_rect(xmin = bbox$lower_corner[1],
                        xmax = bbox$upper_corner[1],
@@ -123,17 +123,9 @@ for (bbox in bboxes) {
   sim$sample_cells(sample_name, bbox$lower_corner, bbox$upper_corner)
   counter <- counter+1
 }
-plot
-plot_tissue(sim)
+
 forest <- sim$get_samples_forest()
 plot_forest(forest) %>%
   annotate_forest(forest,samples = T,MRCAs = T)
-# Final plot
-#pl <- t1 + t2 + t3 + t4  + piechart + timeseries + muller + plt_forest + plot_layout(design = 'ABCD
-#                                                                                         EFGG
-#                                                                                         HHHH
-#                                                                                         HHHH
-#                                                                                         HHHH
-#                                                                                         HHHH')
+forest$save("data/samples_forest.sff")
 ggsave("tissue/forest.pdf", height = 12, width = 10, dpi = 300, units = 'in')
-#forest$save("samples_forest_final.sff")

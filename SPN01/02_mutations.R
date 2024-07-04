@@ -7,37 +7,34 @@ library(patchwork)
 # dir.create(path = "data", recursive = TRUE)
 
 # load the samples forest from "samples_forest.sff" and store it in `forest`
-forest <- load_samples_forest("data/samples_forest_homogeneous_growth.sff")
+forest <- load_samples_forest("data/samples_forest.sff")
 # building a mutation engine by using the "GRCh38" set-up configuration
-m_engine <- build_mutation_engine(setup_code = "GRCh38")
-m_engine <- build_mutation_engine(setup_code = "GRCh38", context_sampling = 50)
+setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
-## Drivers for the tumors
-SNV_Clone1 = SNV("5", 112839942, "T",allele = 1) ## APC R1450*
-CNA_Clone2 = CNA(type = "D", "5",
-                 chr_pos = 67522671, len = 1e7,allele = 0)
-SNV_Clone3 = SNV("12", 25245350, "A")
-SNV_Clone4 = SNV("3",179218303, "A") # NC_000003.12:179218302:G:A
+m_engine <- MutationEngine(setup_code = "GRCh38")
 
-# Mutation rates (passengers)
 mu_SNV = 1e-8
 mu_CNA = 1e-11
+##112707518-112846239 
+CNA_Clone2 = CNA(type = "D", "5",
+                 chr_pos = 107707518, len = 1e7,allele = 0)
 
+## Drivers for the tumors
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = mu_SNV),
-                    drivers = list(SNV_Clone1))
-
+                    passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
+                    drivers = list(list("APC R1450*", allele = 1)))
 m_engine$add_mutant(mutant_name = "Clone 2",
-                    passenger_rates = c(CNA = mu_CNA),
+                    passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
                     drivers = list(CNA_Clone2))
 
 m_engine$add_mutant(mutant_name = "Clone 3",
-                    passenger_rates = c(SNV = mu_SNV),
-                    drivers = list(SNV_Clone3))
+                    passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
+                    drivers = list("KRAS G12V"))
 
 m_engine$add_mutant(mutant_name = "Clone 4",
-                    passenger_rates = c(SNV = mu_SNV),
-                    drivers = list(SNV_Clone4))
+                    passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
+                    drivers = list("PIK3CA E545K"))
+
 
 # Mutational signatures
 m_engine$add_exposure(
@@ -47,15 +44,25 @@ m_engine$add_exposure(
     SBS5 = 0.3,
     SBS13 = 0.3)
 )
+
 print("Mutation engine created")
-phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_mutations = 1000)
-phylo_forest$save("data/phylo_forest.sff")
+phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_SNVs=800, num_of_preneoplatic_indels=200)
+phylo_forest$save("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/data/phylo_forest.sff")
 print("Mutations placed")
-chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
 
-seq_results <- parallel::mclapply(chromosomes, function(c) {
-	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, write_SAM = TRUE)
-}, mc.cores = parallel::detectCores()) %>% do.call("bind_rows", .)
 
-#saveRDS(object =seq_results ,file = paste0("data/sequencing_homogeneous_growth.rds"))
+annot_forest <- plot_forest(forest) %>%
+    annotate_forest(phylo_forest,
+                    samples = T,
+                    MRCAs = T,
+                    exposures = T,
+                    drivers=T,
+                    add_driver_label = T)
 
+exp_timeline <- plot_exposure_timeline(phylo_forest)
+
+labels <- get_relevant_branches(forest)
+sticks <- plot_sticks(forest, labels)
+
+pl <- annot_forest + sticks + exp_timeline + plot_layout(nrow = 3, design = 'A\nA\nB\nB\nC')
+ggsave("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/plots/SPN01_mutations.png",plot = pl, width = 210, height = 297, units = "mm", dpi = 300)
