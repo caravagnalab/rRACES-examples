@@ -15,7 +15,7 @@ setwd("/orfeo/cephfs/scratch/cdslab/shared/mutation_engine/")
 seed <- 12345
 set.seed(seed)
 
-sam_folder = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/purity_100"
+# sam_folder = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/purity_100"
 # dir.create(sam_folder, recursive = TRUE)
 # setwd(sam_folder)
 # Simulate sequencing ####
@@ -27,7 +27,7 @@ chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","1
 # seq_res <- bind_rows(seq_res)
 basic_seq <- BasicIlluminaSequencer(4e-3)
 
-print("starting seq and writing SAMs in desidered folder")
+# print("starting seq and writing SAMs in desidered folder")
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
 	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, 

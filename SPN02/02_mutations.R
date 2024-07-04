@@ -38,7 +38,7 @@ m_engine$add_exposure(
 )
 
 m_engine$add_exposure(
-    time = clone3_born,
+    time = round(clone3_born),
     coefficients = c(
         SBS1 = 0.2, SBS5 = 0.4, SBS6 = 0.4, 
         ID1 = 0.5, ID7 = 0.5)
@@ -67,5 +67,12 @@ mut_forest = annotate_forest(tree_plot,
                 add_driver_label = T) #+
             # ylim(0,10)
 
-ggsave(filename = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/phylogenetic_forest_cycles.png", plot = mut_forest, width = 20, height = 15)
+ggsave(filename = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/phylogenetic_forest_cycles.png", plot = mut_forest, width = 20, height = 15, bg = "white")
 print("done everything")
+
+exposure_time = plot_exposure_timeline(
+  phylo_forest,
+  linewidth = 0.8,
+  emphatize_switches = TRUE
+)
+ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/exposure_plot.png", plot = exposure_time, bg = "white")
