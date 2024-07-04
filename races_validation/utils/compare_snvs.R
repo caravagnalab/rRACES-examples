@@ -6,7 +6,7 @@ library(patchwork)
 library(vcfR)
 library(naniar)
 #library(ggExtra)
-source("utils/vcf_parser.R") ## vcf parser
+source("/u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/races_validation/utils/vcf_parser.R") ## vcf parser
 
 ## set ggplot2 theme
 my_ggplot_theme<- function (cex = 1) {
