@@ -51,17 +51,17 @@ m_engine$add_mutant(mutant_name = "6",
 ## 2. Add exposures
 m_engine$add_exposure(c(SBS1 = .8, SBS5 = .2))
 m_engine$add_exposure(c(ID1 = 1))
-m_engine$add_exposure(time = 7.85,
+m_engine$add_exposure(time = 108.4,
                       c(SBS11= 1)) # Chemotherapy active from 7.85 to 10.85
-m_engine$add_exposure(time = 10.85, c(ID1 = 1))
+m_engine$add_exposure(time = 110.4, c(ID1 = 1))
 # Hypermutant signatures : SBS6, SBS14, SBS15, SBS20, SBS21, and SBS44.
-m_engine$add_exposure(time = 10.85, c(SBS1 = .1, SBS5 = .1,SBS6=.4,
+m_engine$add_exposure(time = 110.4, c(SBS1 = .1, SBS5 = .1,SBS6=.4,
                                       SBS21=.2, SBS44=.2))
 
 
 samples_forest <- load_samples_forest("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff")
 #samples_forest <- load_samples_forest('~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff')
-phylo_forest <- m_engine$place_mutations(samples_forest, 1000)
+phylo_forest <- m_engine$place_mutations(samples_forest, 500, 200)
 
 # phylo_forest$get_sampled_cell_mutations() %>% head()
 # phylo_forest$get_sampled_cell_CNAs() %>% head()
@@ -71,7 +71,33 @@ phylo_forest$save("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/phylofore
 #phylo_forest <- load_phylogenetic_forest("phyloforest.sff")
 #seq_results <- simulate_seq(phylo_forest, coverage = 50)
 
+forest = samples_forest
+annot_forest <- plot_forest(forest) %>%
+  annotate_forest(phylo_forest,
+                  samples = T,
+                  MRCAs = T,
+                  exposures = T,
+                  drivers=T,
+                  add_driver_label = T)
 
+exp_timeline <- plot_exposure_timeline(phylo_forest)
+
+labels <- get_relevant_branches(forest)
+sticks <- plot_sticks(forest, labels)
+
+st = 'AAA
+      AAA
+      AAA
+      AAA
+      BBB
+      BBB
+      CCC'
+pl = patchwork::wrap_plots(
+  annot_forest , sticks , exp_timeline,
+  design = st
+)
+#pl <- annot_forest + sticks + exp_timeline + plot_layout(nrow = 3, design = 'A\nA\nB\nB\nC')
+ggsave("/u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/plots/SPN07_mutations.png",plot = pl, dpi = 300, height = 30, width = 15)
 
 
 
