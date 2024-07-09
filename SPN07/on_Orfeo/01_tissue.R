@@ -2,7 +2,7 @@ set.seed(58)
 library(rRACES)
 library(dplyr)
 library(ggplot2)
-#setwd("~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo")
+setwd("/orfeo/LTS/CDSLab/LT_storage/antonelloa/my_home/rRACES-examples/SPN07/on_Orfeo")
 #source('utils.R')
 
 sim <- SpatialSimulation("SPN07",
@@ -61,9 +61,9 @@ state1= plot_state(sim)
 #tissue_pre
 
 ### Sampling 1
-sample_a = sim$search_sample(c('3'= 100), 25,25)
-sample_b = sim$search_sample(c('4'=100), 25, 25)
-sample_c = sim$search_sample(c('3'=50,'2'=50), 25, 25)
+sample_a = sim$search_sample(c('3'= 300), 100,100)
+sample_b = sim$search_sample(c('4'=300), 100, 100)
+sample_c = sim$search_sample(c('3'=200,'2'=200), 100, 100)
 
 # plot_tissue(sim, num_of_bins=100) +
 #   geom_rect(aes(xmin=sample_a$lower_corner[1],
@@ -123,8 +123,8 @@ m2 = rRACES::plot_muller(sim)
 ggsave(m2, filename='./plots/muller_plot2.png')
 
 ### Sampling 2
-sample_d = sim$search_sample(c('5'= 100), 25,25)
-sample_e = sim$search_sample(c('6'=100), 25, 25)
+sample_d = sim$search_sample(c('5'= 300), 100,100)
+sample_e = sim$search_sample(c('6'=300), 100, 100)
 
 sim$sample_cells("D", sample_d$lower_corner, sample_d$upper_corner)
 sim$sample_cells("E", sample_e$lower_corner, sample_e$upper_corner)
