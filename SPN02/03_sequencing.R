@@ -31,7 +31,7 @@ basic_seq <- BasicIlluminaSequencer(4e-3)
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
 	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, 
-		output_dir = sam_folder, 
+		# output_dir = sam_folder, 
 		write_SAM = FALSE, 
 		sequencer = basic_seq, 
 		purity = 1, 
