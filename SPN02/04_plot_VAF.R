@@ -13,45 +13,29 @@ seq_res = bind_rows(seq_res)
 samples = c("A", "B")
 chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
 
-# plot VAF one chromosome at time
-vaf_gw = lapply(samples, function(x) {
-    vaf_gw = lapply(chromosomes, function(c) {
-        plot_VAF_gw(seq_res, 
-            sample = x, 
-            chromosomes = c(c))
-    })
-    # vaf_gw_plot = wrap_plots(vaf_gw, ncol = 1, nrow = length(vaf_gw))
-    # pdf(paste0("test/SPN02/vaf_gw_", x, ".pdf"))
-    # vaf_gw
-    # dev.off()
-    # ggsave(filename = paste0("test/SPN02/vaf_gw_", x, ".pdf"), plot = vaf_gw_plot)
-})
-names(vaf_gw) = samples
+seq_res_filt = seq_res %>% filter(classes != "germinal")
 
-pdf("test/SPN02/vaf_gw_a.pdf")
-vaf_gw[[1]]
-dev.off()
-pdf("test/SPN02/vaf_gw_b.pdf")
-vaf_gw[[2]]
-dev.off()
+lapply(samples, function(s) {
+    vaf = plot_VAF(seq_res_filt, s)
+    baf = plot_BAF(seq_res_filt, s)
+    dr = plot_DR(seq_res_filt, s)
 
-# lapply(samples, function(x) {
-plot = plot_histogram_vaf(seq_res, 
-    # sample = x, 
-    colour_by = "causes", 
-    cuts = c(-0.1, 1.01)
-    )
-ggsave(filename = paste0("test/SPN02/vaf_hist.pdf"), plot = plot, width = 20)
-# }) 
-# make it bigger
+    p = vaf / baf / dr
 
-marginals = lapply(chromosomes, function(x) {
-    plot_marginals(
-        seq_res, 
-        chromosome = c(x), 
-        cuts = c(-0.1, 1.01))
-})
+    ggsave(paste0("plot/", s, "_report.png"), plot = p, width = 8, height = 10)
+}) 
 
-pdf("test/SPN02/marginal_vaf.pdf")
-marginals
+pdf("plot/chromosome_vaf_marginals_report.pdf", width = 16, height = 5)
+# seq_res_filt$chr %>% unique()
+# s_seq <- seq_res %>% filter(classes!="germinal")
+for (c in unique(seq_res_filt$chr)) {
+    print(c)
+    p_marg <- plot_VAF_marginals(seq_res_filt, chromosomes = c, samples = samples, labels = seq_res_filt["classes"])
+    p_hist <- plot_VAF_histogram(seq_res_filt, chromosomes = c, samples = samples, labels = seq_res_filt["classes"], cuts = c(0.02, 1))
+    p <- (wrap_plots(p_marg, ncol=3)+p_hist)+ plot_layout(guides = 'collect') & theme(legend.position = 'bottom') & ggtitle(paste("Chromosome", c))
+    #p_marg <- lapply(p_marg, function(p) p + ggtitle(paste("Chromosome", c)))
+    #p <- wrap_plots(list(p_marg,p_hist),ncol = 3, nrow=2) + plot_layout(guides = 'collect') & theme(legend.position = 'bottom')
+    print(p)
+}
+
 dev.off()
