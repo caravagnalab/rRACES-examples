@@ -2,7 +2,7 @@ library(rRACES)
 library(tidyverse)
 library(patchwork)
 
-seq_res = readRDS("test/SPN02/sequencing_wg_80x.rds")
+seq_res = readRDS("SPN02_seq_80x.rds")
 # seq_res = seq_to_long(seq_res)
 
 # removed germline mutations

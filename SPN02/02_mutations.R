@@ -76,3 +76,6 @@ exposure_time = plot_exposure_timeline(
   emphatize_switches = TRUE
 )
 ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/exposure_plot.png", plot = exposure_time, bg = "white")
+
+all = mut_forest / exposure_time
+ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/recap_phylo.png", plot = all)
