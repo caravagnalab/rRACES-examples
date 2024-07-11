@@ -61,26 +61,32 @@ state1= plot_state(sim)
 #tissue_pre
 
 ### Sampling 1
-sample_a = sim$search_sample(c('3'= 300), 100,100)
-sample_b = sim$search_sample(c('4'=300), 100, 100)
-sample_c = sim$search_sample(c('3'=200,'2'=200), 100, 100)
+#sample_a = sim$search_sample(c('3'= 300), 100,100)
+#sample_b = sim$search_sample(c('4'=300), 10, 10)
+#sample_c = sim$search_sample(c('3'=200,'2'=200), 10, 10)
 
-# plot_tissue(sim, num_of_bins=100) +
-#   geom_rect(aes(xmin=sample_a$lower_corner[1],
-#                 xmax=sample_a$upper_corner[1],
-#                 ymin=sample_a$lower_corner[2],
-#                 ymax=sample_a$upper_corner[2]),
-#             color= 'white', fill='white')+
-#   geom_rect(aes(xmin=sample_b$lower_corner[1],
-#                 xmax=sample_b$upper_corner[1],
-#                 ymin=sample_b$lower_corner[2],
-#                 ymax=sample_b$upper_corner[2]),
-#             color= 'white', fill='white')+
-#   geom_rect(aes(xmin=sample_c$lower_corner[1],
-#                 xmax=sample_c$upper_corner[1],
-#                 ymin=sample_c$lower_corner[2],
-#                 ymax=sample_c$upper_corner[2]),
-#             color= 'white', fill='white')
+sample_a = list('lower_corner'=c(800, 1000), 'upper_corner'=c(800+10, 1000+10))
+sample_b = list('lower_corner'=c(1200, 1000), 'upper_corner'=c(1200+10, 1000+10))
+sample_c = list('lower_corner'=c(800, 1140), 'upper_corner'=c(800+10, 1140+10))
+
+plot_sampling1 = plot_tissue(sim, num_of_bins=100) +
+  geom_rect(aes(xmin=sample_a$lower_corner[1],
+                xmax=sample_a$upper_corner[1],
+                ymin=sample_a$lower_corner[2],
+                ymax=sample_a$upper_corner[2]),
+            color= 'white', fill='white')+
+  geom_rect(aes(xmin=sample_b$lower_corner[1],
+                xmax=sample_b$upper_corner[1],
+                ymin=sample_b$lower_corner[2],
+                ymax=sample_b$upper_corner[2]),
+            color= 'white', fill='white')+
+  geom_rect(aes(xmin=sample_c$lower_corner[1],
+                xmax=sample_c$upper_corner[1],
+                ymin=sample_c$lower_corner[2],
+                ymax=sample_c$upper_corner[2]),
+            color= 'white', fill='white')
+
+ggsave(plot_sampling1, filename='./plots/sampling1.png')
 
 sim$sample_cells("A", sample_a$lower_corner, sample_a$upper_corner)
 sim$sample_cells("B", sample_b$lower_corner, sample_b$upper_corner)
@@ -123,8 +129,24 @@ m2 = rRACES::plot_muller(sim)
 ggsave(m2, filename='./plots/muller_plot2.png')
 
 ### Sampling 2
-sample_d = sim$search_sample(c('5'= 300), 100,100)
-sample_e = sim$search_sample(c('6'=300), 100, 100)
+#sample_d = sim$search_sample(c('5'= 300), 100,100)
+#sample_e = sim$search_sample(c('6'=300), 100, 100)
+
+sample_d = list('lower_corner'=c(1200, 1000), 'upper_corner'=c(1200+10, 1000+10))
+sample_e = list('lower_corner'=c(900, 900), 'upper_corner'=c(900+10, 900+10))
+
+plot_tissue(sim, num_of_bins=100) +
+  geom_rect(aes(xmin=sample_d$lower_corner[1],
+                xmax=sample_d$upper_corner[1],
+                ymin=sample_d$lower_corner[2],
+                ymax=sample_d$upper_corner[2]),
+            color= 'white', fill='white')+
+  geom_rect(aes(xmin=sample_e$lower_corner[1],
+                xmax=sample_e$upper_corner[1],
+                ymin=sample_e$lower_corner[2],
+                ymax=sample_e$upper_corner[2]),
+            color= 'white', fill='white')
+
 
 sim$sample_cells("D", sample_d$lower_corner, sample_d$upper_corner)
 sim$sample_cells("E", sample_e$lower_corner, sample_e$upper_corner)

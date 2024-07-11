@@ -40,9 +40,13 @@ m_engine$add_mutant(mutant_name = "Clone 4",
 m_engine$add_exposure(
   time = 0,
   coefficients = c(
-    SBS1 = 0.4,
-    SBS5 = 0.3,
-    SBS13 = 0.3)
+    SBS1 = 0.30,
+    SBS5 = 0.20,
+    SBS10a = 0.1,
+    SBS10b = 0.1,
+    ID1 = 0.20,
+    SBS15 = 0.1
+  )
 )
 
 print("Mutation engine created")
