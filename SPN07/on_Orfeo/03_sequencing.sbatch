@@ -7,6 +7,6 @@
 #SBATCH --time=72:00:00
 #SBATCH --output=03_sequencing_%j.out
 
-cd /u/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo
+cd /orfeo/LTS/CDSLab/LT_storage/antonelloa/my_home/rRACES-examples/SPN07/on_Orfeo
 module load R
 Rscript 03_sequencing.R
