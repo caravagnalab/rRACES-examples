@@ -2,7 +2,7 @@
 
 This folder contains the experiments conducted for the thesis, which can be found at the following link:
 
-[Link to Thesis](URL_HERE)
+[Link to Thesis]([URL_HERE](https://github.com/AbKalus/thesis-project-2024/blob/main/TESI_LAUREA_TRIENNALE_AIDA_ABDULA_KALUS.pdf))
 
 The folder is divided into three subfolders, each containing the experiments for each chapter:
 
