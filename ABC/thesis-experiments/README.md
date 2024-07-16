@@ -6,8 +6,8 @@ This folder contains the experiments conducted for the thesis, which can be foun
 
 The folder is divided into three subfolders, each containing the experiments for each chapter:
 
-1. **(Chapter 1 Experiments) C1-Ex** 
-2. **(Chapter 2 Experiments) C2-Ex**
-3. **(Chapter 3 Experiments) C3-Ex**
+1. **(Chapter 1 Experiments) C1-Ex**: Demonstrates the usage of two different ABC schemas.
+2. **(Chapter 2 Experiments) C2-Ex**: Highlights the importance of the choice of summary statistics.
+3. **(Chapter 3 Experiments) C3-Ex**: Simulates drug resistance in species.
 
 Each subfolder contains the relevant data, scripts, and results for the corresponding chapter's experiments.
