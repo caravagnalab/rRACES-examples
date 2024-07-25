@@ -19,7 +19,7 @@ chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","1
 basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
-	simulate_seq(phylo_forest, chromosomes = c, coverage = 80,write_SAM = TRUE,
+	simulate_seq(phylo_forest, chromosomes = c, coverage = 100,write_SAM = TRUE,
 		     sequencer = basic_seq, insert_size_mean = 350, insert_size_stddev = 10, , output_dir = "/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_100X_basic_error_paired_350_3tumor",
 	update_SAM =TRUE, with_normal_sample =FALSE)
 }, mc.cores = parallel::detectCores())
