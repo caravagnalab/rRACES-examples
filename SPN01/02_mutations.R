@@ -40,11 +40,11 @@ m_engine$add_mutant(mutant_name = "Clone 4",
 m_engine$add_exposure(
   time = 0,
   coefficients = c(
-    SBS1 = 0.30,
+    SBS1 = 0.40,
     SBS5 = 0.20,
-    SBS10a = 0.1,
-    SBS10b = 0.1,
-    ID1 = 0.20,
+    SBS10a = 0.15,
+    SBS10b = 0.15,
+    ID1 = 1,
     SBS15 = 0.1
   )
 )

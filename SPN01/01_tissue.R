@@ -107,24 +107,40 @@ t4<-plot_tissue(sim,num_of_bins = 300)
 timeseries_final <- plot_timeseries(sim)
 state_final <- plot_state(sim)
 
-n_w <- n_h <- 20
-ncells <- 0.8 * n_w * n_h
 
-# Sampling ncells with random box sampling of boxes of size n_w x n_h
-bboxes <- sim$search_samples(c("Clone 4" = ncells), n_w, n_h,n_samples=3)
-counter <- 1
-for (bbox in bboxes) {
-  sample_name <-paste0("SPN01_Sample_",counter)
-  plot <- plot +
-    ggplot2::geom_rect(xmin = bbox$lower_corner[1],
-                       xmax = bbox$upper_corner[1],
-                       ymin = bbox$lower_corner[2],
-                       ymax = bbox$upper_corner[2],
-                       fill = NA, color = "black")
-  sim$sample_cells(sample_name, bbox$lower_corner, bbox$upper_corner)
-  counter <- counter+1
-}
+## Perform manual sampling to allow samples to be 
+## as far as possible
 
+t4_sampled <- t4 +
+  ggplot2::geom_rect(xmin = 1100, xmax = 1119, ymin=600, ymax=619,fill = NA, color = "black") +
+  ggplot2::geom_rect(xmin = 739, xmax = 758, ymin=1123, ymax=1142,fill = NA, color = "black") +
+  ggplot2::geom_rect(xmin = 550, xmax = 569, ymin=550, ymax=569,fill = NA, color = "black")
+
+
+sim$sample_cells("SPN01_Sample_1", lower_corner=c(1100,600), upper_corner=c(1119,619))
+sim$sample_cells("SPN01_Sample_2", lower_corner=c(739,1123), upper_corner=c(758,1142))
+sim$sample_cells("SPN01_Sample_3", lower_corner=c(550,550), upper_corner=c(569,569))
+
+
+
+#n_w <- n_h <- 20
+#ncells <- 0.8 * n_w * n_h
+#
+## Sampling ncells with random box sampling of boxes of size n_w x n_h
+#bboxes <- sim$search_samples(c("Clone 4" = ncells), n_w, n_h,n_samples=3)
+#counter <- 1
+#for (bbox in bboxes) {
+#  sample_name <-paste0("SPN01_Sample_",counter)
+#  plot <- plot +
+#    ggplot2::geom_rect(xmin = bbox$lower_corner[1],
+#                       xmax = bbox$upper_corner[1],
+#                       ymin = bbox$lower_corner[2],
+#                       ymax = bbox$upper_corner[2],
+#                       fill = NA, color = "black")
+#  sim$sample_cells(sample_name, bbox$lower_corner, bbox$upper_corner)
+#  counter <- counter+1
+#}
+#
 forest <- sim$get_samples_forest()
 forest$save("data/samples_forest.sff")
 forest_final<- plot_forest(forest) %>%
@@ -132,7 +148,7 @@ forest_final<- plot_forest(forest) %>%
 
 
 # Final plot
-pl <- t1 +t2 +t3 +t4  +state_final + timeseries_final + muller_final + forest_final + plot_layout(design = 'ABCD
+pl <- t1 +t2 +t3 +t4_sampled  +state_final + timeseries_final + muller_final + forest_final + plot_layout(design = 'ABCD
                                                                                          EFGG
                                                                                          HHHH
                                                                                          HHHH
