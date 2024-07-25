@@ -2,13 +2,13 @@ set.seed(58)
 library(rRACES)
 library(dplyr)
 library(ggplot2)
-setwd("/orfeo/LTS/CDSLab/LT_storage/antonelloa/my_home/rRACES-examples/SPN07/on_Orfeo")
+setwd("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo")
 #source('utils.R')
 
 sim <- SpatialSimulation("SPN07",
            #seed = 3,
            save_snapshot = F,
-           width = 2e3, height = 2e3)
+           width = 1e3, height = 1e3)
 #sim$update_tissue("Brain")
 #sim$duplicate_internal_cells <- T
 sim$border_growth_model = F
@@ -17,7 +17,7 @@ sim$history_delta <- 0.1
 sim$add_mutant(name = "1",
                growth_rates = .1,
                death_rates = .03)
-sim$place_cell("1", 1000, 1000)
+sim$place_cell("1", 500, 500)
 sim$run_up_to_size("1",10) #1e2
 p1 = plot_tissue(sim)
 ggsave(p1, filename='./plots/tissue1.png')
@@ -46,7 +46,7 @@ sim$add_mutant(name = "4",
                death_rates = .03)
 sim$mutate_progeny(sim$choose_cell_in("2"), "4")
 #sim$update_rates("1", c(death = 1))
-sim$run_up_to_size("4",1e5)
+sim$run_up_to_size("4",1e4)
 p4 = plot_tissue(sim, num_of_bins=100)
 ggsave(p4, filename='./plots/tissue4.png')
 
@@ -65,9 +65,9 @@ state1= plot_state(sim)
 #sample_b = sim$search_sample(c('4'=300), 10, 10)
 #sample_c = sim$search_sample(c('3'=200,'2'=200), 10, 10)
 
-sample_a = list('lower_corner'=c(800, 1000), 'upper_corner'=c(800+10, 1000+10))
-sample_b = list('lower_corner'=c(1200, 1000), 'upper_corner'=c(1200+10, 1000+10))
-sample_c = list('lower_corner'=c(800, 1140), 'upper_corner'=c(800+10, 1140+10))
+sample_a = list('lower_corner'=c(400, 500), 'upper_corner'=c(400+10, 500+10))
+sample_b = list('lower_corner'=c(500, 450), 'upper_corner'=c(500+10, 450+10))
+sample_c = list('lower_corner'=c(460, 550), 'upper_corner'=c(460+10, 550+10))
 
 plot_sampling1 = plot_tissue(sim, num_of_bins=100) +
   geom_rect(aes(xmin=sample_a$lower_corner[1],
@@ -93,9 +93,13 @@ sim$sample_cells("B", sample_b$lower_corner, sample_b$upper_corner)
 sim$sample_cells("C", sample_c$lower_corner, sample_c$upper_corner)
 
 forest <- sim$get_samples_forest()
-f1 = annotate_forest(forest = forest,tree_plot = plot_forest(forest),MRCAs = T)
-#ggsave(f1, filename='./plots/forest1.png')
-
+forest$get_samples_info()
+f1 = annotate_forest(forest = forest,
+                     tree_plot = plot_forest(forest),
+                     MRCAs = T,
+                     samples = T)
+ggsave(f1, filename='./plots/forest1.png')
+ggsave(f1, filename='./plots/forest1.pdf')
 
 ### Chemotherapy
 sim$update_rates("2", c(death = 3))
@@ -107,20 +111,22 @@ ggsave(p5, filename='./plots/after_chemotherapy.png')
 
 ### Resistant clones birth
 sim$add_mutant(name = "5",
-               growth_rates = .3,
+               growth_rates = .27,
                death_rates = .03)
 sim$mutate_progeny(sim$choose_cell_in("4"), "5")
 sim$run_up_to_size("5",1e2)
+p5 = plot_tissue(sim)
+ggsave(p5, filename='./plots/tissue5.png')
 
 sim$add_mutant(name = "6",
                growth_rates = .5,
                death_rates = .03)
 sim$mutate_progeny(sim$choose_cell_in("5"), "6")
 #sim$update_rates("4", c(death = 1e5))
-sim$run_up_to_size("6",1e5)
+sim$run_up_to_size("6",1e4)
 
 p6 = plot_tissue(sim)
-ggsave(p6, filename='./plots/tissue4.png')
+ggsave(p6, filename='./plots/tissue6.png')
 state2= plot_state(sim)
 
 #m2 = my_muller_plot(sim)
@@ -132,10 +138,10 @@ ggsave(m2, filename='./plots/muller_plot2.png')
 #sample_d = sim$search_sample(c('5'= 300), 100,100)
 #sample_e = sim$search_sample(c('6'=300), 100, 100)
 
-sample_d = list('lower_corner'=c(1200, 1000), 'upper_corner'=c(1200+10, 1000+10))
-sample_e = list('lower_corner'=c(900, 900), 'upper_corner'=c(900+10, 900+10))
+sample_d = list('lower_corner'=c(450, 450), 'upper_corner'=c(450+10, 450+10))
+sample_e = list('lower_corner'=c(500, 500), 'upper_corner'=c(500+10, 500+10))
 
-plot_tissue(sim, num_of_bins=100) +
+plot_sampling2=plot_tissue(sim, num_of_bins=100) +
   geom_rect(aes(xmin=sample_d$lower_corner[1],
                 xmax=sample_d$upper_corner[1],
                 ymin=sample_d$lower_corner[2],
@@ -147,6 +153,7 @@ plot_tissue(sim, num_of_bins=100) +
                 ymax=sample_e$upper_corner[2]),
             color= 'white', fill='white')
 
+ggsave(plot_sampling2, filename='./plots/sampling2.png')
 
 sim$sample_cells("D", sample_d$lower_corner, sample_d$upper_corner)
 sim$sample_cells("E", sample_e$lower_corner, sample_e$upper_corner)
@@ -167,7 +174,7 @@ report = patchwork::wrap_plots(p1,p2,p3,p4,p5,p6,
                                f1, f2,
                                design = st)
 
-ggsave(report, filename= './plots/tissue_report.pdf',width = 20, height = 20)
+ggsave(report, filename= './plots/tissue_report.pdf',width = 25, height = 20)
 
 
 
