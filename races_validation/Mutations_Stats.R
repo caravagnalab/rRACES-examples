@@ -24,3 +24,6 @@ for (i in samples){
 					  sample_id,20)
 	ggsave(filename = paste0("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/plots/plot_mutect2_",i,".png"), plot=plot, dpi=300, width = 16, height = 16)
 }
+
+
+

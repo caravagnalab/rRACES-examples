@@ -21,8 +21,8 @@ basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
 
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
-	simulate_seq(phylo_forest, chromosomes = c, coverage = 100,write_SAM = TRUE,read_size =150, 
-		     sequencer = basic_seq, insert_size_mean = 350, insert_size_stddev = 10, , output_dir = "/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_100X_basic_error_paired_350_3tumor_new1",
+	simulate_seq(phylo_forest, chromosomes = c, coverage = 200,write_SAM = TRUE,read_size =150, 
+		     sequencer = basic_seq, insert_size_mean = 350, insert_size_stddev = 10, , output_dir = "/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_200X_basic_error_paired_350_3tumor_new1",
 	update_SAM =TRUE, with_normal_sample =FALSE)
 }, mc.cores = 8)
 
