@@ -46,7 +46,7 @@ samtools view -s $f_t -b "$tumor_bam" > "tumor_downsampled.bam"
 samtools view -s $f_n -b "$normal_bam" > "normal_downsampled.bam"
 
 # Merge the downsampled BAM files
-samtools merge "$output_bam" "tumor_downsampled.bam" "normal_downsampled.bam"
+samtools merge -c "$output_bam" "tumor_downsampled.bam" "normal_downsampled.bam"
 
 # Clean up temporary files
 rm "tumor_downsampled.bam" "normal_downsampled.bam"
