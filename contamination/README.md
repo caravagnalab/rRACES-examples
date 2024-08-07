@@ -61,13 +61,13 @@ This script will perform:
 
 1. Contamination of the tumor sample with their corresponding normal resulting in a new `${chrom}.bam` file. The fraction $f_{tumor}$ to downsample the tumor `bam` is derived from the intial coverage $ODP_{tumor}$, the expected new coverage $FDP_{tumor}$ and the expected new purity $\pi$:  
 
-    $$ DP_{tumor} =FDP_{tumor} × \pi $$
-    $$ f_{tumor} =\frac{DP_{tumor}}{ODP_{tumor}} $$
+    $$DP_{tumor} =FDP_{tumor} × \pi$$ \
+    $$f_{tumor} =\frac{DP_{tumor}}{ODP_{tumor}}$$
 
     While the fraction $f_{normal}$ to downsample the normal `bam`:
 
-    $$ DP_{normal} =FDP_{tumor} × (1-\pi) $$
-    $$ f_{normal} =\frac{DP_{normal}}{ODP_{normal}} $$
+    $$DP_{normal} =FDP_{tumor} × (1-\pi)$$ \
+    $$f_{normal} =\frac{DP_{normal}}{ODP_{normal}}$$
 
 2. Conversion of the `bam` file to paired-end `fastq` files, required to run nf-core/sarek.
 
