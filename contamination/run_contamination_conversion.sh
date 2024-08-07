@@ -1,5 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=THIN
+#SBATCH --job-name=contamination_downsampling
 #SBATCH -A cdslab
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
@@ -7,7 +8,7 @@
 #SBATCH --time=72:00:00
 #SBATCH --output=contamination_%A_%a.out
 #SBATCH --error=contamination_%A_%a.err
-#SBATCH --array=12
+#SBATCH --array=1-24
 
 module load samtools
 
@@ -15,21 +16,31 @@ module load samtools
 
 # define the folders 
 # sequencing folder
-races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_100X_basic_error_paired_350_1tumor_new_1" #"path/to/dir/where/sam/from/races/tumor/are/sequenced"
+
+races_dir="/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/test/contamination_downsampling_final/simulation/sequencing_200X_basic_error_paired_350_1tumor_new_1"
+races_dir_n="/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/test/contamination_downsampling_final/simulation/sequencing_160X_basic_error_paired_350_1normal_new_1_germline"
+
+
+# races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_100X_basic_error_paired_350_1tumor_new_1" #"path/to/dir/where/sam/from/races/tumor/are/sequenced"
 # downsampling folder
 downsampling=${races_dir}/downsampling
 # tmp folder
 races_tmp=${downsampling}/tmp/
 tmp_n=${races_tmp}normal
 # normal folder 
-races_dir_n="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_80X_basic_error_paired_350_1normal_new_1" #"path/to/dir/where/sam/from/races/normal/are/sequenced/"
+# races_dir_n="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_80X_basic_error_paired_350_1normal_new_1" #"path/to/dir/where/sam/from/races/normal/are/sequenced/"
 
 
 sam_files=($(ls $races_dir/*.sam | grep chr | rev | cut -f 1 -d "/"| rev |cut -f 1 -d "."))
-chr=${sam_files[$SLURM_ARRAY_TASK_ID-1]} ## split by chromosomes
+chr=${sam_files[$SLURM_ARRAY_TASK_ID]} ## split by chromosomes
 
 # get sample names
 samples=$(samtools view -H ${races_dir}/${chr}.sam | grep '^@RG' | sed -n 's/.*\tSM:\([^\t]*\).*/\1/p' | sort | uniq)
+
+# create file to iterate later 
+mkdir -p ${races_tmp}${chr}
+printf "%s\n" "${samples[@]}" > ${races_tmp}${chr}/"sample_names.txt"
+
 # create folder for each sample in tmp 
 
 samples_tmp_folder=$(echo $samples | sed "s@[^ ]*@${races_tmp}&@g" | sed "s@\([^ ]*\)@\1/splitted_sorted_bam@g")
@@ -42,11 +53,11 @@ mkdir -p ${samples_tmp_folder_new_id}
 samtools split -f ${races_tmp}/%\!/splitted_sorted_bam/%*_%\!.bam --threads 8 ${races_dir}/${chr}.sam 
 echo "splitted sam"
 # define the purity and final coverage you want to get
-purity=0.80
+purity=0.70
 frac=($(echo $purity | cut -f 2 -d "."))
-original_depth_tumor=100
-original_depth_normal=80
-new_depth_tumor=80
+original_depth_tumor=200
+original_depth_normal=160
+new_depth_tumor=100
 
 new_bam=${downsampling}/purity_${frac}_coverage_${new_depth_tumor}
 new_bam_samples=$(echo $samples | sed "s@[^ ]*@${new_bam}/&@g")
@@ -60,7 +71,7 @@ mkdir -p ${tmp_n}/splitted_sorted_bam
 samtools sort $races_dir_n/${chr}.sam -T ${races_tmp}/samtools_sort_tmp -o ${tmp_n}/splitted_sorted_bam/${chr}.sorted.bam
 echo "bam sorted"
 #
-new_id="SPN01_downsampled_08P" #"choose_new_id"
+new_id="SPN01_downsampled_07P" #"choose_new_id"
 
 # modify the ID before merging
 mkdir -p ${tmp_n}/new_id
@@ -71,37 +82,43 @@ samtools addreplacerg \
     -o ${tmp_n}/new_id/${chr}.sorted.ID.bam \
     ${tmp_n}/splitted_sorted_bam/${chr}.sorted.bam ## required to have the same ID once merged
 echo "id normal changed"
-## sort tumor sample
-#
-for sample in ${samples[@]}; do
-    
-    # defining the variables
-    sorted_file=${races_tmp}/${sample}/splitted_sorted_bam/${chr}_${sample}.sorted.bam
-    new_id_out=${races_tmp}/${sample}/new_id/${chr}_${sample}.sorted.ID.bam
-    sam_splitted=${races_tmp}/${sample}/splitted_sorted_bam/${chr}_${sample}.bam
-    
-    # sorting
-    samtools sort -o ${sorted_file} -T ${races_tmp}/samtools_sort_tmp ${sam_splitted}
-    echo "tumor bam sorted"
-    # ID replacing
-    samtools addreplacerg \
-        -r ID:${new_id} \
-        -r SM:${new_id} \
-        -r PL:ILLUMINA \
-        -o ${new_id_out} \
-        ${sorted_file} ## required to have the same ID once merged
-    echo "tumor bam id changed"
-    /orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/contamination/downsampling.sh \
-        -t ${new_id_out} \
-        -n ${tmp_n}/new_id/${chr}.sorted.ID.bam \
-        -i $original_depth_tumor \
-        -j $original_depth_normal \
-        -p $purity \
-        -d $new_depth_tumor \
-        -o ${new_bam}/${sample}/${chr}_${sample}.purity_${frac}_coverage_${new_depth_tumor}.bam
 
-    mkdir -p ${races_tmp}/${sample}/bam2fastq
-    samtools fastq -1 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.R1.fastq \
-	    -2 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.R2.fastq \
-	    -0 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.unpaired.fastq -s ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.singleton.fastq -N ${new_bam}/${sample}/${chr}_${sample}.purity_${frac}_coverage_${new_depth_tumor}.bam
-done
+# launch processing of the tumour bam on each sample
+sample_list=${races_tmp}${chr}/sample_names.txt
+n_sample_job=$(wc -l < ${sample_list})
+sbatch --array=1-$(($n_sample_job)) /orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/contamination/tumour_processing.sh ${sample_list} ${chr} ${races_tmp} ${original_depth_tumor} ${original_depth_normal} ${purity} ${new_depth_tumor} ${frac}
+
+## sort tumor sample
+
+# for sample in ${samples[@]}; do
+    
+#     # defining the variables
+#     sorted_file=${races_tmp}/${sample}/splitted_sorted_bam/${chr}_${sample}.sorted.bam
+#     new_id_out=${races_tmp}/${sample}/new_id/${chr}_${sample}.sorted.ID.bam
+#     sam_splitted=${races_tmp}/${sample}/splitted_sorted_bam/${chr}_${sample}.bam
+    
+#     # sorting
+#     samtools sort -o ${sorted_file} -T ${races_tmp}/samtools_sort_tmp ${sam_splitted}
+#     echo "tumor bam sorted"
+#     # ID replacing
+#     samtools addreplacerg \
+#         -r ID:${new_id} \
+#         -r SM:${new_id} \
+#         -r PL:ILLUMINA \
+#         -o ${new_id_out} \
+#         ${sorted_file} ## required to have the same ID once merged
+#     echo "tumor bam id changed"
+#     /orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/contamination/downsampling.sh \
+#         -t ${new_id_out} \
+#         -n ${tmp_n}/new_id/${chr}.sorted.ID.bam \
+#         -i $original_depth_tumor \
+#         -j $original_depth_normal \
+#         -p $purity \
+#         -d $new_depth_tumor \
+#         -o ${new_bam}/${sample}/${chr}_${sample}.purity_${frac}_coverage_${new_depth_tumor}.bam
+
+#     mkdir -p ${races_tmp}/${sample}/bam2fastq
+#     samtools fastq -1 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.R1.fastq \
+# 	    -2 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.R2.fastq \
+# 	    -0 ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.unpaired.fastq -s ${races_tmp}/${sample}/bam2fastq/${chr}_${sample}.singleton.fastq -N ${new_bam}/${sample}/${chr}_${sample}.purity_${frac}_coverage_${new_depth_tumor}.bam
+# done
