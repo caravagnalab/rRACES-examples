@@ -38,17 +38,19 @@ D_n=$(awk "BEGIN {print $FDP_t * (1 - $purity)}")
 # Calculate downsampling fractions
 f_t=$(awk "BEGIN {print $D_t / $IDP_t}")
 f_n=$(awk "BEGIN {print $D_n / $IDP_n}")
-
+echo $f_t
+echo $f_n
 # Downsample the tumor BAM file
-samtools view -s $f_t -b "$tumor_bam" > "tumor_downsampled.bam"
-
+t_sample=$(basename $tumor_bam | cut -f 1 -d ".")
+samtools view -s $f_t -b "$tumor_bam" > ${t_sample}_tumor_downsampled.bam
+n_sample=$(basename $normal_bam | cut -f 1 -d ".")
 # Downsample the normal BAM file
-samtools view -s $f_n -b "$normal_bam" > "normal_downsampled.bam"
+samtools view -s $f_n -b "$normal_bam" > ${n_sample}_normal_downsampled.bam
 
 # Merge the downsampled BAM files
-samtools merge -c "$output_bam" "tumor_downsampled.bam" "normal_downsampled.bam"
+samtools merge -c "$output_bam" ${t_sample}_tumor_downsampled.bam ${n_sample}_normal_downsampled.bam
 
 # Clean up temporary files
-rm "tumor_downsampled.bam" "normal_downsampled.bam"
+rm ${t_sample}_tumor_downsampled.bam ${n_sample}_normal_downsampled.bam
 
 echo "Downsampling and merging completed. Output saved to $output_bam"
