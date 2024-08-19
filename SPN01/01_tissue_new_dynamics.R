@@ -61,7 +61,7 @@ bbox <- bbox <- sim$search_sample(c("Clone 4" = 300), 25, 25)
 sim$sample_cells("Sample_C", bbox$lower_corner, bbox$upper_corner)
 t1.2<- plot_tissue(sim)
 
-bbox <- bbox <- sim$search_sample(c("Clone 2" = 180, 'Clone 3' = 120), 25, 25)
+bbox <- bbox <- sim$search_sample(c("Clone 4" = 180, 'Clone 3' = 120), 25, 25)
 sim$sample_cells("Sample_A", bbox$lower_corner, bbox$upper_corner)
 t1.3<- plot_tissue(sim)
 
