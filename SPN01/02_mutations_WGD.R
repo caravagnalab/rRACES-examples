@@ -11,10 +11,12 @@ forest <- load_samples_forest("data/samples_forest_new_dynamics.sff")
 # building a mutation engine by using the "GRCh38" set-up configuration
 #setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
-m_engine <- MutationEngine(setup_code = "GRCh38")
+m_engine <- MutationEngine(setup_code = "GRCh38",
+                             tumour_type = "COAD",
+                             tumour_study = "US")
 
 mu_SNV = 1e-8
-mu_CNA = 1e-10
+mu_CNA = 5e-11
 ##112707518-112846239 
 CNA_Clone2 = CNA(type = "D", "5",
                  chr_pos = 107707518, len = 1e7,allele = 0)
@@ -27,7 +29,7 @@ m_engine$add_mutant(mutant_name = "Clone 2",
                     passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
                     drivers = list(CNA_Clone2))
 mu_SNV = 1e-10
-mu_CNA = 1e-11
+mu_CNA = 1e-13
 m_engine$add_mutant(mutant_name = "Clone 3",
                     passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),
                     drivers = list("TP53 R175H"))
@@ -43,10 +45,11 @@ m_engine$add_exposure(
   coefficients = c(
     SBS1 = 0.40,
     SBS5 = 0.20,
-    SBS10a = 0.15,
-    SBS10b = 0.15,
-    ID1 = 1,
-    SBS15 = 0.1
+    SBS17a = 0.15,
+    SBS17b = 0.15,
+    ID1 = 0.60,
+    ID2 = 0.40,
+    SBS13 = 0.1
   )
 )
 
