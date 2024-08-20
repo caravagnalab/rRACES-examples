@@ -11,23 +11,29 @@ sim$death_activation_level <- 50
 # Clone 1
 sim$add_mutant(name = "Clone 1", growth_rates = 0.08, death_rates = 0.01)
 sim$place_cell("Clone 1", 500, 500)
-sim$run_up_to_size("Clone 1", 1000)
+sim$run_up_to_size("Clone 1", 1500)
 
 # Sample A 
-bbox <- sim$search_sample(c("Clone 1" = 300), 25, 25)
+bbox <- sim$search_sample(c("Clone 1" = 350), 20, 20)
 sim$sample_cells("Sample A", bbox$lower_corner, bbox$upper_corner)
-t1 <- plot_tissue(sim)
+t1 <- plot_tissue(sim) + geom_rect(xmin = bbox$lower_corner[1], xmax = bbox$upper_corner[1],
+                                   ymin = bbox$lower_corner[2], ymax = bbox$upper_corner[2],
+                                   fill = NA, color = "black")
 
 # Clone 2
 sim$add_mutant(name = "Clone 2", growth_rates = 0.3, death_rates = 0.01)
 sim$update_rates(species = "Clone 1", rates = c(growth = 0.06, death = 0.01))
 sim$mutate_progeny(sim$choose_cell_in("Clone 1"), "Clone 2")
-sim$run_up_to_size(species = 'Clone 2', 700)
+sim$run_up_to_size(species = 'Clone 2', 1700)
 
-bbox <- sim$search_sample(c("Clone 1" = 100, 'Clone 2' = 50), 20, 20)
+# Sample B
+bbox <- sim$search_sample(c("Clone 1" = 100, 'Clone 2' = 50), 21, 21)
 sim$sample_cells("Sample B", bbox$lower_corner, bbox$upper_corner)
-t2 <- plot_tissue(sim) 
+t2 <- plot_tissue(sim) + geom_rect(xmin = bbox$lower_corner[1], xmax = bbox$upper_corner[1],
+                                  ymin = bbox$lower_corner[2], ymax = bbox$upper_corner[2],
+                                  fill = NA, color = "black")
 
+# Update 
 sim$update_rates(species = "Clone 1", rates = c(growth = 0.02, death = 0.03))
 sim$update_rates(species = "Clone 2", rates = c(growth = 0.4, death = 0.005))
 sim$run_up_to_size(species = 'Clone 2', 6000)
@@ -38,9 +44,11 @@ sim$run_up_to_size(species = 'Clone 2', 16000)
 muller <- plot_muller(sim)
 
 # Sample C
-bbox <- sim$search_sample(c('Clone 2' = 400), 22, 22)
+bbox <- sim$search_sample(c('Clone 2' = 350), 20, 20)
 sim$sample_cells("Sample C", bbox$lower_corner, bbox$upper_corner)
-t3 <- plot_tissue(sim)
+t3 <- plot_tissue(sim) + geom_rect(xmin = bbox$lower_corner[1], xmax = bbox$upper_corner[1],
+                                   ymin = bbox$lower_corner[2], ymax = bbox$upper_corner[2],
+                                   fill = NA, color = "black")
 
 # Clone 3
 sim$add_mutant(name = "Clone 3", growth_rates = 2, death_rates = 0.01)
@@ -50,9 +58,11 @@ sim$run_up_to_size("Clone 3", 10000)
 muller <- plot_muller(sim)
 
 # Sample D
-bbox <- sim$search_sample(c("Clone 2" = 200, 'Clone 3' = 150), 20, 20)
+bbox <- sim$search_sample(c("Clone 2" = 120, 'Clone 3' = 120), 20, 20)
 sim$sample_cells("Sample D", bbox$lower_corner, bbox$upper_corner)
-t4 <- plot_tissue(sim)
+t4 <- plot_tissue(sim) + geom_rect(xmin = bbox$lower_corner[1], xmax = bbox$upper_corner[1],
+                                   ymin = bbox$lower_corner[2], ymax = bbox$upper_corner[2],
+                                   fill = NA, color = "black")
 
 # Forest
 forest <- sim$get_samples_forest()

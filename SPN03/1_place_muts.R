@@ -6,34 +6,37 @@ library(patchwork)
 forest <- load_samples_forest("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/results/samples_forest.sff")
 
 setwd('/orfeo/cephfs/scratch/cdslab/shared/races/')
-m_engine <- MutationEngine(setup_code = "GRCh38")
+m_engine <- MutationEngine(setup_code = "GRCh38",
+                           tumour_type= 'CLLE')
+
+SNV_rate = 1e-8
+CNA_rate = 2e-12
 
 # Clone 1 
 # NOTCH1p2514*fs*4 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 1e-8,
-                                        CNA = 1e-11),
-                    driver_SNVs = list("NOTCH1 FY357Y")
+                    passenger_rates = c(SNV = SNV_rate,
+                                        CNA = CNA_rate),
+                    drivers = list("NOTCH1 FY357Y", 
+                                   CNA(chr = "13", 
+                                       chr_pos = 39500001, 
+                                       len = 1.5e6,  
+                                       type = "D"))
 )
 
 # Clone 2 
 # KRAS G12D
 m_engine$add_mutant(mutant_name = "Clone 2",
-                    passenger_rates = c(SNV = 1e-8, 
-                                        CNA = 1e-11),
-                    driver_SNVs = list("KRAS G12D")
+                    passenger_rates = c(SNV = SNV_rate, 
+                                        CNA = CNA_rate),
+                    driver = list("KRAS G12D")
 )
 
 # Clone 3
 # Unknown
 m_engine$add_mutant(mutant_name = "Clone 3",
-                    passenger_rates = c(SNV = 1e-8, 
-                                        CNA = 1e-11),
-                    # 13q14 deletion 
-                    drivers = list(CNA(chr = "13", 
-                                       chr_pos = 39500001, 
-                                       len = 1.5e6,  
-                                       type = "D"))
+                    passenger_rates = c(SNV = SNV_rate, 
+                                        CNA = CNA_rate)
 )
 
 # Signatures
@@ -45,6 +48,7 @@ phylo_forest <- m_engine$place_mutations(forest,
                                          num_of_preneoplatic_SNVs = 800,
                                          num_of_preneoplatic_indels = 200)
 
+phylo_forest$get_sampled_cell_CNAs() %>% distinct(chr, begin, end)
 phylo_forest$save("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/results/phylo_forest.sff")
 
 annot_forest <- plot_forest(forest) %>%
@@ -52,7 +56,7 @@ annot_forest <- plot_forest(forest) %>%
                     samples = T, 
                     MRCAs = T,
                     exposures = T, 
-                    drivers=T, 
+                    drivers = T, 
                     add_driver_label = T)
 
 exp_timeline <- plot_exposure_timeline(phylo_forest)
