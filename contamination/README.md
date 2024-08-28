@@ -1,3 +1,6 @@
+> [!WARNING]
+> Outdated information. Please refer to [this directory](https://github.com/caravagnalab/rRACES-examples/tree/main/building_cohorts) to produce the cohort.
+
 # Downsampling and data preparation
 
 ## 1. rRACES sequencing
