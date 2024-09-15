@@ -3,13 +3,14 @@ library(rRACES)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
+set.seed(0)
 # Set directories
 # dir.create(path = "data", recursive = TRUE)
 
 # load the samples forest from "samples_forest.sff" and store it in `forest`
 forest <- load_samples_forest("data/samples_forest_new_dynamics.sff")
 # building a mutation engine by using the "GRCh38" set-up configuration
-#setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
+setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
 m_engine <- MutationEngine(setup_code = "GRCh38",
                              tumour_type = "COAD",

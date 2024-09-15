@@ -73,7 +73,6 @@ plt_forest <- plot_forest(forest) %>%
 plt_forest
 piechart <- plot_state(sim)
 timeseries <- plot_timeseries(sim)
-# ggsave(filename = "~/Desktop/test_forest.png",plot = plt_forest, height = 12, width = 10, dpi = 300, units = 'in')
 # # Final plot
 pl <- t1.1 + t1.2 + t1.3 + piechart + timeseries + muller + plt_forest + plot_layout(design = 'ABC\nEFG\nHHH\nHHH\nHHH') 
 pl
