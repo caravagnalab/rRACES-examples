@@ -15,9 +15,13 @@ my_ggplot_theme<- function (cex = 1) {
         legend.key.size = unit(0.3 * cex_opt, "cm"), panel.background = element_rect(fill = "white"))
 }
 
-mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_filter){
+mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_filter,sample_id_vcf){
   seq_res <- readRDS(seq_races)
-  seq_res_long <- seq_to_long(seq_res)
+  if ("sample_name"%in%colnames(seq_res)){
+    seq_res_long<-seq_res
+  } else {
+	seq_res_long <- seq_to_long(seq_res)
+  }
 
   ## extract sample for which variant calling has been done
   #sample_id <- "SPN01_Sample_1"
@@ -28,15 +32,19 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     dplyr::filter(NV!=0)
   chromsomes <- paste0("chr",unique(seq_res_long$chr))
   cols_to_keep <- c("chr", "from", "to", "ref","alt","mutationID","NV","DP","VAF","FILTER")
+  plot_vaf_races <- seq_res_long %>% ggplot(aes(x=VAF)) + geom_histogram(binwidth=0.01)
+	  #facet_wrap(~chr,scale="free")
   ## READ vcf
   vcf <- vcfR::read.vcfR(file = vcf_file)
   if (caller=="mutect2"){
     muts <- parse_Mutect(vcf = vcf,filter_mutations = FALSE)
-    muts[[sample_id]]$mutations <-muts[[sample_id]]$mutations %>%
+    muts[[sample_id_vcf]]$mutations <-muts[[sample_id_vcf]]$mutations %>%
       dplyr::filter(chr%in%chromsomes) %>%
       dplyr::mutate(mutationID=paste0(chr,":",from,":",ref,":",alt))
-    merged_df <- merge(seq_res_long, muts[[sample_id]]$mutations[,c(cols_to_keep)],
+    print(muts[[sample_id_vcf]]$mutations[,c(cols_to_keep)])
+    merged_df <- merge(seq_res_long, muts[[sample_id_vcf]]$mutations[,c(cols_to_keep)],
                        by = "mutationID", all = TRUE, suffix=c(".races",".caller"))
+    plot_vaf_caller <- muts[[sample_id_vcf]]$mutations %>% ggplot(aes(x=VAF)) + geom_histogram(binwidth=0.01)
 
   } else if (caller=="strelka"){
     muts <- parse_Strelka(vcf = vcf,filter_mutations = FALSE)
@@ -45,6 +53,7 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
       dplyr::mutate(mutationID=paste0(chr,":",from,":",ref,":",alt))
     merged_df <- merge(seq_res_long, muts$TUMOR$mutations[,c(cols_to_keep)],
                        by = "mutationID", all = TRUE, suffix=c(".races",".caller"))
+    plot_vaf_caller <- muts$TUMOR$mutations  %>% ggplot(aes(x=VAF)) + geom_histogram(binwidth=0.01)
 
   }
   merged_df$type <- ifelse(!is.na(merged_df$VAF.races) & !is.na(merged_df$VAF.caller), "TP",
@@ -104,12 +113,8 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     geom_bar(stat = "identity") +
     labs(x = paste0(caller," filter"), title = "Most frequent filtering label") +
     my_ggplot_theme() + coord_flip()
-  pl <- p+p_filter_tp+p_dp+p_nv + plot_layout(design ='AAABBB\nAAABBB\nCCCDDD\nCCCDDD')
+  pl <- plot_vaf_races+ plot_vaf_caller+p+p_filter_tp+p_dp+p_nv + plot_layout(design ='AAABBB\nCCCDDD\nCCCDDD\nEEEFFF\nEEEFFF')
   return(pl)
 
 }
-
-
-
-
 
