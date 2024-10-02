@@ -2,7 +2,9 @@ library(rRACES)
 library(tidyverse)
 library(patchwork)
 
-seq_res = readRDS("SPN02_seq_80x.rds")
+seq_res = readRDS("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/SPN02_seq_50x.rds")
+seq_res = seq_res[1:23]
+
 # seq_res = seq_to_long(seq_res)
 
 # removed germline mutations
@@ -11,14 +13,14 @@ seq_res = readRDS("SPN02_seq_80x.rds")
 
 seq_res = bind_rows(seq_res)
 samples = c("A", "B")
-chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
+chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X")
 
 seq_res_filt = seq_res %>% filter(classes != "germinal")
 seq_res_germ = seq_res %>% filter(classes == "germinal")
 lapply(samples, function(s) {
-    vaf = plot_VAF(seq_res_filt, s)
-    baf = plot_BAF(seq_res_germ, s)
-    dr = plot_DR(seq_res_germ, s)
+    vaf = rRACES::plot_VAF(seq_res_filt,sample = s)
+    baf = rRACES::plot_BAF(seq_res_germ, sample =s)
+    dr = rRACES::plot_DR(seq_res_germ, sample =s)
 
     p = vaf / baf / dr
 
@@ -39,3 +41,12 @@ for (c in unique(seq_res_filt$chr)) {
 }
 
 dev.off()
+
+x = seq_to_long(seq_res) 
+
+x %>% 
+    ggplot(aes(VAF)) +
+    geom_histogram(binwidth = 0.01, fill = "#41B3A2") +
+    theme_bw() +
+    xlim(c(0.02, 1.01)) +
+    facet_wrap(vars(sample_name)) 
