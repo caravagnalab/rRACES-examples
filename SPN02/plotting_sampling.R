@@ -16,6 +16,9 @@
 #' box = list("A" = bbox, "B" = bbox2)
 #' plotting_sample(sim, samples_timing = timing, boxes = box)
 
+library(cli)
+library(english)
+
 plotting_sample = function(sim, samples_timing, boxes) {
   
   color_type = c("Polyclonal" = "#C40C0C", "Clonal" = "#333A73")
