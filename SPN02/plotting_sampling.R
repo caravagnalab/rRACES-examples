@@ -21,7 +21,8 @@ plotting_sample = function(sim, samples_timing, boxes) {
   color_type = c("Polyclonal" = "#C40C0C", "Clonal" = "#333A73")
   
   layout = "
-    AABBCCDD
+    AABB
+    CCDD
     "
   
   p_list <- lapply(english::ordinal(seq(1:4)), function(x) {ggplot() + ggtitle(paste(x, "sampling"))})
@@ -29,7 +30,8 @@ plotting_sample = function(sim, samples_timing, boxes) {
   for (t in seq_along(samples_timing)) {
     samples = samples_timing[[t]]
     print(samples)
-    p_list[[t]] <- rRACES::plot_tissue(sim)
+    p_list[[t]] <- rRACES::plot_tissue(sim) 
+
     for (i in seq_along(samples)) {
       
       sample = samples[i]
@@ -57,7 +59,8 @@ plotting_sample = function(sim, samples_timing, boxes) {
         scale_color_manual(values = color_type) +
         geom_text(data = sample_data, aes(x=x_min-15, y=y_max+10, label = sample, color = type), size=3, inherit.aes = FALSE, show.legend = F, check_overlap = T) +
         ggtitle(paste(english::ordinal(t), "sampling")) +
-        guides(color = guide_legend(nrow = 2, title = "Type of sample", title.position = "top"))
+        guides(color = guide_legend(nrow = 2, title = "Type of sample", title.position = "top")) +
+        theme(legend.position = "bottom")
     }
   }
   
