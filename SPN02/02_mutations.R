@@ -8,13 +8,17 @@ library(ggplot2)
 clone3_born = readRDS("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/clone3_clock.rds")
 sampled_phylogeny = load_samples_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/samples_forest.sff")
 curr_dir = getwd()
-setwd("/orfeo/cephfs/scratch/cdslab/shared/mutation_engine/")
+setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 m_engine <- MutationEngine(setup_code = "GRCh38", 
                 context_sampling = 50)
 
+
+
+
 subjects <- m_engine$get_germline_subjects()
 
-m_engine$set_germline_subject(subjects[2, "sample"])
+# setting the germline subject as columbian woman
+m_engine$set_germline_subject("HG01113")
 
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = 1e-8, indel = 1e-8, CNA = 1e-11),
@@ -44,7 +48,7 @@ m_engine$add_exposure(
         ID1 = 0.5, ID7 = 0.5)
 )
 
-Sys.time()
+# Sys.time()
 # add mutations on the forest with 1000 pre-neoplastic mutations
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 
     num_of_preneoplatic_SNVs = 800, 
@@ -53,7 +57,7 @@ phylo_forest <- m_engine$place_mutations(sampled_phylogeny,
 Sys.time()
 print("Mutations placed")
 # save the phylogenetic forest in the file "phylo_forest.sff"
-phylo_forest$save("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/phylo_forest.sff")
+phylo_forest$save(paste(curr_dir, "phylo_forest.sff", sep = "/"))
 
 # plotting
 tree_plot = plot_forest(sampled_phylogeny) 
@@ -62,10 +66,10 @@ mut_forest = annotate_forest(tree_plot,
                 samples = TRUE,
                 MRCAs = TRUE,
                 exposures = T,
-                facet_signatures = T,
+                facet_signatures = F,
                 drivers = T,
-                add_driver_label = T) #+
-            # ylim(0,10)
+                add_driver_label = T) +
+            ggplot2::facet_wrap( ~ signature, scales = "free")
 
 ggsave(filename = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/phylogenetic_forest_cycles.png", plot = mut_forest, width = 20, height = 15, bg = "white")
 print("done everything")
@@ -74,7 +78,7 @@ exposure_time = plot_exposure_timeline(
   phylo_forest,
   linewidth = 0.8,
   emphatize_switches = TRUE
-)
+) 
 ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/exposure_plot.png", plot = exposure_time, bg = "white")
 
 all = mut_forest / exposure_time

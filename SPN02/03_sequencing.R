@@ -2,7 +2,7 @@ library(rRACES)
 library(dplyr)
 library(ggplot2)
 
-phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/phylo_forest.sff")
+phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/SPN02/results/phylo_forest.sff")
 # forest <- load_samples_forest("test/SPN02/forest.sff")
 
 # plot_forest(forest) %>% 
@@ -10,7 +10,7 @@ phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/area/vgazziero/C
 #                 exposures = T, drivers=T, add_driver_label = T)
 # ggsave("test/SPN02/mutations_forest.pdf", width = 15)
 # curr_dir = getwd()
-setwd("/orfeo/cephfs/scratch/cdslab/shared/mutation_engine/")
+setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
 seed <- 12345
 set.seed(seed)
@@ -30,16 +30,16 @@ basic_seq <- BasicIlluminaSequencer(4e-3)
 # print("starting seq and writing SAMs in desidered folder")
 
 seq_results <- parallel::mclapply(chromosomes, function(c) {
-	simulate_seq(phylo_forest, coverage = 80, chromosomes = c, 
+	simulate_seq(phylo_forest, coverage = 50, chromosomes = c, 
 		# output_dir = sam_folder, 
 		write_SAM = FALSE, 
 		sequencer = basic_seq, 
-		purity = 1, 
+		purity = 0.95, 
 		with_normal_sample = TRUE)
 }, mc.cores = parallel::detectCores()) 
 # %>% do.call("bind_rows", .)
 #seq_results <- simulate_seq(phylo_forest, coverage = 80)
 # list.files(sam_folder)
 
-saveRDS(seq_results, "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/SPN02_seq_80x.rds")
+saveRDS(seq_results, "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/SPN02_seq_50x.rds")
 print("sequencing ended")

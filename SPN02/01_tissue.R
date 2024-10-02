@@ -3,8 +3,10 @@ library(rRACES)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
+library(english)
 
-# setwd("results")
+setwd("SPN02/results/")
+
 seed <- 1679
 set.seed(seed)
 
@@ -97,16 +99,84 @@ ggsave(filename = "clone3_muller.png", plot = muller_clone3)
 tissue_clone3 = plot_tissue(sim)
 ggsave("clone3_tissue.png", plot = tissue_clone3)
 
-# sampling cells
-box_w = 20
-box1_p <- c(460, 510)
-box1_q = box1_p + box_w
 
-box2_p <- c(480, 300)
-box2_q = box2_p + box_w
+# sample the tissue
+n_w <- n_h <- 50
+ncells <- 0.8 * n_w * n_h
+
+# Sampling ncells with random box sampling of boxes of size n_w x n_h
+# bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
+
+# sampling cells
+
+# setting the boxes
+# doing this is equivalent of doing the stuff below, but comparable with the automatic search boxes 
+bbox = new(TissueRectangle, c(430, 350), 21, 21)
+bbox2 = new(TissueRectangle, c(300, 510), 21, 21)
+
+plotting_sample = function(sim, samples_timing, boxes) {
+  
+  color_type = c("Polyclonal" = "#C40C0C", "Clonal" = "#333A73")
+  
+  layout = "
+    AABBCCDD
+    "
+  
+  p_list <- lapply(english::ordinal(seq(1:4)), function(x) {ggplot() + ggtitle(paste(x, "sampling"))})
+  
+  for (t in seq_along(samples_timing)) {
+    samples = samples_timing[[t]]
+    print(samples)
+    p_list[[t]] <- rRACES::plot_tissue(sim)
+    for (i in seq_along(samples)) {
+      
+      sample = samples[i]
+      bbox = boxes[[sample]]
+      
+      # print(sample)
+      sample_data = tibble(type = names(sample), 
+                           sample = unname(sample), 
+                           x_min = bbox$lower_corner[1],
+                           x_max = bbox$upper_corner[1],
+                           y_min = bbox$lower_corner[2],
+                           y_max = bbox$upper_corner[2])
+      
+      p_list[[t]] =  p_list[[t]] +
+        geom_rect(data = sample_data, aes(color = type, 
+                                          xmin = x_min,
+                                          xmax = x_max,
+                                          ymin = y_min,
+                                          ymax = y_max),
+                  fill = NA, inherit.aes = FALSE) +
+        scale_color_manual(values = color_type) +
+        ggtitle(paste(english::ordinal(t), "sampling")) +
+        guides(color = guide_legend(nrow = 2, title = "Type of sample", title.position = "top"))
+    }
+  }
+  
+  p = wrap_plots(p_list, design = layout) + plot_layout(guides = 'collect')
+  return(p)
+}
+
+s = c("Clonal" = "A", "Polyclonal" = "B")
+timing = list("T1" = s)
+box = list("A" = bbox, "B" = bbox2)
+plotting_sample(sim, samples_timing = timing, boxes = box)
+
+
+##############################
+
+# box_w = 20
+# box1_p <- c(430, 350)
+# box1_q = box1_p + box_w
+# 
+# box2_p <- c(300, 510)
+# box2_q = box2_p + box_w
 
 # box_1 = bbox_sampler(sim, which="Clone 3", n = 2000, n_w = 50, n_h = 50)
 # box_2 = bbox_sampler(sim, which="Clone 3", n = 2000, n_w = 50, n_h = 50)
+
+
 
 sampling_plot = plot_tissue(sim) +
   geom_rect(xmin = box1_p[1], xmax = box1_q[1], 
