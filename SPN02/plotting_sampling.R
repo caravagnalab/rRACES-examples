@@ -67,7 +67,7 @@ plotting_sample = function(sim, samples_timing, boxes) {
     }
   }
   
-  p = wrap_plots(p_list, design = layout) + plot_layout(guides = 'collect')
+  p = wrap_plots(p_list, design = layout) / guide_area() + plot_layout(guides = 'collect')
   return(p)
 }
 
