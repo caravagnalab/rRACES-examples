@@ -24,7 +24,7 @@ plot_tissue_dynamics<-function(tissue_plots,state_plots,SPN_id){
   leg <- ggpubr::get_legend(state_plots[[last]])
   plot_legend <- ggpubr::as_ggplot(leg)
   x =  patchwork::wrap_plots(list_pairs_plots, design = layout_dinamycs) 
-  final_plot <- x/ plot_legend+ plot_annotation(title = "Tissue dinamycs")
+  final_plot <- x+ plot_annotation(title = "Tissue dinamycs")
   return(final_plot)
 }
 
