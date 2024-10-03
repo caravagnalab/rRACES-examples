@@ -59,7 +59,10 @@ plotting_sample = function(sim, samples_timing, boxes) {
                                           ymax = y_max),
                   fill = NA, inherit.aes = FALSE) +
         scale_color_manual(values = color_type) +
-        geom_text(data = sample_data, aes(x=x_min-15, y=y_max+10, label = sample, color = type), size=3, inherit.aes = FALSE, show.legend = F, check_overlap = T) +
+        # geom_text_repel(data = sample_data, aes(label = sample, color = type), size=3, inherit.aes = FALSE, show.legend = F, check_overlap = T) +
+        geom_text_repel(data = sample_data, aes(y = y_max, x = x_max, label = sample, color = type), size=3, inherit.aes = FALSE, show.legend = F, 
+                        force = 2, min.segment.length = 0,
+                         position = position_nudge_repel(x = -0.1, y = 0.05)) +
         ggtitle(paste(english::ordinal(t), "sampling")) +
         guides(color = guide_legend(nrow = 1, title = "Type of sample", title.position = "top")) +
         theme(legend.position = "bottom")
