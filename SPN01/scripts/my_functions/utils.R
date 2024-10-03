@@ -87,13 +87,13 @@ squareplot = function(seq_res, samples_list,chrom)
 
     pl_r = pl_l = NULL
     
-    palette <- RColorBrewer::brewer.pal(n = lenght(unique(s_seq$causes)), name = "Set3")
-    cols <- setNames(palette, unique(s_seq$causes))
+    palette <- RColorBrewer::brewer.pal(n = length(unique(s_seq$causes)), name = "Set3")
+    col_causes <- setNames(palette, unique(s_seq$causes))
     #cols <- rRACES:::get_colors_for(unique(s_seq$causes))
     col_classes <- c("passenger" = "#CCCC99",
                      "pre-neoplastic" = "#006699",
                      "driver" = "#990033")
-    cols <- c(cols,col_classes)
+    cols <- c(col_causes,col_classes)
 
     if (length(idx_pre) > 1)
       pl_r = lapply(setdiff(idx_pre, s), function(x) {
@@ -120,7 +120,7 @@ squareplot = function(seq_res, samples_list,chrom)
         joined <- full_join(s_sn,s_sn_x,by=c("chr","from","ref","alt","to","causes","classes"))
         plot <- joined %>% ggplot(aes(x=VAF.x,y=VAF.y,col=causes)) + geom_point() +
           CNAqc:::my_ggplot_theme() +
-          scale_color_manual(values = col_signatures)
+          scale_color_manual(values = col_causes)
         plot + ggplot2::geom_point(alpha = 0.7) +
           ggplot2::xlim(c(-0.01, 1.01)) +
           ggplot2::ylim(c(-0.01, 1.01)) +

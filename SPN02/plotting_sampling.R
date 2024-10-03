@@ -24,8 +24,7 @@ plotting_sample = function(sim, samples_timing, boxes) {
   color_type = c("Polyclonal" = "#C40C0C", "Clonal" = "#333A73")
   
   layout = "
-    AABB
-    CCDD
+    AABBCCDD
     "
   
   p_list <- lapply(english::ordinal(seq(1:4)), function(x) {ggplot() + ggtitle(paste(x, "sampling"))})
@@ -62,12 +61,13 @@ plotting_sample = function(sim, samples_timing, boxes) {
         scale_color_manual(values = color_type) +
         geom_text(data = sample_data, aes(x=x_min-15, y=y_max+10, label = sample, color = type), size=3, inherit.aes = FALSE, show.legend = F, check_overlap = T) +
         ggtitle(paste(english::ordinal(t), "sampling")) +
-        guides(color = guide_legend(nrow = 2, title = "Type of sample", title.position = "top")) +
+        guides(color = guide_legend(nrow = 1, title = "Type of sample", title.position = "top")) +
         theme(legend.position = "bottom")
     }
   }
   
-  p = wrap_plots(p_list, design = layout) / guide_area() + plot_layout(guides = 'collect')
+  p = wrap_plots(p_list, design = layout)+ plot_layout(guides = 'collect') & ggplot2::theme(legend.position = "none")
+  #/ guide_area()  + plot_layout(guides = 'collect')
   return(p)
 }
 
