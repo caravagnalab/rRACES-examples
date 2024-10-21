@@ -14,16 +14,17 @@
 #module load picard
 
 ## Set up info
-races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_30X_basic_error_paired_100_1normal"
+#races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_30X_basic_error_paired_100_1normal"
+races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_30X_basic_error_paired_350_1normal_new_1_germline"
 ## Define the array of samples ids present in sam header
 
 samples=(normal_sample)
 sample=${samples[$SLURM_ARRAY_TASK_ID-1]}
 cd $races_dir
 
-time cat chr_*R1.fastq > ${sample}/${sample}_R1.fastq
+time cat chr_*${sample}/*R1.fastq > ${sample}/${sample}_R1.fastq
 rm -f chr_*R1.fastq
 time pigz -p 16 ${sample}/${sample}_R1.fastq ## cpus-per-task
-time cat chr_*R2.fastq > ${sample}/${sample}_R2.fastq
+time cat chr_*${sample}/*R2.fastq > ${sample}/${sample}_R2.fastq
 rm -f chr_*R2.fastq
 time pigz -p 16 ${sample}/${sample}_R2.fastq ## cpus-per-task

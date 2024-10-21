@@ -14,15 +14,25 @@ races_dir=$3
 cd $races_dir
 sample_id=$2
 chrom=$1
-cd $sample_id
+#cd $sample_id
 #date
 #printf "samtools fastq -N $chrom\_$sample_id.sam -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq""\n"
 #time samtools fastq -N $chrom.sam -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq
-time samtools sort -n $chrom\_$sample_id.sam | \
-	samtools fastq -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq -0 $chrom\_$sample_id.unpaired.fastq -s $chrom\_$sample_id.singleton.fastq -N
+#time samtools sort -n $chrom\_$sample_id.sam | \
+#	samtools fastq -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq -0 $chrom\_$sample_id.unpaired.fastq -s $chrom\_$sample_id.singleton.fastq -N
 
 
-#####
+time samtools sort -n $chrom.sam | \
+        samtools fastq -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq -0 $chrom\_$sample_id.unpaired.fastq -s $chrom\_$sample_id.singleton.fastq -N
+
+
+# .20purity.bam
+
+#time samtools sort -n $chrom.20purity.bam | samtools fastq -1 $chrom\_$sample_id.R1.fastq -2 $chrom\_$sample_id.R2.fastq -0 $chrom\_$sample_id.unpaired.fastq -s $chrom\_$sample_id.singleton.fastq -N
+
+#
+#
+#
 ####
 # when using simulate_normal_seq
 # change the commands in this way
