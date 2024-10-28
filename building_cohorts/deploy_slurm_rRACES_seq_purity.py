@@ -14,14 +14,17 @@ shell_script="""#!/bin/bash
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=8:00:00
-#SBATCH --mem=50GB
+#SBATCH --mem=200GB
 
 module load R/4.3.3
 module load samtools
 
-echo "Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}"
+echo "ciao" > ${LOT}.log
 
-Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
+echo "Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY} ${WITH_NORMAL}"
+
+
+Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY} ${WITH_NORMAL}
 
 rm -rf ${NODE_SCRATCH}/${SPN}_${LOT}
 """
@@ -32,12 +35,12 @@ library(dplyr)
 
 args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) != 10) {
+if (length(args) != 11) {
   stop(paste("Syntax error: rRACES_seq.R",
 	         "<phylo_forest> <SPN> <lot_name>",
 	         "<node_local_dir> <output_dir>",
 	         "<coverage> <type> <num_of_cores>",
-	         "<seed> <purity>"),
+	         "<seed> <purity> <with_normal>"),
        call. = FALSE)
 }
 
@@ -51,6 +54,7 @@ type <- args[7]
 num_of_cores <- strtoi(args[8])
 seed <- strtoi(args[9])
 purity <- as.double(args[10])
+with_normal <- as.logical(args[11])
 
 if (type == "tumour") {
     seq_tumour <- TRUE
@@ -151,7 +155,7 @@ if (seq_tumour) {
                  update_SAM = TRUE,
                  filename_prefix = sam_filename_prefix,
                  template_name_prefix = paste0(lot_name,'r'),
-                 with_normal_sample = TRUE)
+                 with_normal_sample = with_normal)
   }, mc.cores = num_of_cores)
 } else {
   seq_results <- parallel::mclapply(chromosomes, function(c) {
@@ -201,6 +205,9 @@ cat("done\\n7. Removing local files...")
 unlink(output_local_dir, recursive = TRUE)
 cat("done\\n")
 
+# done_filename <- file.path(output_dir, paste0(lot_name, ".done"))
+done_file_dir <- "/fast/cdslab/ggandolfi/done_files/"
+#done_filename <- file.path(paste0(done_file_dir,lot_name, ".done"))
 done_filename <- file.path(output_dir, paste0(lot_name, ".done"))
 invisible(file.create(done_filename))
 """
@@ -218,7 +225,10 @@ def get_lot_prefix(seq_type):
 
 
 def get_completed_jobs(output_dir, lot_prefix):
-    common_prefix = f"{output_dir}/{lot_prefix}"
+#def get_completed_jobs(done_file_dir, lot_prefix):
+    #common_prefix = f"{output_dir}/{lot_prefix}"
+    #common_prefix = f"{done_file_dir}/{lot_prefix}"
+    common_prefix = os.path.normpath(f"{output_dir}/{lot_prefix}")
     common_suffix = '.done'
     done_files = glob.glob(f"{common_prefix}*{common_suffix}")
     prefix_len = len(common_prefix)
@@ -227,7 +237,6 @@ def get_completed_jobs(output_dir, lot_prefix):
     done_ids = list()
     for done_file in done_files:
         done_ids.append(int(done_file[prefix_len:-suffix_len]))
-
     return done_ids
 
 
@@ -237,7 +246,8 @@ def remove_old_done_files(output_dir, lot_prefix):
         os.unlink(done_file)
 
 def get_sample_names(output_dir, first_lot_name):
-    common_prefix = f"{output_dir}/{first_lot_name}_"
+    #common_prefix = f"{output_dir}/{first_lot_name}_"
+    common_prefix = os.path.normpath(f"{output_dir}/{first_lot_name}_")
     common_suffix = ".done"
     BAM_files = glob.glob(f"{common_prefix}*{common_suffix}")
     prefix_len = len(common_prefix)
@@ -269,7 +279,10 @@ if (__name__ == '__main__'):
     parser.add_argument('-c', '--coverage', type=float, default=200.0,
                         help="The final sample overall coverage")
     parser.add_argument('-pu', '--purity', type=float, default=1.0,
-                        help="The final sample overall purity")                      
+                        help="The final sample overall purity")
+    parser.add_argument('-wn', '--with_normal', type=str, required=True,
+                        help="Wheter sequence also the normal sample. "
+                        + "Normal and tumors will have the same coverage")
     parser.add_argument('-l', '--num_of_lots', type=int, default=50,
                         help="The number of sequencing lots")
     parser.add_argument('-f', '--first_lot_id', type=int, default=0,
@@ -336,10 +349,13 @@ if (__name__ == '__main__'):
                         args.first_lot_id+args.num_of_lots))
 
     completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
+    #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
     submitted = list(completed_ids)
     lot_ids = list(lot_ids.difference(set(completed_ids)))
+    
 
     while len(lot_ids) != 0:
+        #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
         completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
         
         to_be_submitted = (args.parallel_jobs
@@ -354,15 +370,15 @@ if (__name__ == '__main__'):
 
             cmd = ['sbatch', '--account={}'.format(account),
                    '--partition={}'.format(args.partition),
-                   '--exclude=epyc007', ## added since epyc007 has some issues
+                   '--exclude={}'.format(args.exclude), ## added since epyc007 has some issues
                    '--job-name={}_{}'.format(args.SPN, lot_name),
                    ('--export=PHYLO_FOREST={},SPN={},LOT={},DEST={},'
                     + 'COVERAGE={},TYPE={},NODE_SCRATCH={},'
-                    + 'SEED={},PURITY={}').format(args.phylogenetic_forest,
+                    + 'SEED={},PURITY={},WITH_NORMAL={}').format(args.phylogenetic_forest,
                                         args.SPN, lot_name,
                                         args.output_dir, lot_coverage,
                                         seq_type, args.node_scratch_directory,
-                                        i,args.purity),
+                                        i,args.purity,args.with_normal),
                    '--output={}/lot_{}.log'.format(log_dir, lot_name),
                    './rRACES_seq.sh']
             if args.exclude != "":
@@ -376,8 +392,9 @@ if (__name__ == '__main__'):
             submitted.extend(lot_ids[:to_be_submitted])
             lot_ids = lot_ids[to_be_submitted:]
         time.sleep(60)  # wait 1 minute
-
+    #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
     completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
     while (len(completed_ids) != len(submitted)):
         time.sleep(60)
+        #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
         completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
