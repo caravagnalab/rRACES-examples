@@ -1,15 +1,24 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=THIN
 #SBATCH --account=cdslab
 #SBATCH --job-name=tissue
-#SBATCH --nodes=2
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=2
-#SBATCH --cpus-per-task=24
-#SBATCH --mem=200gb
-#SBATCH --time=03:00:00
-#SBATCH --output=tissue_%j.out
+#SBATCH --cpus-per-task=10
+#SBATCH --mem=30gb
+#SBATCH --time=1:00:00
+#SBATCH --output=/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/logs/tissue_%j.log
 
-cd /u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06
+cd /u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/
 
+#conda deactivate
+
+module purge
 module load R
+
+
+#export PATH=/u/cdslab/ahaghighi/scratch/anaconda3/bin:$PATH
+#eval "$(conda shell.bash hook)"
+#conda activate races-env
+
 Rscript tissue.R

@@ -1,19 +1,38 @@
 
+.libPaths("/orfeo/cephfs/scratch/cdslab/ahaghighi/Rlibs")
+
+library(rRACES)
+library(ggplot2)
+library(dplyr)
+
+seed <- 2024
+set.seed(seed)
 
 curr_dir <- getwd()
-
 
 # load phylogenetic forest
 phylo_forest <- load_phylogenetic_forest( paste(curr_dir, "/data/phylo_forest.sff", sep = "") )
 
+chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","X","Y")
+
 basic_seq <- BasicIlluminaSequencer(4e-3)
 
-seq_results <- simulate_seq(phylo_forest, sequencer = basic_seq, coverage = 80, write_SAM = FALSE)
+seq_results <- parallel::mclapply(
+  chromosomes, 
+  function(c) {
+    simulate_seq(
+      phylo_forest = phylo_forest, sequencer = basic_seq, chromosomes = c, coverage = 80, write_SAM = FALSE, purity = 1, with_normal_sample = TRUE
+    )
+  }, 
+  mc.cores = parallel::detectCores()
+)
 
-saveRDS(seq_results, paste0(curr_dir, "/data/sequencing_wg_80x_witherr.rds"))
-print("sequencing ended")
+seq_results_final <- do.call("bind_rows", seq_results)
 
-#data <- seq_to_long(seq_results)
-#BASE_FACTOR <- 1e6
+saveRDS(seq_results_final, file = paste(curr_dir, "/data/SPN06_seq_80X.rds", sep = "") )
+
+print("sequencing done!")
+
+
 
 
