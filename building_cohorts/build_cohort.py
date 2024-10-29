@@ -2,37 +2,298 @@
 
 import os
 import sys
+import math
 import glob
 import time
-import argparse
 import subprocess
-import datetime
-import fnmatch
+import argparse
 
-tumour_coverage = 200
-mixing_normal_coverage = 200
-normal_coverage = 30
-num_of_lots = 200
-BAM_parallel_jobs = 40
-diluition_parallel_jobs = 12
-
-fastq_shell_script="""#!/bin/bash
+gender_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=20
-#SBATCH --time=6:00:00
-#SBATCH --mem=20GB
+#SBATCH --cpus-per-task=1
+#SBATCH --time=1:00:00
+#SBATCH --mem=200GB
 
-module load R
-module load samtools
+module load R/4.3.3
 
-echo "Rscript generate_normal_fastq.R ${BAM_FILE} ${OUTPUT_DIR}"
+echo "Rscript rRACES_subject_gender.R ${PHYLO_FOREST}"
 
-Rscript generate_normal_fastq.R ${BAM_FILE} ${OUTPUT_DIR}
+
+Rscript rRACES_subject_gender.R ${PHYLO_FOREST}
 """
 
-fastq_R_script="""rm(list = ls())
+gender_R_script="""rm(list = ls())
 library(rRACES)
+
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 1) {
+  stop(paste("Syntax error: rRACES_subject_gender.R",
+	         "<phylo_forest>"),
+       call. = FALSE)
+}
+
+forest <- load_phylogenetic_forest(args[1])
+
+dir <- dirname(args[1])
+
+gender <- forest$get_germline_subject()$gender
+if (gender == "male") {
+    gender <- "XY"
+} else if (gender == "female") { 
+    gender <- "XY"
+} else {
+    stop(paste0("Unsupported germline subject gender ",
+                "\\"",gender,"\\"."),
+         call. = FALSE)
+}
+
+fileConn<-file(file.path(dir, "subject_gender.txt"))
+writeLines(c(gender), fileConn)
+close(fileConn)
+"""
+
+
+shell_script="""#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --time=8:00:00
+#SBATCH --mem=200GB
+
+module load R/4.3.3
+module load samtools
+
+echo "Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}"
+
+
+Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
+
+rm -rf ${NODE_SCRATCH}/${SPN}_${LOT}
+"""
+
+R_script="""rm(list = ls())
+library(rRACES)
+library(dplyr)
+
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 10) {
+  stop(paste("Syntax error: rRACES_seq.R",
+	         "<phylo_forest> <SPN> <lot_name>",
+	         "<node_local_dir> <output_dir>",
+	         "<coverage> <type> <num_of_cores>",
+	         "<seed> <purity>"),
+       call. = FALSE)
+}
+
+phylo_forest_filename <- args[1]
+spn_name <- args[2]
+lot_name <- args[3]
+node_local_dir <- args[4]
+output_dir <- args[5]
+coverage <- as.double(args[6])
+type <- args[7]
+num_of_cores <- strtoi(args[8])
+seed <- strtoi(args[9])
+purity <- as.double(args[10])
+
+if (type == "tumour") {
+    seq_tumour <- TRUE
+} else if (type == "normal") {
+    seq_tumour <- FALSE
+    with_preneoplastic <- FALSE
+} else if (type == "normal_with_preneoplastic") {
+    seq_tumour <- FALSE
+    with_preneoplastic <- TRUE
+} else {
+    stop(paste("The paramter <type> must be among",
+               "\\"tumour\\", \\"normal\\", and
+               \\"normal_with_preneoplastic\\"."),
+         call. = FALSE)
+}
+
+merge_sams <- function(output_local_dir, BAM_file,
+                       sam_filename_prefix, chromosomes,
+		       num_of_cores) {
+    
+    SAM_files <- ""
+    for (i in 1:length(chromosomes)) {
+        chr_SAM_file <- file.path(output_local_dir,
+                                  paste0(sam_filename_prefix,
+                                         chromosomes[i], ".sam"))
+
+        SAM_files <- paste(SAM_files, chr_SAM_file)
+    }
+    
+    cmd <- paste("samtools merge -fc -@", num_of_cores,
+		 "-o", BAM_file, SAM_files)
+
+    invisible(system(cmd, intern = TRUE))
+}
+
+delete_sams <- function(output_local_dir, sam_filename_prefix, chromosomes) {
+    for (i in 1:length(chromosomes)) {
+        chr_SAM_file <- file.path(output_local_dir,
+                                  paste0(sam_filename_prefix,
+                                         chromosomes[i], ".sam"))
+
+        unlink(chr_SAM_file)
+    }
+}
+
+if (!file.exists(node_local_dir)) {
+  dir.create(node_local_dir)
+}
+
+output_local_dir <- file.path(node_local_dir,
+                              paste0(spn_name, "_",
+                                     lot_name))
+if (file.exists(output_local_dir)) {
+  unlink(output_local_dir, recursive=TRUE)
+}
+dir.create(output_local_dir)
+
+if (!file.exists(output_dir)) {
+  dir.create(output_dir)
+}
+
+bam_dir <- file.path(output_dir, "BAM")
+if (!file.exists(bam_dir)) {
+  dir.create(bam_dir)
+}
+
+fastq_dir <- file.path(output_dir, "FASTQ")
+if (!file.exists(fastq_dir)) {
+  dir.create(fastq_dir)
+}
+
+data_dir <- file.path(output_dir, "data")
+if (!file.exists(data_dir)) {
+  dir.create(data_dir)
+}
+
+set.seed(seed)
+
+filename_prefix <- lot_name
+
+sam_filename_prefix <- paste0(filename_prefix, "_chr_")
+
+BAM_filename <- paste0(filename_prefix, ".bam")
+
+BAM_file <- file.path(bam_dir, BAM_filename)
+BAM_local_file <- file.path(output_local_dir, BAM_filename)
+
+BAM_done_filename <- file.path(output_dir, paste0(lot_name, "_BAM.done"))
+
+step <- 1
+
+if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
+    unlink(BAM_done_filename)
+
+    cat("1. Reading phylogenetic forest...\\n")
+    phylo_forest <- load_phylogenetic_forest(phylo_forest_filename)
+    
+    cat("done\\n2. Copying reference genome...")
+    
+    ref_path <- file.path(output_local_dir, "reference.fasta")
+    
+    invisible(file.copy(phylo_forest$get_reference_path(), ref_path))
+    
+    cat("done\\n3. Simulating reads...\\n")
+    
+    # Simulate sequencing ####
+    #no_error_seq <- ErrorlessIlluminaSequencer()
+    basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
+    chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
+    if (seq_tumour) {
+      seq_results <- parallel::mclapply(chromosomes, function(c) {
+        simulate_seq(phylo_forest, reference_genome = ref_path,
+    	             chromosomes = c,
+                     coverage = coverage,
+                     purity = purity, 
+                     write_SAM = TRUE, read_size = 150,
+                     sequencer = basic_seq,
+                     insert_size_mean = 350,
+                     insert_size_stddev = 10,
+                     output_dir = output_local_dir,
+                     update_SAM = TRUE,
+                     filename_prefix = sam_filename_prefix,
+                     template_name_prefix = paste0(lot_name,'r'),
+                     with_normal_sample = FALSE)
+      }, mc.cores = num_of_cores)
+    } else {
+      seq_results <- parallel::mclapply(chromosomes, function(c) {
+        simulate_normal_seq(phylo_forest, reference_genome = ref_path,
+                            chromosomes = c,
+                            coverage = coverage,
+                            write_SAM = TRUE, read_size = 150,
+                            sequencer = basic_seq,
+                            insert_size_mean = 350,
+                            insert_size_stddev = 10,
+                            filename_prefix = sam_filename_prefix,
+                     	    template_name_prefix = paste0(lot_name,'r'),
+                            output_dir = output_local_dir,
+                            with_preneoplastic = with_preneoplastic,
+                            update_SAM = TRUE)
+      }, mc.cores = num_of_cores)
+    }
+    seq_results_final<- do.call("bind_rows", seq_results)
+    saveRDS(seq_results_final,
+            file.path(data_dir,
+                      paste0("seq_results_", spn_name,
+    			  "_", lot_name, ".rds")))
+    
+    cat("done\\n4. Building overall BAM file...")
+    merge_sams(output_local_dir, BAM_local_file,
+               sam_filename_prefix, chromosomes,
+    		   num_of_cores)
+    
+    cat("done\\n5. Deleting SAM files...")
+    delete_sams(output_local_dir, sam_filename_prefix, chromosomes)
+    
+    cat("done\\n6. Moving the BAM file to output directory...")
+
+    cmd <- paste0("cp ", BAM_local_file, " ", bam_dir, "/")
+
+    invisible(system(cmd, intern = TRUE))
+
+    invisible(file.create(BAM_done_filename))
+    cat("done\\n")
+
+    remove_local_bam <- TRUE
+    step <- 7
+} else {
+    BAM_local_file <- BAM_file
+
+    cat("Found the lot BAM file\\n")
+    
+    remove_local_bam <- FALSE
+
+    step <- 1
+}
+
+cat(paste0(step, ". Splitting BAM file by sample..."))
+step <- step + 1
+
+split_bam_by_samples <- function(output_local_dir, BAM_file, remove_local_bam) {
+    cmd <- paste0("samtools split -f \\"",
+                  file.path(output_local_dir,"%*_%!.bam"),
+                  "\\" ", BAM_file, " -@ ", num_of_cores)
+    invisible(system(cmd, intern = TRUE))
+
+    if (remove_local_bam) {
+        file.remove(BAM_file)
+    }
+}
+invisible(split_bam_by_samples(output_local_dir, BAM_local_file, remove_local_bam))
+
+cat(paste0("done\\n", step,
+           ". Generating the FASTQs and deleting the BAMs..."))
+step <- step + 1
+
+BAM_files <- list.files(output_local_dir, pattern = "\\\\.bam$")
 
 generate_fastq <- function(orig_file, fastq_dir) {
   base_orig_file <- tools::file_path_sans_ext(basename(orig_file))
@@ -48,191 +309,80 @@ generate_fastq <- function(orig_file, fastq_dir) {
   invisible(system(cmd, intern = TRUE))
 }
 
-args <- commandArgs(trailingOnly = TRUE)
+result <- parallel::mclapply(BAM_files, function(c) {
+    curr_BAM_file <- file.path(output_local_dir, c)
+    if (BAM_file != curr_BAM_file) {
+        generate_fastq(curr_BAM_file, output_local_dir)
 
-if (length(args) != 2) {
-  stop(paste("Syntax error: generate_normal_fastq <BAM_file>",
-             "<output_dir>"),
-       call. = FALSE)
-}
+        unlink(curr_BAM_file)
+    }
+}, mc.cores = num_of_cores)
 
-bam_file <- args[1]
-output_dir <- args[2]
+cat(paste0("done\\n", step,
+           ". Moving the FASTQ files to output directory..."))
+step <- step + 1
 
-if (!file.exists(output_dir)) {
-    dir.create(output_dir)
-}
+cmd <- paste0("mv ", file.path(output_local_dir, "*.fastq.gz"),
+              " ", fastq_dir, "/")
+invisible(system(cmd, intern = TRUE))
 
-log_dir <- file.path(output_dir, "log")
+cat(paste0("done\\n", step, ". Removing local files..."))
+step <- step + 1
 
-if (!file.exists(log_dir)) {
-    dir.create(log_dir)
-}
+unlink(output_local_dir, recursive = TRUE)
 
-base_orig_file <- tools::file_path_sans_ext(basename(bam_file))
+done_filename <- file.path(output_dir, paste0(lot_name, "_final.done"))
+invisible(file.create(done_filename))
 
-generate_fastq(bam_file, output_dir)
-
-done_file <- file.path(log_dir, paste0(base_orig_file, ".done"))
-
-invisible(file.create(done_file))
+cat("done\\n")
 """
 
 
-def build_reads(SPN, phylogenetic_forest, output_dir, account, partition,
-                num_of_lots, coverage, parallel_jobs, options=[]):
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
-    cmd = (['python3', './deploy_rRACES_seq.py', '-p', f'{partition}',
-            '-A', f'{account}', '-l', f'{num_of_lots}', '-c', f'{coverage}',
-            '-j', f'{parallel_jobs}', SPN, phylogenetic_forest, output_dir]
-            + options)
-
-    subprocess.run(cmd)
-
-    return output_dir
+def get_lot_prefix(seq_type):
+    if seq_type=='normal':
+        return 'n'
+    if seq_type=='normal_with_preneoplastic':
+        return 's'
+    if seq_type=='tumour':
+        return 't'
+    raise TypeError("Only \"tumour\", \"normal\", and "
+                    + "\"normal_with_preneoplastic\" are supported")
 
 
-def diluite_reads(SPN, phylogenetic_forest, output_dir, tumour_dir, mixing_normal_dir,
-                  account, partition):
+def get_completed_jobs(done_file_dir, lot_prefix):
+    common_prefix = os.path.normpath(f"{done_file_dir}/{lot_prefix}")
+    common_suffix = '_final.done'
+    done_files = glob.glob(f"{common_prefix}*{common_suffix}")
+    prefix_len = len(common_prefix)
+    suffix_len = len(common_suffix)
+
+    done_ids = list()
+    for done_file in done_files:
+        done_ids.append(int(done_file[prefix_len:-suffix_len]))
+    return done_ids
+
+
+def remove_old_done_files(output_dir, lot_prefix):
+    done_files = glob.glob(f"{output_dir}/{lot_prefix}*.done")
+    for done_file in done_files:
+        os.unlink(done_file)
+
+def get_sample_names_from_FASTQ(fastq_dir, SPN):
+    suffix = '.R1.fastq.gz'
+    fastq_files = glob.glob(f'{fastq_dir}/t*_{SPN}_*{suffix}')
+
+    sample_names = set()
+    for fastq_file in fastq_files:
+        fastq_basename = os.path.basename(fastq_file)
+        prefix_up_to = fastq_basename.find(SPN)
+        
+        sample_names.add(fastq_basename[prefix_up_to+len(SPN)+1:-len(suffix)])
     
-    diluitions_dir = os.path.join(output_dir, "diluitions")
-    if not os.path.exists(diluitions_dir):
-        os.mkdir(diluitions_dir)
-    
-    fastq_dir = os.path.join(output_dir, "fastq")
-    if not os.path.exists(fastq_dir):
-        os.mkdir(fastq_dir)
-
-    cmd = ['python3', './deploy_diluite_cohort.py', '-p', f'{partition}',
-           '-A', f'{account}', '-j', f'{diluition_parallel_jobs}', SPN,
-           phylogenetic_forest, diluitions_dir, fastq_dir,
-           os.path.join(tumour_dir, "BAM"), os.path.join(mixing_normal_dir, "BAM")]
-
-    subprocess.run(cmd)
-
-    return (diluitions_dir, fastq_dir)
-
-
-def get_done(directory):
-    return glob.glob(os.path.join(directory, "*.done"))
-
-
-def build_fastq(bam_dir, fastq_dir, account, partition):
-    with open('generate_normal_fastq.R', 'w') as outstream:
-        outstream.write(fastq_R_script)
-
-    with open('generate_normal_fastq.sh', 'w') as outstream:
-        outstream.write(fastq_shell_script)
-
-    if not os.path.exists(fastq_dir):
-        os.mkdir(fastq_dir)
-
-    fastq_log_dir = os.path.join(fastq_dir, "log")
-    if not os.path.exists(fastq_log_dir):
-        os.mkdir(fastq_log_dir)
-
-    bam_files = glob.glob(os.path.join(bam_dir, "*.bam"))
-
-    for bam_file in bam_files:
-        basename = os.path.splitext(os.path.basename(bam_file))[0]
-        cmd = ['sbatch', f'--account={account}',
-                f'--partition={partition}',
-                (f'--export=BAM_FILE={bam_file},'
-                 + f'OUTPUT_DIR={fastq_dir}'),
-                f'--output={fastq_log_dir}/{basename}.log',
-                './generate_normal_fastq.sh']
-                #'./test.sh']
-
-        subprocess.run(cmd)
-
-    while (len(bam_files) != len(get_done(fastq_log_dir))):
-        time.sleep(60)
-    
-    return fastq_dir
-
-def get_fastq_filenames(bam_dir, fastq_dir):
-
-    normal_fastq_filenames = []
-    for bam_file in sorted(glob.glob(os.path.join(bam_dir, "*.bam"))):
-        basename = os.path.splitext(os.path.basename(bam_file))[0]
-        common_name = os.path.join(fastq_dir, basename)
-
-        normal_fastq_filenames.append((f'{common_name}.R1.fastq.gz',
-                                       f'{common_name}.R2.fastq.gz'))
-
-    return normal_fastq_filenames
-
-def get_cohort_in(directory):
-    cohorts = set()
-    for cohort in fnmatch.filter(os.listdir(directory), "*X_*p"):
-        if os.path.isdir(os.path.join(directory, cohort)):
-            cohorts.add(cohort)
-    
-    return cohorts
-
-def build_sarek_files(output_dir, fastq_dir, diluitions_dir, normal_dir):
-    sarek_dir = os.path.join(output_dir, "sarek")
-
-    if (not os.path.exists(sarek_dir)):
-        os.mkdir(sarek_dir)
-
-    path = os.path.normpath(diluitions_dir)
-    diluitions_dir_depth = len(path.split(os.sep))
-
-    normal_fastq_filenames = get_fastq_filenames(os.path.join(normal_dir, "BAM"),
-                                                 os.path.join(fastq_dir, "normal"))
-
-    #cohorts = set()
-    #for root, dirnames, filenames in os.walk(diluitions_dir):
-    #    for filename in fnmatch.filter(filenames, "sarek*.csv"):
-    #        path = os.path.normpath(root)
-    #        cohorts.add(path.split(os.sep)[diluitions_dir_depth])
-
-    for cohort in get_cohort_in(diluitions_dir):
-        with open(os.path.join(sarek_dir, cohort + ".csv"), 'w') as outstream:
-            outstream.write('patient,sex,status,sample,'
-                            + 'lane,fastq_1,fastq_2\n')
-
-            for root, dirnames, filenames in os.walk(diluitions_dir):
-                for filename in fnmatch.filter(filenames, "sarek_*.csv"):
-                    with open(os.path.join(root, filename)) as instream:
-                        line_num = 0
-                        for line in instream:
-                            if line_num>0:
-                                outstream.write(f'{line.strip()}\n')
-                                if (line_num == 1):
-                                    (SPN, gender) = line.strip().split(',')[:2]
-
-                            line_num += 1
-
-            line = 1
-            for fastq_filenames in normal_fastq_filenames:
-                outstream.write(f'{SPN},{gender},0,normal_sample,'
-                                + f'L{str(line).zfill(3)},{fastq_filenames[0]},'
-                                + f'{fastq_filenames[1]}\n')
-                line += 1
-
-def build_tumour_reads(SPN, phylogenetic_forest, output_dir, account, partition):
-    return build_reads(SPN, phylogenetic_forest, os.path.join(output_dir, "tumour"),
-                       account, partition, tumour_coverage, tumour_coverage, 
-                       min(BAM_parallel_jobs, tumour_coverage))
-
-def build_mixing_normal_reads(SPN, phylogenetic_forest, output_dir, account, partition):
-    return build_reads(SPN, phylogenetic_forest, os.path.join(output_dir, "mixing_normal"),
-                       account, partition, mixing_normal_coverage, mixing_normal_coverage,
-                       min(BAM_parallel_jobs, mixing_normal_coverage), options=['-w'])
-
-def build_normal_reads(SPN, phylogenetic_forest, output_dir, account, partition):
-    return build_reads(SPN, phylogenetic_forest, os.path.join(output_dir, "normal"),
-                       account, partition, normal_coverage, normal_coverage,
-                       min(BAM_parallel_jobs, normal_coverage), options=['-n'])
-
+    return list(sample_names)
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-                                     description=('Generates the cohorts of a tumour'))
+                                     description=('Produces a rRACES sequencing'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
                         help = ('The phylogenetic forest absoluted path '
@@ -240,10 +390,34 @@ if (__name__ == '__main__'):
     parser.add_argument('output_dir', type=str,
                         help = ('The output directory absoluted path '
                                 + 'for the cluster nodes'))
-    parser.add_argument('-p', '--partition', type=str, required=True,
+    parser.add_argument('-P', '--partition', type=str, required=True,
                         help="The cluster partition")
-    parser.add_argument('-A', '--account', type=str,
+    parser.add_argument('-A', '--account', type=str, required=True,
                         help="The cluster account")
+    parser.add_argument('-s', '--node_scratch_directory', type=str,
+                        default='/local_scratch',
+                        help="The nodes' scratch directory")
+    parser.add_argument('-j', '--parallel_jobs', type=int, default=20,
+                        help="The number of parallel jobs")
+    parser.add_argument('-x', '--exclude', type=str, default="",
+                        help=("A list of nodes to exclude from the "
+                              + "computation"))
+    parser.add_argument('-F', '--force_completed_jobs', action='store_true',
+                        help=("A Boolean flag to force rerun of "
+                              + "already completed job."))
+
+    cohorts = { 'tumour': {
+                    'max_coverage': 200, 
+                    'purities': list([0.3, 0.6, 0.9])
+                    },
+                'normal': {
+                    'max_coverage': 50, 
+                    'purities': list([1])
+                    }
+                }
+
+    num_of_lots = 50
+    cohort_coverages = list([50, 100, 150, 200])
 
     args = parser.parse_args()
 
@@ -254,42 +428,150 @@ if (__name__ == '__main__'):
     else:
         account = args.account
 
-    output_dir = os.path.abspath(args.output_dir)
+    gender_filename = os.path.join(os.path.dirname(args.phylogenetic_forest),
+                                "subject_gender.txt")
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    if not os.path.exists(gender_filename):
+        with open('rRACES_subject_gender.R', 'w') as outstream:
+            outstream.write(gender_R_script)
 
-    execution_track = []
+        with open('rRACES_subject_gender.sh', 'w') as outstream:
+            outstream.write(gender_shell_script)
 
-    execution_track.append(f"Starting at {datetime.datetime.now()}\n")
-    phylogenetic_forest = os.path.abspath(args.phylogenetic_forest)
+        cmd = ['sbatch', '--account={}'.format(account),
+            '--partition={}'.format(args.partition),
+            f'--export=PHYLO_FOREST={args.phylogenetic_forest}',
+            './rRACES_subject_gender.sh']
 
-    tumour_dir = build_tumour_reads(args.SPN, phylogenetic_forest,
-                                    output_dir, account, args.partition)
-    execution_track.append(f"Tumour BAMs built at {datetime.datetime.now()}\n")
+        subprocess.run(cmd)
 
-    mixing_normal_dir = build_mixing_normal_reads(args.SPN, phylogenetic_forest,
-                                                  output_dir, account, args.partition)
-    execution_track.append(f"Mixing normal BAMs built at {datetime.datetime.now()}\n")
+    with open('rRACES_seq.R', 'w') as outstream:
+        outstream.write(R_script)
+
+    with open('rRACES_seq.sh', 'w') as outstream:
+        outstream.write(shell_script)
+
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
+
+
+    zeros = math.ceil(math.log10(num_of_lots))
+
+    for seq_type, cohorts_data in cohorts.items():
+        lot_coverage = cohorts_data['max_coverage']/num_of_lots
+
+        lot_prefix = get_lot_prefix(seq_type)
+
+        type_output_dir = f'{args.output_dir}/{seq_type}'
+
+        if not os.path.exists(type_output_dir):
+            os.mkdir(type_output_dir)
+
+        for purity in cohorts_data['purities']:
+
+            output_dir = f'{type_output_dir}/purity_{purity}'
+
+            if not os.path.exists(output_dir):
+                os.mkdir(output_dir)
+
+            log_dir = '{}/log/'.format(output_dir)
+
+            if not os.path.exists(log_dir):
+                os.mkdir(log_dir)
+
+            if args.force_completed_jobs:
+                remove_old_done_files(output_dir, lot_prefix)
+            
+            lot_ids = set(range(num_of_lots))
+
+            completed_ids = get_completed_jobs(output_dir, lot_prefix)
+            submitted = list(completed_ids)
+            lot_ids = list(lot_ids.difference(set(completed_ids)))
+
+            while len(lot_ids) != 0:
+                completed_ids = get_completed_jobs(output_dir, lot_prefix)
+                
+                to_be_submitted = (args.parallel_jobs
+                                + len(completed_ids)
+                                - len(submitted))
+
+                for i in lot_ids[:to_be_submitted]:
+                    lot_name = '{}{}'.format(lot_prefix, str(i).zfill(zeros))
+
+                    sys.stdout.write('Submitting lot {}...'.format(lot_name))
+                    sys.stdout.flush()
+
+                    cmd = ['sbatch', '--account={}'.format(account),
+                        '--partition={}'.format(args.partition),
+                        '--job-name={}_{}'.format(args.SPN, lot_name),
+                        ('--export=PHYLO_FOREST={},SPN={},LOT={},DEST={},'
+                            + 'COVERAGE={},TYPE={},NODE_SCRATCH={},'
+                            + 'SEED={},PURITY={}').format(args.phylogenetic_forest,
+                                                args.SPN, lot_name,
+                                                output_dir, lot_coverage,
+                                                seq_type, args.node_scratch_directory,
+                                                i, purity),
+                        '--output={}/lot_{}.log'.format(log_dir, lot_name),
+                        './rRACES_seq.sh']
+                    if args.exclude != "":
+                        cmd.insert(-1,"--exclude={}".format(args.exclude))
+
+                    subprocess.run(cmd)
+                    sys.stdout.write('done\n')
+                    sys.stdout.flush()
+
+                if to_be_submitted>0:
+                    submitted.extend(lot_ids[:to_be_submitted])
+                    lot_ids = lot_ids[to_be_submitted:]
+                time.sleep(60)  # wait 1 minute
+            completed_ids = get_completed_jobs(output_dir, lot_prefix)
+            while (len(completed_ids) != len(submitted)):
+                time.sleep(60)
+                completed_ids = get_completed_jobs(output_dir, lot_prefix)
+
+    with open(gender_filename, "r") as gender_file:
+        subject_gender = gender_file.read().strip('\n')
     
-    normal_dir = build_normal_reads(args.SPN, phylogenetic_forest,
-                                    output_dir, account, args.partition)
-    execution_track.append(f"Normal BAMs built at {datetime.datetime.now()}\n")
+    os.makedirs(f'{args.output_dir}/sarek')
 
-    (diluitions_dir, fastq_dir) = diluite_reads(args.SPN, phylogenetic_forest, output_dir,
-                                                tumour_dir, mixing_normal_dir, account,
-                                                args.partition)
-    execution_track.append(f"Cohorts built at {datetime.datetime.now()}\n")
+    fastq_suffix = '.fastq.gz'
+    for purity in cohorts['tumour']['purities']:
+        fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
+        sample_names = get_sample_names_from_FASTQ(fastq_dir, args.SPN)
 
-    build_fastq(os.path.join(normal_dir, "BAM"),
-                os.path.join(fastq_dir, "normal"), account, args.partition)
-    execution_track.append("Normal FASTQs built at "
-                           + f"{datetime.datetime.now()}\n")
+        lines = math.ceil(math.log10(num_of_lots*(len(sample_names)+1)))
 
-    build_sarek_files(output_dir, fastq_dir, diluitions_dir, normal_dir)
-    execution_track.append("Sarek files built at "
-                           + f"{datetime.datetime.now()}\n")
+        for cohort_cov in cohort_coverages:
+            num_of_tumour_lots = math.ceil((cohort_cov*num_of_lots)/cohorts['tumour']['max_coverage'])
+            with open(f'{args.output_dir}/sarek/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file:
+                sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
+                for sample_name in sample_names:
+                    line = 1
+                    to_do = {
+                        'tumour': {
+                            'num_of_lots': num_of_tumour_lots,
+                            'name': sample_name,
+                        },
+                        'normal': {
+                            'num_of_lots': num_of_lots,
+                            'name': 'normal',
+                        }
+                    }
 
-    with open(f'{os.path.join(output_dir, "cohorts.done")}', 'w') as outstream:
-        for line in execution_track:
-            outstream.write(line)
+                    for seq_type, type_data in to_do.items():
+                        type_prefix = get_lot_prefix(seq_type)
+                        for lot in range(type_data['num_of_lots']):
+                            lot_name = f'{type_prefix}{str(lot).zfill(zeros)}'
+                            fastq_base_name = f'{lot_name}_{args.SPN}_{type_data['name']}'
+                            line_name = f'L{str(line).zfill(lines)}'
+                            line += 1
+                            R1_filename = os.path.abspath(os.path.join(fastq_dir,
+                                                                       fastq_base_name+'.R1'+fastq_suffix))
+                            R2_filename = os.path.abspath(os.path.join(fastq_dir,
+                                                                       fastq_base_name+'.R2'+fastq_suffix))
+                            sarek_file.write(f'\n{args.SPN},{subject_gender},1,{sample_name},'
+                                            + f'{line_name},{R1_filename},{R2_filename}')
+
+
+
+
