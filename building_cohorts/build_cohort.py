@@ -382,14 +382,12 @@ def get_sample_names_from_FASTQ(fastq_dir, SPN):
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-                                     description=('Produces a rRACES sequencing'))
+                                     description=('Produces the cohorts of a SPN'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
-                        help = ('The phylogenetic forest absoluted path '
-                                + 'for the cluster nodes'))
+                        help = ('A rRACES phylogenetic forest'))
     parser.add_argument('output_dir', type=str,
-                        help = ('The output directory absoluted path '
-                                + 'for the cluster nodes'))
+                        help = ('The output directory'))
     parser.add_argument('-P', '--partition', type=str, required=True,
                         help="The cluster partition")
     parser.add_argument('-A', '--account', type=str, required=True,
