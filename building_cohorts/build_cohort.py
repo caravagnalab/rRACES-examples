@@ -367,16 +367,16 @@ def remove_old_done_files(output_dir, lot_prefix):
     for done_file in done_files:
         os.unlink(done_file)
 
-def get_sample_names_from_FASTQ(fastq_dir, SPN):
+def get_sample_names_from_FASTQ(fastq_dir):
     suffix = '.R1.fastq.gz'
-    fastq_files = glob.glob(f'{fastq_dir}/t*_{SPN}_*{suffix}')
+    fastq_files = glob.glob(f'{fastq_dir}/t*_*{suffix}')
 
     sample_names = set()
     for fastq_file in fastq_files:
         fastq_basename = os.path.basename(fastq_file)
-        prefix_up_to = fastq_basename.find(SPN)
+        prefix_up_to = fastq_basename.find('_')
         
-        sample_names.add(fastq_basename[prefix_up_to+len(SPN)+1:-len(suffix)])
+        sample_names.add(fastq_basename[prefix_up_to+1:-len(suffix)])
     
     return list(sample_names)
 
@@ -541,13 +541,13 @@ if (__name__ == '__main__'):
         subject_gender = gender_file.read().strip('\n')
     
     sarek_dir = os.path.join(args.output_dir, 'sarek')
-    if not os.path.exists(args.output_dir):
+    if not os.path.exists(sarek_dir):
         os.mkdir(sarek_dir)
 
     fastq_suffix = '.fastq.gz'
     for purity in cohorts['tumour']['purities']:
         fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
-        sample_names = get_sample_names_from_FASTQ(fastq_dir, args.SPN)
+        sample_names = get_sample_names_from_FASTQ(fastq_dir)
 
         lines = math.ceil(math.log10(num_of_lots*(len(sample_names)+1)))
 
