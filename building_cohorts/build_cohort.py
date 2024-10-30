@@ -450,10 +450,10 @@ if (__name__ == '__main__'):
 
     with open('rRACES_seq.R', 'w') as outstream:
         outstream.write(R_script)
-    
-    space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 2.2 / num_of_lots
+
+    space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots
     memory_per_lot = math.ceil(args.mem_per_node*space_per_lot/args.scratch_per_node)
-    memory_per_lot = max(memory_per_lot, 20)
+    memory_per_lot = max(memory_per_lot, math.ceil(args.mem_per_node/5))
 
     shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
 
