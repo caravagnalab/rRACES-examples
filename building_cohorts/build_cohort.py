@@ -13,7 +13,7 @@ gender_shell_script="""#!/bin/bash
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=1:00:00
-#SBATCH --mem=200GB
+#SBATCH --mem=20GB
 
 module load R/4.3.3
 
@@ -58,9 +58,9 @@ close(fileConn)
 shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=5
 #SBATCH --time=8:00:00
-#SBATCH --mem=200GB
+#SBATCH --mem={MEMORY}GB
 
 module load R/4.3.3
 module load samtools
@@ -395,7 +395,7 @@ if (__name__ == '__main__'):
     parser.add_argument('-s', '--node_scratch_directory', type=str,
                         default='/local_scratch',
                         help="The nodes' scratch directory")
-    parser.add_argument('-j', '--parallel_jobs', type=int, default=20,
+    parser.add_argument('-j', '--parallel_jobs', type=int, default=40,
                         help="The number of parallel jobs")
     parser.add_argument('-x', '--exclude', type=str, default="",
                         help=("A list of nodes to exclude from the "
@@ -403,6 +403,11 @@ if (__name__ == '__main__'):
     parser.add_argument('-F', '--force_completed_jobs', action='store_true',
                         help=("A Boolean flag to force rerun of "
                               + "already completed job."))
+    parser.add_argument('-S', '--scratch_per_node', type=float, default=300,
+                        help=("The scratch space available in each "
+                              + "node (in GB)."))
+    parser.add_argument('-M', '--mem_per_node', type=float, default=512,
+                        help="The memory of each node in GB")
 
     cohorts = { 'tumour': {
                     'max_coverage': 200, 
@@ -414,7 +419,7 @@ if (__name__ == '__main__'):
                     }
                 }
 
-    num_of_lots = 50
+    num_of_lots = 40
     cohort_coverages = list([50, 100, 150, 200])
 
     args = parser.parse_args()
@@ -445,13 +450,18 @@ if (__name__ == '__main__'):
 
     with open('rRACES_seq.R', 'w') as outstream:
         outstream.write(R_script)
+    
+    space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 2.2 / num_of_lots
+    memory_per_lot = math.ceil(args.mem_per_node*space_per_lot/args.scratch_per_node)
+    memory_per_lot = max(memory_per_lot, 20)
+
+    shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
 
     with open('rRACES_seq.sh', 'w') as outstream:
         outstream.write(shell_script)
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-
 
     zeros = math.ceil(math.log10(num_of_lots))
 
@@ -530,7 +540,9 @@ if (__name__ == '__main__'):
     with open(gender_filename, "r") as gender_file:
         subject_gender = gender_file.read().strip('\n')
     
-    os.makedirs(f'{args.output_dir}/sarek')
+    sarek_dir = os.path.join(args.output_dir, 'sarek')
+    if not os.path.exists(args.output_dir):
+        os.mkdir(sarek_dir)
 
     fastq_suffix = '.fastq.gz'
     for purity in cohorts['tumour']['purities']:
@@ -541,7 +553,7 @@ if (__name__ == '__main__'):
 
         for cohort_cov in cohort_coverages:
             num_of_tumour_lots = math.ceil((cohort_cov*num_of_lots)/cohorts['tumour']['max_coverage'])
-            with open(f'{args.output_dir}/sarek/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file:
+            with open(f'{sarek_dir}/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file:
                 sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
                 for sample_name in sample_names:
                     line = 1
@@ -549,18 +561,22 @@ if (__name__ == '__main__'):
                         'tumour': {
                             'num_of_lots': num_of_tumour_lots,
                             'name': sample_name,
+                            'fastq_dir': fastq_dir
                         },
                         'normal': {
                             'num_of_lots': num_of_lots,
                             'name': 'normal',
+                            'fastq_dir': os.path.join(f'{args.output_dir}',
+                                                      f'normal/purity_1/FASTQ')
                         }
                     }
 
                     for seq_type, type_data in to_do.items():
                         type_prefix = get_lot_prefix(seq_type)
+                        fastq_dir = type_data['fastq_dir']
                         for lot in range(type_data['num_of_lots']):
                             lot_name = f'{type_prefix}{str(lot).zfill(zeros)}'
-                            fastq_base_name = f'{lot_name}_{args.SPN}_{type_data['name']}'
+                            fastq_base_name = f'{lot_name}_{args.SPN}_{type_data["name"]}'
                             line_name = f'L{str(line).zfill(lines)}'
                             line += 1
                             R1_filename = os.path.abspath(os.path.join(fastq_dir,
