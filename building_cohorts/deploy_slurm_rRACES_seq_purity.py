@@ -13,13 +13,11 @@ shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=8:00:00
+#SBATCH --time=2:00:00
 #SBATCH --mem=200GB
 
 module load R/4.3.3
 module load samtools
-
-echo "ciao" > ${LOT}.log
 
 echo "Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY} ${WITH_NORMAL}"
 
@@ -71,11 +69,9 @@ if (type == "tumour") {
          call. = FALSE)
 }
 
-merge_sams <- function(output_local_dir, filename_prefix,
+merge_sams <- function(output_local_dir, BAM_file,
                        sam_filename_prefix, chromosomes,
 		       num_of_cores) {
-    BAM_file <- file.path(output_local_dir,
-                          paste0(filename_prefix, ".bam"))
     
     SAM_files <- ""
     for (i in 1:length(chromosomes)) {
@@ -90,8 +86,16 @@ merge_sams <- function(output_local_dir, filename_prefix,
 		 "-o", BAM_file, SAM_files)
 
     invisible(system(cmd, intern = TRUE))
+}
 
-    return(BAM_file)
+delete_sams <- function(output_local_dir, sam_filename_prefix, chromosomes) {
+    for (i in 1:length(chromosomes)) {
+        chr_SAM_file <- file.path(output_local_dir,
+                                  paste0(sam_filename_prefix,
+                                         chromosomes[i], ".sam"))
+
+        unlink(chr_SAM_file)
+    }
 }
 
 if (!file.exists(node_local_dir)) {
@@ -115,6 +119,11 @@ if (!file.exists(bam_dir)) {
   dir.create(bam_dir)
 }
 
+fastq_dir <- file.path(output_dir, "FASTQ")
+if (!file.exists(fastq_dir)) {
+  dir.create(fastq_dir)
+}
+
 data_dir <- file.path(output_dir, "data")
 if (!file.exists(data_dir)) {
   dir.create(data_dir)
@@ -126,90 +135,161 @@ filename_prefix <- lot_name
 
 sam_filename_prefix <- paste0(filename_prefix, "_chr_")
 
-cat("1. Reading phylogenetic forest...\\n")
-phylo_forest <- load_phylogenetic_forest(phylo_forest_filename)
+BAM_filename <- paste0(filename_prefix, ".bam")
 
-cat("   done\\n2. Copying reference genome...")
+BAM_file <- file.path(bam_dir, BAM_filename)
+BAM_local_file <- file.path(output_local_dir, BAM_filename)
 
-ref_path <- file.path(output_local_dir, "reference.fasta")
+BAM_done_filename <- file.path(output_dir, paste0(lot_name, "_BAM.done"))
 
-invisible(file.copy(phylo_forest$get_reference_path(), ref_path))
+step <- 1
 
-cat("   done\\n3. Simulating reads...\\n")
+if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
+    unlink(BAM_done_filename)
 
-# Simulate sequencing ####
-#no_error_seq <- ErrorlessIlluminaSequencer()
-basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
-chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
-if (seq_tumour) {
-  seq_results <- parallel::mclapply(chromosomes, function(c) {
-    simulate_seq(phylo_forest, reference_genome = ref_path,
-	             chromosomes = c,
-                 coverage = coverage,
-                 purity = purity, 
-                 write_SAM = TRUE, read_size = 150,
-                 sequencer = basic_seq,
-                 insert_size_mean = 350,
-                 insert_size_stddev = 10,
-                 output_dir = output_local_dir,
-                 update_SAM = TRUE,
-                 filename_prefix = sam_filename_prefix,
-                 template_name_prefix = paste0(lot_name,'r'),
-                 with_normal_sample = with_normal)
-  }, mc.cores = num_of_cores)
+    cat("1. Reading phylogenetic forest...\\n")
+    phylo_forest <- load_phylogenetic_forest(phylo_forest_filename)
+    
+    cat("done\\n2. Copying reference genome...")
+    
+    ref_path <- file.path(output_local_dir, "reference.fasta")
+    
+    invisible(file.copy(phylo_forest$get_reference_path(), ref_path))
+    
+    cat("done\\n3. Simulating reads...\\n")
+    
+    # Simulate sequencing ####
+    #no_error_seq <- ErrorlessIlluminaSequencer()
+    basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
+    chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
+    if (seq_tumour) {
+      seq_results <- parallel::mclapply(chromosomes, function(c) {
+        simulate_seq(phylo_forest, reference_genome = ref_path,
+    	             chromosomes = c,
+                     coverage = coverage,
+                     purity = purity, 
+                     write_SAM = TRUE, read_size = 150,
+                     sequencer = basic_seq,
+                     insert_size_mean = 350,
+                     insert_size_stddev = 10,
+                     output_dir = output_local_dir,
+                     update_SAM = TRUE,
+                     filename_prefix = sam_filename_prefix,
+                     template_name_prefix = paste0(lot_name,'r'),
+                     with_normal_sample = with_normal)
+      }, mc.cores = num_of_cores)
+    } else {
+      seq_results <- parallel::mclapply(chromosomes, function(c) {
+        simulate_normal_seq(phylo_forest, reference_genome = ref_path,
+                            chromosomes = c,
+                            coverage = coverage,
+                            write_SAM = TRUE, read_size = 150,
+                            sequencer = basic_seq,
+                            insert_size_mean = 350,
+                            insert_size_stddev = 10,
+                            filename_prefix = sam_filename_prefix,
+                     	    template_name_prefix = paste0(lot_name,'r'),
+                            output_dir = output_local_dir,
+                            with_preneoplastic = with_preneoplastic,
+                            update_SAM = TRUE)
+      }, mc.cores = num_of_cores)
+    }
+    seq_results_final<- do.call("bind_rows", seq_results)
+    saveRDS(seq_results_final,
+            file.path(data_dir,
+                      paste0("seq_results_", spn_name,
+    			  "_", lot_name, ".rds")))
+    
+    cat("done\\n4. Building overall BAM file...")
+    merge_sams(output_local_dir, BAM_local_file,
+               sam_filename_prefix, chromosomes,
+    		   num_of_cores)
+    
+    cat("done\\n5. Deleting SAM files...")
+    delete_sams(output_local_dir, sam_filename_prefix, chromosomes)
+    
+    cat("done\\n6. Moving the BAM file to output directory...")
+
+    cmd <- paste0("cp ", BAM_local_file, " ", bam_dir, "/")
+
+    invisible(system(cmd, intern = TRUE))
+
+    invisible(file.create(BAM_done_filename))
+    cat("done\\n")
+
+    remove_local_bam <- TRUE
+    step <- 7
 } else {
-  seq_results <- parallel::mclapply(chromosomes, function(c) {
-    simulate_normal_seq(phylo_forest, reference_genome = ref_path,
-                        chromosomes = c,
-                        coverage = coverage,
-                        write_SAM = TRUE, read_size = 150,
-                        sequencer = basic_seq,
-                        insert_size_mean = 350,
-                        insert_size_stddev = 10,
-                        filename_prefix = sam_filename_prefix,
-                 	    template_name_prefix = paste0(lot_name,'r'),
-                        output_dir = output_local_dir,
-                        with_preneoplastic = with_preneoplastic,
-                        update_SAM = TRUE)
-  }, mc.cores = num_of_cores)
+    BAM_local_file <- BAM_file
+
+    cat("Found the lot BAM file\\n")
+    
+    remove_local_bam <- FALSE
+
+    step <- 1
 }
-seq_results_final<- do.call("bind_rows", seq_results)
-saveRDS(seq_results_final,
-        file.path(data_dir,
-                  paste0("seq_results_", spn_name,
-			  "_", lot_name, ".rds")))
 
-cat("   done\\n4. Building overall BAM file...")
-BAM_file <- merge_sams(output_local_dir, filename_prefix,
-                       sam_filename_prefix, chromosomes,
-		               num_of_cores)
+cat(paste0(step, ". Splitting BAM file by sample..."))
+step <- step + 1
 
-split_bam_by_samples <- function(output_local_dir, BAM_file) {
+split_bam_by_samples <- function(output_local_dir, BAM_file, remove_local_bam) {
     cmd <- paste0("samtools split -f \\"",
                   file.path(output_local_dir,"%*_%!.bam"),
                   "\\" ", BAM_file, " -@ ", num_of_cores)
     invisible(system(cmd, intern = TRUE))
 
-    file.remove(BAM_file)
+    if (remove_local_bam) {
+        file.remove(BAM_file)
+    }
+}
+invisible(split_bam_by_samples(output_local_dir, BAM_local_file, remove_local_bam))
+
+cat(paste0("done\\n", step,
+           ". Generating the FASTQs and deleting the BAMs..."))
+step <- step + 1
+
+BAM_files <- list.files(output_local_dir, pattern = "\\\\.bam$")
+
+generate_fastq <- function(orig_file, fastq_dir) {
+  base_orig_file <- tools::file_path_sans_ext(basename(orig_file))
+
+  file_prefix <- file.path(fastq_dir, base_orig_file)
+  R1 <- paste0(file_prefix, ".R1.fastq.gz")
+  R2 <- paste0(file_prefix, ".R2.fastq.gz")
+  unpaired <- paste0(file_prefix, ".unpaired.fastq.gz")
+  singleton <- paste0(file_prefix, ".singleton.fastq.gz")
+
+  cmd <- paste("samtools fastq -@ 20 -c 9 -N -1", R1, "-2", R2, "-0", unpaired, 
+               "-s", singleton, orig_file)
+  invisible(system(cmd, intern = TRUE))
 }
 
-cat("done\\n5. Splitting BAM file by sample...")
-invisible(split_bam_by_samples(output_local_dir, BAM_file))
+result <- parallel::mclapply(BAM_files, function(c) {
+    curr_BAM_file <- file.path(output_local_dir, c)
+    if (BAM_file != curr_BAM_file) {
+        generate_fastq(curr_BAM_file, output_local_dir)
 
-cat("done\\n6. Moving BAM files to output directory...")
-cmd <- paste0("mv ", file.path(output_local_dir, "*.bam"),
-              " ", bam_dir, "/")
+        unlink(curr_BAM_file)
+    }
+}, mc.cores = num_of_cores)
+
+cat(paste0("done\\n", step,
+           ". Moving the FASTQ files to output directory..."))
+step <- step + 1
+
+cmd <- paste0("mv ", file.path(output_local_dir, "*.fastq.gz"),
+              " ", fastq_dir, "/")
 invisible(system(cmd, intern = TRUE))
 
-cat("done\\n7. Removing local files...")
-unlink(output_local_dir, recursive = TRUE)
-cat("done\\n")
+cat(paste0("done\\n", step, ". Removing local files..."))
+step <- step + 1
 
-# done_filename <- file.path(output_dir, paste0(lot_name, ".done"))
-done_file_dir <- "/fast/cdslab/ggandolfi/done_files/"
-#done_filename <- file.path(paste0(done_file_dir,lot_name, ".done"))
-done_filename <- file.path(output_dir, paste0(lot_name, ".done"))
+unlink(output_local_dir, recursive = TRUE)
+
+done_filename <- file.path(output_dir, paste0(lot_name, "_final.done"))
 invisible(file.create(done_filename))
+
+cat("done\\n")
 """
 
 
@@ -224,12 +304,9 @@ def get_lot_prefix(seq_type):
                     + "\"normal_with_preneoplastic\" are supported")
 
 
-def get_completed_jobs(output_dir, lot_prefix):
-#def get_completed_jobs(done_file_dir, lot_prefix):
-    #common_prefix = f"{output_dir}/{lot_prefix}"
-    #common_prefix = f"{done_file_dir}/{lot_prefix}"
-    common_prefix = os.path.normpath(f"{output_dir}/{lot_prefix}")
-    common_suffix = '.done'
+def get_completed_jobs(done_file_dir, lot_prefix):
+    common_prefix = os.path.normpath(f"{done_file_dir}/{lot_prefix}")
+    common_suffix = '_final.done'
     done_files = glob.glob(f"{common_prefix}*{common_suffix}")
     prefix_len = len(common_prefix)
     suffix_len = len(common_suffix)
@@ -246,9 +323,8 @@ def remove_old_done_files(output_dir, lot_prefix):
         os.unlink(done_file)
 
 def get_sample_names(output_dir, first_lot_name):
-    #common_prefix = f"{output_dir}/{first_lot_name}_"
-    common_prefix = os.path.normpath(f"{output_dir}/{first_lot_name}_")
-    common_suffix = ".done"
+    common_prefix = os.path.normpath(f"{output_dir}/{first_lot_name}")
+    common_suffix = "_BAM.done"
     BAM_files = glob.glob(f"{common_prefix}*{common_suffix}")
     prefix_len = len(common_prefix)
     suffix_len = len(common_suffix)
@@ -278,9 +354,10 @@ if (__name__ == '__main__'):
                         help="The cluster account")
     parser.add_argument('-c', '--coverage', type=float, default=200.0,
                         help="The final sample overall coverage")
-    parser.add_argument('-pu', '--purity', type=float, default=1.0,
+    parser.add_argument('-P', '--purity', type=float, default=1.0,
                         help="The final sample overall purity")
-    parser.add_argument('-wn', '--with_normal', type=str, required=True,
+    parser.add_argument('-N', '--with_normal_sample', action='store_true',
+                        default=False,
                         help="Wheter sequence also the normal sample. "
                         + "Normal and tumors will have the same coverage")
     parser.add_argument('-l', '--num_of_lots', type=int, default=50,
@@ -290,8 +367,8 @@ if (__name__ == '__main__'):
     parser.add_argument('-j', '--parallel_jobs', type=int, default=20,
                         help="The number of parallel jobs")
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-n', '--normal', action='store_true',
-                       default=False,
+    group.add_argument('-n', '--normal_without_preneoplastic',
+                       action='store_true', default=False,
                        help=("Sequencing simulation of a normal sample "
                              + "*without* preneoplastic mutations."))
     group.add_argument('-w', '--normal_with_preneoplastic',
@@ -332,7 +409,7 @@ if (__name__ == '__main__'):
 
     zeros = math.ceil(math.log10(args.num_of_lots))
 
-    if args.normal:
+    if args.normal_without_preneoplastic:
         seq_type = 'normal'
     else:
         if args.normal_with_preneoplastic:
@@ -349,13 +426,10 @@ if (__name__ == '__main__'):
                         args.first_lot_id+args.num_of_lots))
 
     completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
-    #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
     submitted = list(completed_ids)
     lot_ids = list(lot_ids.difference(set(completed_ids)))
-    
 
     while len(lot_ids) != 0:
-        #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
         completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
         
         to_be_submitted = (args.parallel_jobs
@@ -370,7 +444,6 @@ if (__name__ == '__main__'):
 
             cmd = ['sbatch', '--account={}'.format(account),
                    '--partition={}'.format(args.partition),
-                   '--exclude={}'.format(args.exclude), ## added since epyc007 has some issues
                    '--job-name={}_{}'.format(args.SPN, lot_name),
                    ('--export=PHYLO_FOREST={},SPN={},LOT={},DEST={},'
                     + 'COVERAGE={},TYPE={},NODE_SCRATCH={},'
@@ -378,7 +451,8 @@ if (__name__ == '__main__'):
                                         args.SPN, lot_name,
                                         args.output_dir, lot_coverage,
                                         seq_type, args.node_scratch_directory,
-                                        i,args.purity,args.with_normal),
+                                        i,args.purity,(args.with_normal_sample 
+                                                       if "TRUE" else "FALSE")),
                    '--output={}/lot_{}.log'.format(log_dir, lot_name),
                    './rRACES_seq.sh']
             if args.exclude != "":
@@ -392,9 +466,7 @@ if (__name__ == '__main__'):
             submitted.extend(lot_ids[:to_be_submitted])
             lot_ids = lot_ids[to_be_submitted:]
         time.sleep(60)  # wait 1 minute
-    #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
     completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
     while (len(completed_ids) != len(submitted)):
         time.sleep(60)
-        #completed_ids = get_completed_jobs("/fast/cdslab/ggandolfi/done_files/", lot_prefix)
         completed_ids = get_completed_jobs(args.output_dir, lot_prefix)
