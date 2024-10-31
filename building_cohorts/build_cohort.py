@@ -378,7 +378,31 @@ def get_sample_names_from_FASTQ(fastq_dir):
         
         sample_names.add(fastq_basename[prefix_up_to+1:-len(suffix)])
     
-    return list(sample_names)
+    return sorted(list(sample_names))
+
+def write_sarek_sample_lines(sarek_file, SPN, seq_type, sample_name, num_of_lots, fastq_dir,
+                             lot_padding_zeros, line_padding_zeros=2):
+    if (seq_type == 'tumour'):
+        status = 1
+    elif (seq_type == 'normal'):
+        status = 0
+    else:
+        raise RuntimeError(f'Unsupported sequence type "{seq_type}"')
+
+    fastq_suffix = '.fastq.gz'
+
+    line = 1
+    for lot in range(num_of_lots):
+        lot_name = f'{get_lot_prefix(seq_type)}{str(lot).zfill(lot_padding_zeros)}'
+        fastq_base_name = f'{lot_name}_{sample_name}'
+        line_name = f'L{str(line).zfill(line_padding_zeros)}'
+        line += 1
+        R1_filename = os.path.abspath(os.path.join(fastq_dir,
+                                                    fastq_base_name+'.R1' + fastq_suffix))
+        R2_filename = os.path.abspath(os.path.join(fastq_dir,
+                                                    fastq_base_name+'.R2' + fastq_suffix))
+        sarek_file.write(f'\n{SPN},{subject_gender},{status},{sample_name},'
+                        + f'{line_name},{R1_filename},{R2_filename}')
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -544,10 +568,10 @@ if (__name__ == '__main__'):
     if not os.path.exists(sarek_dir):
         os.mkdir(sarek_dir)
 
-    fastq_suffix = '.fastq.gz'
+    normal_fastq_dir = os.path.join(f'{args.output_dir}', 'normal/purity_1/FASTQ')
     for purity in cohorts['tumour']['purities']:
-        fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
-        sample_names = get_sample_names_from_FASTQ(fastq_dir)
+        tumour_fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
+        sample_names = get_sample_names_from_FASTQ(tumour_fastq_dir)
 
         lines = math.ceil(math.log10(num_of_lots*(len(sample_names)+1)))
 
@@ -556,36 +580,7 @@ if (__name__ == '__main__'):
             with open(f'{sarek_dir}/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file:
                 sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
                 for sample_name in sample_names:
-                    line = 1
-                    to_do = {
-                        'tumour': {
-                            'num_of_lots': num_of_tumour_lots,
-                            'name': sample_name,
-                            'fastq_dir': fastq_dir
-                        },
-                        'normal': {
-                            'num_of_lots': num_of_lots,
-                            'name': 'normal',
-                            'fastq_dir': os.path.join(f'{args.output_dir}',
-                                                      f'normal/purity_1/FASTQ')
-                        }
-                    }
-
-                    for seq_type, type_data in to_do.items():
-                        type_prefix = get_lot_prefix(seq_type)
-                        fastq_dir = type_data['fastq_dir']
-                        for lot in range(type_data['num_of_lots']):
-                            lot_name = f'{type_prefix}{str(lot).zfill(zeros)}'
-                            fastq_base_name = f'{lot_name}_{args.SPN}_{type_data["name"]}'
-                            line_name = f'L{str(line).zfill(lines)}'
-                            line += 1
-                            R1_filename = os.path.abspath(os.path.join(fastq_dir,
-                                                                       fastq_base_name+'.R1'+fastq_suffix))
-                            R2_filename = os.path.abspath(os.path.join(fastq_dir,
-                                                                       fastq_base_name+'.R2'+fastq_suffix))
-                            sarek_file.write(f'\n{args.SPN},{subject_gender},1,{sample_name},'
-                                            + f'{line_name},{R1_filename},{R2_filename}')
-
-
-
-
+                    write_sarek_sample_lines(sarek_file, args.SPN, 'tumour', sample_name,
+                                             num_of_tumour_lots, tumour_fastq_dir, zeros, lines)
+                write_sarek_sample_lines(sarek_file, args.SPN, 'normal', 'normal_sample',
+                                         num_of_lots, normal_fastq_dir, zeros, lines)
