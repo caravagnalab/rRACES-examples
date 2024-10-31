@@ -432,7 +432,7 @@ if (__name__ == '__main__'):
         account = args.account
 
     gender_filename = os.path.join(os.path.dirname(args.phylogenetic_forest),
-                                "subject_gender.txt")
+                                   "subject_gender.txt")
 
     if not os.path.exists(gender_filename):
         with open('rRACES_subject_gender.R', 'w') as outstream:
