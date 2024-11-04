@@ -3,7 +3,7 @@ library(rRACES)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
-library(CNAqc)
+#library(CNAqc)
 #source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/scripts/my_functions/plot_genome_wide.R")
 #'
 #' Convert realtive coordinates to absolute coordinates
@@ -30,6 +30,20 @@ relative_to_absolute_coords_pos = function(x, ref = "GRCh38") {
   return(x)
 }
 
+
+signatures_palette <- function(phylo_forest,seed){
+  ref_path <- phylo_forest$get_reference_path()
+  SBS_table_path <- gsub(pattern = "reference.fasta",replacement = "SBS_signatures.txt",x = ref_path)
+  IDS_table_path <- gsub(pattern = "reference.fasta",replacement = "indel_signatures.txt",x = ref_path)
+  SBS_table <-  read.csv(SBS_table_path,header=T,sep="\t")
+  SBS_sign <- colnames(SBS_table)
+  IDS_table <-  read.csv(IDS_table_path,header=T,sep="\t")
+  IDS_sign <- colnames(IDS_table)
+  set.seed(seed)
+  return(Polychrome::createPalette(length(sigs), c("#6B8E23","#4169E1"), M=1000,
+                                   target="normal", range=c(15,80)) %>%
+           setNames(sigs))
+}
 #'
 #' Generates CNAqc object given simulate_seq() dataframe and
 #' phylogenetic forest object. The final result will be a CNAqc 
@@ -65,6 +79,16 @@ races2cnaqc <- function(seq_results,phylo_forest,sample_id,ref,purity){
                    ref = ref)
   return(x)
 }
+
+
+get_classes_colors <- function(classes){
+  color = c(`driver` = "firebrick4",`passenger` = ggplot2::alpha("tan2",0.4),`pre-neoplastic` = "cornflowerblue",
+            `germinal` = "darkolivegreen")
+  missing = setdiff(names(color), classes)
+  nmissing = length(missing)
+  c(color, CNAqc:::nmfy(missing, rep("gray", nmissing)))
+}
+
 
 
 get_legend <- function(col_palette){
