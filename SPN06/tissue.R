@@ -93,9 +93,11 @@ sim$update_rates("C2", rates = c(growth = 0, death = 1))
 sim$update_rates("C3", rates = c(growth = 0, death = 1))
 sim$update_rates("C4", rates = c(growth = 0, death = 1))
 
-while ((sim$get_cells() %>% filter(mutant == "C2") %>% nrow()) > 100) {
-  sim$run_up_to_time(sim$get_clock() + 0.1)
-}
+#while ((sim$get_cells() %>% filter(mutant == "C2") %>% nrow()) > 100) {
+#  sim$run_up_to_time(sim$get_clock() + 0.1)
+#}
+sim$run_until(sim$var("C2")<100)
+
 
 chemo1_end <- sim$get_clock()
 

@@ -89,9 +89,10 @@ CNA_C6 <- CNA(
   chr = "12", 
   chr_pos = 25205246, 
   len = 45690, 
-  allele = 2, 
+  #allele = 2, 
   #src_allele = NULL
 )
+
 
 #CNA_C7 <- WGD
 
