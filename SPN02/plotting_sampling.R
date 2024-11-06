@@ -66,6 +66,7 @@ plotting_sample = function(sim, samples_timing, boxes) {
                          position = position_nudge_repel(x = -0.1, y = 0.05)) +
         ggtitle(paste(english::ordinal(t), "sampling")) +
         guides(color = guide_legend(nrow = 1, title = "Type of sample", title.position = "top")) +
+	 CNAqc:::my_ggplot_theme()+
         theme(legend.position = "bottom")
     }
   }

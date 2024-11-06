@@ -12,15 +12,16 @@
 module load samtools
 
 ## Set up info
-races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_100X_basic_error_paired_350_3tumor_new1"
+#races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_100X_basic_error_paired_350_3tumor_new1"
+races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_100X_basic_error_paired_350_1tumor_new_1"
 sam_files=($(ls $races_dir/*.sam | grep chr | rev | cut -f 1 -d "/"| rev |cut -f 1 -d "."))
 sam_file=${sam_files[$SLURM_ARRAY_TASK_ID-1]} ## split by chromosomes
 
 ## Define the array of samples ids present in sam header
-samples=(SPN01_Sample_1 SPN01_Sample_2 SPN01_Sample_3)
-cd $races_dir
-time samtools split -f %\!/%*_%\!.sam --threads 8 ${sam_file}.sam
-
+#samples=(SPN01_Sample_1 SPN01_Sample_2 SPN01_Sample_3)
+#cd $races_dir
+#time samtools split -f %\!/%*_%\!.sam --threads 8 ${sam_file}.sam
+samples=(SPN01_Sample_1)
 cd /u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/SPN01/05_sam_processing
 ## SAM_TO_FASTQ ###
 for i in ${samples[@]}; do

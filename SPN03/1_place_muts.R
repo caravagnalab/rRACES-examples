@@ -10,7 +10,7 @@ m_engine <- MutationEngine(setup_code = "GRCh38",
                            tumour_type= 'CLLE')
 
 SNV_rate = 1e-8
-CNA_rate = 2e-12
+CNA_rate = 1e-11
 
 # Clone 1 
 # NOTCH1p2514*fs*4 
@@ -48,7 +48,12 @@ phylo_forest <- m_engine$place_mutations(forest,
                                          num_of_preneoplatic_SNVs = 800,
                                          num_of_preneoplatic_indels = 200)
 
-phylo_forest$get_sampled_cell_CNAs() %>% distinct(chr, begin, end)
+# check CN
+# phylo_forest$get_sampled_cell_CNAs() %>% distinct(chr, begin, end)
+phylo_forest$get_bulk_allelic_fragmentation('Sample A') %>% filter(major != minor, ratio > 0.9)
+phylo_forest$get_bulk_allelic_fragmentation('Sample B') %>% filter(major != minor, ratio > 0.9)
+phylo_forest$get_bulk_allelic_fragmentation('Sample C') %>% filter(major != minor, ratio > 0.9)
+
 phylo_forest$save("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/results/phylo_forest.sff")
 
 annot_forest <- plot_forest(forest) %>%

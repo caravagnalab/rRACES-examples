@@ -13,7 +13,8 @@ module load samtools
 
 ## Set up info
 # Set the directory where sam files for the normal are stored
-races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_30X_basic_error_paired_100_1normal/"
+#races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/FINAL_DATA/sequencing_30X_basic_error_paired_100_1normal/"
+races_dir="/orfeo/LTS/CDSLab/LT_storage/ggandolfi/races_simulations/CHECK_PURITY/sequencing_30X_basic_error_paired_350_1normal_new_1_germline/"
 sam_files=($(ls $races_dir/*.sam | grep chr | rev | cut -f 1 -d "/"| rev |cut -f 1 -d "."))
 sam_file=${sam_files[$SLURM_ARRAY_TASK_ID-1]} ## split by chromosomes
 
