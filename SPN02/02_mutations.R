@@ -9,27 +9,24 @@ clone3_born = readRDS("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results
 sampled_phylogeny = load_samples_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/SPN02/results/samples_forest.sff")
 curr_dir = getwd()
 setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
+
+# setting the germline subject as columbian woman and tumor type to colonrectal cancer
 m_engine <- MutationEngine(setup_code = "GRCh38", 
-                context_sampling = 50)
+                context_sampling = 50, 
+                tumour_type = "COAD",
+			   tumour_study = "US", germline_subject = "HG01113")
 
-
-
-
-subjects <- m_engine$get_germline_subjects()
-
-# setting the germline subject as columbian woman
-m_engine$set_germline_subject("HG01113")
 
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 1e-8, indel = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, indel = 1e-9, CNA = 1e-11),
                     drivers = list("BRAF V600E"))
 
 m_engine$add_mutant(mutant_name = "Clone 2", 
-                    passenger_rates = c(SNV = 1e-8, indel = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, indel = 1e-9, CNA = 1e-11),
                     drivers = list("PIK3CA E545K"))
 
 m_engine$add_mutant(mutant_name = "Clone 3", 
-                    passenger_rates = c(SNV = 1e-7, indel = 1e-7, CNA = 1e-10), # modelled as an hypermutant, so with higher passenger_rates
+                    passenger_rates = c(SNV = 1e-7, indel = 1e-8, CNA = 1e-10), # modelled as an hypermutant, so with higher passenger_rates
                     drivers = list(SNV("2", 47799065, "A")))
 
 # indels and sbs have different coefficients summing (up to 1 for IDs and up to 1 for SBSs)

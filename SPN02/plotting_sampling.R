@@ -18,6 +18,7 @@
 
 library(cli)
 library(english)
+library(ggrepel)
 
 plotting_sample = function(sim, samples_timing, boxes) {
   
