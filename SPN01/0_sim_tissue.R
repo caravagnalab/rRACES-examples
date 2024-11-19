@@ -8,7 +8,7 @@ library(cli)
 library(ggrepel)
 library(ggpubr)
 source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/plot_tissue_dynamics.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN02/plotting_sampling.R")
+#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN02/plotting_sampling.R")
 
 dir <- getwd()
 set.seed(12345)
@@ -140,12 +140,12 @@ s = c("Clonal" = "SPN01_1.2", "Clonal" = "SPN01_1.3","Polyclonal" = "SPN01_1.1")
 timing = list("T1" = s)
 
 ### Use function for plotting different samples
-sampling_plot <- plotting_sample(sim, samples_timing = timing, boxes = box)
+#sampling_plot <- plotting_sample(sim, samples_timing = timing, boxes = box)
 
 
 # Forest
 forest <- sim$get_samples_forest()
-forest$save("data/samples_forest.sff")
+forest$save("data/samples_forest_1.sff")
 
 plt_forest <- plot_forest(forest) %>%
 	  annotate_forest(forest)+
@@ -182,10 +182,10 @@ data_info_samples <- sim$get_samples_info()
 tbl_sample <- ggtexttable(data_info_samples, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
 		tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
 		tab_add_hline(at.row = 4, row.side = "bottom", linewidth = 3, linetype = 1)
-
-page1.2 <- wrap_plots(list(sampling_plot,tbl_sample,plt_forest),design = page1.2_layout)+
-	        patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
+ggsave("plot_forest.pdf",plt_forest,width = 250, height = 320, units = "mm", dpi = 300)
+#page1.2 <- wrap_plots(list(sampling_plot,tbl_sample,plt_forest),design = page1.2_layout)+
+#	        patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
 saveRDS(page1.1,"page1.1.rds")
-saveRDS(page1.2,"page1.2.rds")
+#saveRDS(page1.2,"page1.2.rds")
 ggsave("page1.1.pdf",plot=page1.1,width = 250, height = 320, units = "mm", dpi = 300)
-ggsave("page1.2.pdf",plot=page1.2,width = 250, height = 320, units = "mm", dpi = 300)
+#ggsave("page1.2.pdf",plot=page1.2,width = 250, height = 320, units = "mm", dpi = 300)
