@@ -67,20 +67,23 @@ sim$run_up_to_size("C4", 1000)
 #-------------------------------------------------------------------------------
 #------------------------------ Sampling [A, B] --------------------------------
 #-------------------------------------------------------------------------------
-bbox_width <- 20
+bbox_width <- 40
 
 # Box A
-bbox1_p <- c(970, 895) # OK
+# T:1246 C2:125(10%) C3:1121(90%)
+bbox1_p <- c(970, 870)
 bbox1_q <- bbox1_p + bbox_width
 
 # Box B
-bbox2_p <- c(900, 925) # 80% 0% 20%
+# T:1555 C2:958(61%) C3:382(25%) C4:215(14%)
+bbox2_p <- c(910, 890)
 bbox2_q <- bbox2_p + bbox_width
 
 sim$sample_cells("A", bottom_left = bbox1_p, top_right = bbox1_q)
 sim$sample_cells("B", bottom_left = bbox2_p, top_right = bbox2_q)
 message("Samples A and B Extracted!")
 sample_AB <- plot_tissue(sim)
+
 
 
 #-------------------------------------------------------------------------------
@@ -113,7 +116,7 @@ sim$run_up_to_size("C5", 16000)
 #-------------------------------------------------------------------------------
 #-------------------------------- Sampling [C] ---------------------------------
 #-------------------------------------------------------------------------------
-bbox_c = sim$search_sample(c("C5" = 360), nw = 20, nh = 20)
+bbox_c = sim$search_sample(c("C5" = 1200), nw = 40, nh = 40)
 sim$sample_cells("C", bbox_c$lower_corner, bbox_c$upper_corner)
 message("Sample C Extracted!")
 sample_C <- plot_tissue(sim)
@@ -153,10 +156,10 @@ sim$run_up_to_size("C7", 2000)
 #-------------------------------------------------------------------------------
 #----------------------------- Sampling [D, E] ---------------------------------
 #-------------------------------------------------------------------------------
-bbox_d = sim$search_sample(c("C6" = 360), nw = 20, nh = 20)
+bbox_d = sim$search_sample(c("C6" = 1200), nw = 40, nh = 40)
 sim$sample_cells("D", bbox_d$lower_corner, bbox_d$upper_corner)
 
-bbox_e = sim$search_sample(c("C7" = 360), nw = 20, nh = 20)
+bbox_e = sim$search_sample(c("C7" = 1000), nw = 40, nh = 40)
 sim$sample_cells("E", bbox_e$lower_corner, bbox_e$upper_corner)
 
 message("Samples D and E Extracted!")
@@ -201,6 +204,7 @@ curr_dir <- getwd()
 
 print(paste0("curr_dir: ", curr_dir))
 
+
 ggsave(filename = paste0(curr_dir, "/plots/final.png"), plot = p, width = 16, height = 10, dpi = 300)
 #ggsave(filename = "~/scratch/packages/rRACES-examples/SPN06/plots/final2.png", plot = p, width = 16, height = 10, dpi = 300)
 #ggsave(filename = paste(curr_dir, "/plots/final_test2.png", sep = ""), plot = p, width = 16, height = 10, dpi = 300)
@@ -217,5 +221,6 @@ chemo_timing <- list(
 saveRDS( chemo_timing, paste(curr_dir, "/data/chemo_timing.rds", sep = "") )
 
 message("DONE!, everything safe and sound")
+
 
 

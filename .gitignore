@@ -16,3 +16,6 @@
 *.rds
 *._.DS_Store
 /SPN01/new_simulation*
+*._test.R
+*cmake*
+*test.R

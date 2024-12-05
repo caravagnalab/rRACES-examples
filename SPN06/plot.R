@@ -22,18 +22,18 @@ source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_bluepr
 
 # load the sequence and phylogenetic forest objects
 #-------------------------------------------------------------------------------
-seq_results <- readRDS("data/SPN06_seq_80X.rds")
+seq_results <- readRDS("data/SPN06_seq_200X.rds")
 phylo_forest <- load_phylogenetic_forest("data/phylo_forest.sff")
 
 samples <- phylo_forest$get_samples_info()[["name"]] %>% sort()
 print(samples)
 
 
-pdf("output/genome_wide_80X.pdf", width = 10, height = 12)
+pdf("output/genome_wide_200X.pdf", width = 10, height = 12)
 
 plots_gw <- list()
 
-cov = 80
+cov = 200
 error_rate = 1e-3
 tumour_type = "LUAD"
 germline_sub = "default"

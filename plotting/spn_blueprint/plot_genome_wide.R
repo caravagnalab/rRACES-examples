@@ -2,7 +2,8 @@ library(rRACES)
 library(CNAqc)
 library(dplyr)
 library(ggplot2)
-source("/u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/plotting/spn_blueprint/utils.R")
+#source("/u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/plotting/spn_blueprint/utils.R")
+source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_blueprint/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'

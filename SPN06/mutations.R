@@ -4,6 +4,9 @@ library(dplyr)
 library(ggplot2)
 library(patchwork)
 
+seed <- 2024
+set.seed(seed)
+
 #-------------------------------------------------------------------------------
 #-------------------------- set up Mutation Engine -----------------------------
 #-------------------------------------------------------------------------------
@@ -17,7 +20,7 @@ message("start creating mutations")
 #-------------------------------------------------------------------------------
 #---------------------------- passenger mutations ------------------------------
 #-------------------------------------------------------------------------------
-passengers <- c(SNV = 1e-8, CNA = 1e-11)
+passengers <- c(SNV = 1e-8, CNA = 1e-10)
 #SNV(chr = 0, chr_pos = 0, alt = 0, ref = "?", allele = NULL, cause = "")
 
 #-------------------------------------------------------------------------------
@@ -38,16 +41,26 @@ SNV_C1 <- SNV(
 '
 
 # STK11 LOH
+'
 CNA_C2 <- CNA(
   type = "D", 
   chr = "19", 
   chr_pos = 1177558, 
-  len = 50873, 
-  allele = 0, 
-  #src_allele = NULL
+  len = 50873, # 50873
+  allele = 0
+)
+'
+CNA_C2 <- CNA(
+  type = "D", 
+  chr = "19", 
+  chr_pos = 702994, 
+  len = 1e6, 
+  allele = 0
 )
 
+
 # EGFR amp
+'
 CNA_C3 <- CNA(
   type = "A", 
   chr = "7", 
@@ -56,6 +69,14 @@ CNA_C3 <- CNA(
   #allele = 2, 
   #src_allele = NULL
 )
+'
+CNA_C3 <- CNA(
+  type = "A", 
+  chr = "7", 
+  chr_pos = 54615322,  
+  len = 1e6
+)
+
 
 # KEAP1 R413C/H/L
 SNV_C4 <- "KEAP1 R460M"
@@ -84,6 +105,7 @@ SNV_C5 <- SNV(
 '
 
 # KRAS amp (mutant)
+'
 CNA_C6 <- CNA(
   type = "A", 
   chr = "12", 
@@ -91,6 +113,13 @@ CNA_C6 <- CNA(
   len = 45690, 
   #allele = 2, 
   #src_allele = NULL
+)
+'
+CNA_C6 <- CNA(
+  type = "A", 
+  chr = "12", 
+  chr_pos = 24728091, 
+  len = 1e6
 )
 
 
