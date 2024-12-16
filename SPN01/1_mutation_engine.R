@@ -3,13 +3,11 @@ library(rRACES)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
-library(ggpubr)
-library(ggrepel)
+#library(ggpubr)
+#library(ggrepel)
 dir <- getwd()
 set.seed(12345)
-forest <- load_samples_forest("data/samples_forest_1.sff")
-#setwd("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/new_simulation/sim6")
-#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/signature_palette.R")
+forest <- load_samples_forest("data/samples_forest_singularity.sff")
 setwd("/orfeo/scratch/cdslab/shared/races/GRCh38/")
 m_engine <- MutationEngine(setup_code = "GRCh38",tumour_type = "COAD",
 			   tumour_study = "US")
@@ -27,35 +25,35 @@ df <- df %>%
 	mutate(mu_SNV=c(1e-8,1e-8,1e-8,1e-8),
 	       mu_CNA=c(0,1e-10, 1e-12, 1e-12),
 	       mu_indels=c(0,0,0,0))
-tbl <- ggtexttable(df, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
-          tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
-          tab_add_hline(at.row = 4, row.side = "bottom", linewidth = 3, linetype = 1)
-          #tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
+#tbl <- ggtexttable(df, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
+#          tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
+#          tab_add_hline(at.row = 4, row.side = "bottom", linewidth = 3, linetype = 1)
+#          #tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
 
 mu_SNV = 1e-8
 mu_CNA = 1e-10
 ##112707518-112846239 
 CNA_Clone2 = rRACES::CNA(type = "D", "5",
-		 chr_pos = 107707518, len = 1e7,allele = 0)
+		 chr_pos = 107707518, len = 2e7,allele = 0)
 
 ## Drivers for the tumors
 m_engine$add_mutant(mutant_name = "Clone 1",
 		    passenger_rates = c(SNV = mu_SNV, CNA = 0),drivers = list(list("APC R1450*", allele = 1)))
 m_engine$add_mutant(mutant_name = "Clone 2",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list(CNA_Clone2))
 mu_SNV = 1e-8
-mu_CNA = 1e-12
+mu_CNA = 1e-13
 m_engine$add_mutant(mutant_name = "Clone 3",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list("TP53 R175H"))
 
 m_engine$add_mutant(mutant_name = "Clone 4",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list(WGD))
 
 
 # Mutational signatures
-m_engine$add_exposure(time = 0,coefficients = c(SBS1 = 0.40,SBS5 = 0.20,
-		      SBS17a = 0.15,SBS17b = 0.15,ID1 = 0.60,ID2 = 0.40,SBS13 = 0.1))
+m_engine$add_exposure(time = 0,coefficients = c(SBS1 = 0.20,SBS5 = 0.35,
+		      SBS18 = 0.15,SBS17b = 0.25,ID1 = 0.60,ID2 = 0.40,SBS88 = 0.05))
 print("Mutation engine created")
 phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_SNVs=800, num_of_preneoplatic_indels=200)
 
-phylo_forest$save(paste0(dir,"/","data/phylo_forest_1.sff"))
+phylo_forest$save(paste0(dir,"/","data/phylo_forest_singularity.sff"))
 
 #setwd(dir)
 ########### Plotting ##########

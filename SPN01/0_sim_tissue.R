@@ -3,14 +3,15 @@ library(rRACES)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
-library(english)
-library(cli)
-library(ggrepel)
-library(ggpubr)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/plot_tissue_dynamics.R")
+#library(english)
+#library(cli)
+#library(ggrepel)
+#library(ggpubr)
+#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/plot_tissue_dynamics.R")
 #source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN02/plotting_sampling.R")
 
 dir <- getwd()
+print(dir)
 set.seed(12345)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345)
 tissue_size <- sim$get_tissue_size()
@@ -95,15 +96,15 @@ muller <- plot_muller(sim)
 print("End simulation")
 
 ### Table with info ###
-data_final <- inner_join(sim$get_species(),sim$get_counts(),by=c("mutant","epistate")) %>%
-                #mutate(percetage=counts/sum(counts)*100) %>%
-		select(c("mutant","epistate","growth_rate","death_rate","overall"))
-tbl <- ggtexttable(data_final, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
-          tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
-          tab_add_hline(at.row = 5, row.side = "bottom", linewidth = 3, linetype = 1) %>%
-          tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
-
-print("Table written")
+#data_final <- inner_join(sim$get_species(),sim$get_counts(),by=c("mutant","epistate")) %>%
+#                #mutate(percetage=counts/sum(counts)*100) %>%
+#		select(c("mutant","epistate","growth_rate","death_rate","overall"))
+#tbl <- ggtexttable(data_final, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
+#          tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
+#          tab_add_hline(at.row = 5, row.side = "bottom", linewidth = 3, linetype = 1) %>%
+#          tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
+#
+#print("Table written")
 ### Sampling ###
 
 bboxC <- sim$search_sample(c("Clone 4"= 1000),50, 50)
@@ -145,47 +146,47 @@ timing = list("T1" = s)
 
 # Forest
 forest <- sim$get_samples_forest()
-forest$save("data/samples_forest_1.sff")
+forest$save("data/samples_forest_singularity.sff")
 
-plt_forest <- plot_forest(forest) %>%
-	  annotate_forest(forest)+
-	   theme(legend.position = "none")
-piechart <- plot_state(sim)+theme(legend.position = "none")
-timeseries <- plot_timeseries(sim)+
-	CNAqc:::my_ggplot_theme()+
-	theme(legend.position = "none")
-
-tissue_plots <- list(t1,t2,t3,t4,t5,t6)
-state_plots <- list(s1,s2,s3,s4,s5,s6)
-plot_tissue_dynamics <- plot_tissue_dynamics(tissue_plots,state_plots,SPN_id="SPN01")
-muller <- plot_muller(sim)+
-	CNAqc:::my_ggplot_theme()+
-	theme(legend.position = "none")
-saveRDS(muller,"muller_plot.rds")
-page1.1_layout <- "AAAAA\nAAAAA\nAAAAA\nBBBBB\nBBBBB\nCCCDD"
-page1.2_layout <- "AAAAA\nBBBBB\nCCCCC\nCCCCC\nCCCCC\nCCCCC"
-part1 <-plot_tissue_dynamics # ggplot()
-part2 <- ggplot()
-part3 <- ggplot()
-part4 <- ggplot()
-part5 <- ggplot()
-### Table with info ###
-#data_final <- inner_join(sim$get_species(),sim$get_counts(),by=c("mutant","epistate")) %>%
-#	        mutate(percetage=counts/sum(counts)*100)
-#tbl <- ggtexttable(data_final, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
-#	  tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
-#	  tab_add_hline(at.row = 5, row.side = "bottom", linewidth = 3, linetype = 1) %>%
-#	  tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
-page1.1 <- wrap_plots(list(plot_tissue_dynamics,muller,tbl,timeseries),design = page1.1_layout)+
-	patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
-data_info_samples <- sim$get_samples_info()
-tbl_sample <- ggtexttable(data_info_samples, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
-		tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
-		tab_add_hline(at.row = 4, row.side = "bottom", linewidth = 3, linetype = 1)
-ggsave("plot_forest.pdf",plt_forest,width = 250, height = 320, units = "mm", dpi = 300)
-#page1.2 <- wrap_plots(list(sampling_plot,tbl_sample,plt_forest),design = page1.2_layout)+
-#	        patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
-saveRDS(page1.1,"page1.1.rds")
-#saveRDS(page1.2,"page1.2.rds")
-ggsave("page1.1.pdf",plot=page1.1,width = 250, height = 320, units = "mm", dpi = 300)
-#ggsave("page1.2.pdf",plot=page1.2,width = 250, height = 320, units = "mm", dpi = 300)
+#plt_forest <- plot_forest(forest) %>%
+#	  annotate_forest(forest)+
+#	   theme(legend.position = "none")
+#piechart <- plot_state(sim)+theme(legend.position = "none")
+#timeseries <- plot_timeseries(sim)+
+#	CNAqc:::my_ggplot_theme()+
+#	theme(legend.position = "none")
+#
+#tissue_plots <- list(t1,t2,t3,t4,t5,t6)
+#state_plots <- list(s1,s2,s3,s4,s5,s6)
+#plot_tissue_dynamics <- plot_tissue_dynamics(tissue_plots,state_plots,SPN_id="SPN01")
+#muller <- plot_muller(sim)+
+#	CNAqc:::my_ggplot_theme()+
+#	theme(legend.position = "none")
+#saveRDS(muller,"muller_plot.rds")
+#page1.1_layout <- "AAAAA\nAAAAA\nAAAAA\nBBBBB\nBBBBB\nCCCDD"
+#page1.2_layout <- "AAAAA\nBBBBB\nCCCCC\nCCCCC\nCCCCC\nCCCCC"
+#part1 <-plot_tissue_dynamics # ggplot()
+#part2 <- ggplot()
+#part3 <- ggplot()
+#part4 <- ggplot()
+#part5 <- ggplot()
+#### Table with info ###
+##data_final <- inner_join(sim$get_species(),sim$get_counts(),by=c("mutant","epistate")) %>%
+##	        mutate(percetage=counts/sum(counts)*100)
+##tbl <- ggtexttable(data_final, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
+##	  tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
+##	  tab_add_hline(at.row = 5, row.side = "bottom", linewidth = 3, linetype = 1) %>%
+##	  tab_add_footnote(text = "*Values referring to end of simulation", size = 8, face = "italic")
+#page1.1 <- wrap_plots(list(plot_tissue_dynamics,muller,tbl,timeseries),design = page1.1_layout)+
+#	patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
+#data_info_samples <- sim$get_samples_info()
+#tbl_sample <- ggtexttable(data_info_samples, rows = NULL, theme = ttheme("blank",base_size = 8)) %>%
+#		tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2) %>%
+#		tab_add_hline(at.row = 4, row.side = "bottom", linewidth = 3, linetype = 1)
+#ggsave("plot_forest.pdf",plt_forest,width = 250, height = 320, units = "mm", dpi = 300)
+##page1.2 <- wrap_plots(list(sampling_plot,tbl_sample,plt_forest),design = page1.2_layout)+
+##	        patchwork::plot_annotation(title= "SPN01 final report",subtitle = "Tissue dynamics")
+#saveRDS(page1.1,"page1.1.rds")
+##saveRDS(page1.2,"page1.2.rds")
+#ggsave("page1.1.pdf",plot=page1.1,width = 250, height = 320, units = "mm", dpi = 300)
+##ggsave("page1.2.pdf",plot=page1.2,width = 250, height = 320, units = "mm", dpi = 300)
