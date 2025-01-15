@@ -1,4 +1,5 @@
 
+.libPaths("/orfeo/cephfs/scratch/cdslab/ahaghighi/Rlibs")
 
 rm(list = ls()) # clears objects from the workspace
 
@@ -23,6 +24,8 @@ source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_bluepr
 # load the sequence and phylogenetic forest objects
 #-------------------------------------------------------------------------------
 seq_results <- readRDS("data/SPN06_seq_200X.rds")
+seq_results <- do.call(rbind, lapply(seq_results, function(x) x[[1]]))
+
 phylo_forest <- load_phylogenetic_forest("data/phylo_forest.sff")
 
 samples <- phylo_forest$get_samples_info()[["name"]] %>% sort()
@@ -34,7 +37,7 @@ pdf("output/genome_wide_200X.pdf", width = 10, height = 12)
 plots_gw <- list()
 
 cov = 200
-error_rate = 1e-3
+error_rate = 4e-3
 tumour_type = "LUAD"
 germline_sub = "default"
 
@@ -46,7 +49,7 @@ for (i in samples) {
     phylo_forest=phylo_forest,
     sample_id=i,
     ref="GRCh38",
-    purity=0.9
+    purity=1
   )
   
   gw <- genome_wide_plots(x, seq_results, i)
