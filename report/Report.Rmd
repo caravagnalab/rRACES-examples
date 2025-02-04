@@ -1,0 +1,75 @@
+---
+set_title: !r test_title
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+    toc_depth: 3
+    number_sections: true
+    theme: cosmo  
+# params:
+  # files:
+  #   sim: "NULL" ## path to simulation snapshot
+  #   sample_forest: "NULL" ## path to sample forest
+  #   phylo_forest: "NULL" ## path to phylo forest
+  spn: "NULL" ## SPN id
+  sequencing:
+    coverage: 100
+    purity: 0.9
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- Libraries  -->
+
+```{r libraries, echo=FALSE, warning=FALSE, include=FALSE, message = FALSE}
+
+#load libraries
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(ggplot2)
+library(patchwork)
+library(rRACES)
+library(dplyr)
+metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = ";")
+img_dir <- "SCOUT_images/"
+```
+
+```{r params, include = FALSE}
+#Load params from YAML if running outside R Markdown
+if (!exists("params")) {
+  params <- yaml::read_yaml("params.yml")
+}
+```
+
+---
+title: "Report for `r params$spn`"
+---
+
+```{r get_spn_info, include = FALSE}
+#Load params from YAML if running outside R Markdown
+info_spn <- metadata %>% filter(SPN_ID==params$spn)
+```
+
+This report shows the results for patient **`r params$spn`** of SCOUT cohort. `r info_spn$Description` **`r params$spn`** is profiled by `r info_spn$N_Samples` samples collected at `r info_spn$N_Timepoints` time-point.
+<!-- **`r params$spn`** tumour represents a micro-satellite stable (MSS) colorectal cancer composed of a single clonal population, sampled at `r info_spn$N_Timepoints` with `r info_spn$N_Samples` multiregional samples. -->
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+spn_image <- paste0(img_dir,params$spn,".png")
+knitr::include_graphics(spn_image)
+```
+
+# Tissue Dynamics
+This part of the report shows how the tumour growth in time. Muller plot and time series plot show changing in cellular growth of the different clones.
+
+## Growth model
+
+## Phylogenetic tree
+
+# Mutation Engine
+# Sequencing results
+
+The **`r params$spn`** is sequenced with a coverage of **`r params$sequencing$coverage`**X and a simulated purity of **`r params$sequencing$purity`**.
