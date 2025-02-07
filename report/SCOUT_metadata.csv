@@ -1,0 +1,8 @@
+SPN_ID	N_Clones	N_Samples	N_Timepoints	Description	SBS	ID	Driver_CNA	Driver_SNV
+SPN01	4	3	1	SPN01 is a prototype micro-satellite stable (MSS) colorectal cancer composed of 4 clones	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN02	3	2	1	SPN02 is a prototype micro-satellite instable (MSI) colorectal cancer composed of 3 clones	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN03	3	4	4	SPN03 is a prototype chronic lymphocitic leukemia composed of 3 clones	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN04	3	2	2	SPN04 is a prototype acute myeloyd leukemia composed of 3 clones	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN05	5	3	1	SPN05 is a prototype mismatch-repair deficient breast cancer composed of 5 clones	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN06	6	5	3	SPN06 is a prototype smoking-associated lung adenocarcinoma	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA
+SPN07	6	5	2	SPN07 is a prototype glioblastoma with 6 clones that compete over time during a single line of treatment. The main clonal population is driven by inactivated PTEN (mutation and LOH)	SBS1,SBS5,SBS13	ID1,ID2	APC LOH, WGD	APC,KRAS,PIK3CA

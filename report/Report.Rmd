@@ -7,18 +7,16 @@ output:
       collapsed: true
     toc_depth: 3
     number_sections: true
-    theme: cosmo  
-# params:
-  # files:
-  #   sim: "NULL" ## path to simulation snapshot
-  #   sample_forest: "NULL" ## path to sample forest
-  #   phylo_forest: "NULL" ## path to phylo forest
-  spn: "NULL" ## SPN id
-  sequencing:
-    coverage: 100
-    purity: 0.9
+    self_contained: yes
+    css: corp-styles.css
+    highlight: pygments
 ---
 
+```{r, echo=FALSE}
+htmltools::img(src = "logo.png",
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; down:20; padding:5px; width:100px; height:auto;')
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -34,15 +32,26 @@ library(ggplot2)
 library(patchwork)
 library(rRACES)
 library(dplyr)
-metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = ";")
+library(tidyverse)
+metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 img_dir <- "SCOUT_images/"
 ```
 
 ```{r params, include = FALSE}
 #Load params from YAML if running outside R Markdown
 if (!exists("params")) {
-  params <- yaml::read_yaml("params.yml")
+  params <- yaml::read_yaml("params_SPN03.yml")
 }
+```
+
+<!-- Load the data  -->
+
+```{r laod_data, echo=FALSE, include=FALSE}
+#phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/phylo_forest.sff")
+#sample_forest <- load_samples_forest("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/samples_forest.sff")
+# sim <- recover_simulation("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/SPN01/")
+sample_forest <- load_samples_forest(params$files$sample_forest)
+phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
 ```
 
 ---
@@ -55,21 +64,91 @@ info_spn <- metadata %>% filter(SPN_ID==params$spn)
 ```
 
 This report shows the results for patient **`r params$spn`** of SCOUT cohort. `r info_spn$Description` **`r params$spn`** is profiled by `r info_spn$N_Samples` samples collected at `r info_spn$N_Timepoints` time-point.
-<!-- **`r params$spn`** tumour represents a micro-satellite stable (MSS) colorectal cancer composed of a single clonal population, sampled at `r info_spn$N_Timepoints` with `r info_spn$N_Samples` multiregional samples. -->
 
-```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+
+```{r pressure, echo=FALSE, out.width = '100%'}
 spn_image <- paste0(img_dir,params$spn,".png")
 knitr::include_graphics(spn_image)
 ```
 
-# Tissue Dynamics
+# Tissue Simulation and Sampling
 This part of the report shows how the tumour growth in time. Muller plot and time series plot show changing in cellular growth of the different clones.
 
-## Growth model
+## Tissue dynamics
 
-## Phylogenetic tree
+`r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which samplig is perfomed. 
+
+```{r samlping_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=8}
+source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
+print(final_plot)
+```
+
+## Sampling
+
+`r params$spn` is sampled at `r info_spn$N_Timepoints` time-point, where a total of `r info_spn$N_Samples` samples are derived. Sampling dynamics is reported in the following plot:
+
+
+```{r growth_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=2}
+source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
+print(plot_sampling)
+```
+
+General information about the samples are reported in the table below.
+```{r test_table}
+library(reactable)
+library(sparkline)
+table <- readRDS(params$files$sample_info)
+table <- table %>% 
+  select(!c("xmin","xmax","ymin","ymax")) %>% 
+  mutate(time=round(time,2))
+reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE)
+```
+
 
 # Mutation Engine
+
+Mutational processes are added to the sampled cells based on the tumour type. In particular, the mutation engine is set up by specifing:
+
+1. Mutation rates of SNVs, INDELs and CNAs;
+2. Driver SNVs and CNAs;
+3. SBS and ID mutational signatures.
+
+## Drivers event
+
+For `r params$spn` drivers SNVs and CNAs are added to a particular clone, each chatacterized by a specific mutation rate.
+The following table summarizes the genomic and evolutionary features of the clones.
+
+
+<!-- report a table with the driver information and the mutation rate of every clone, as well as the SBS/ID-->
+
+## Signature exposure
+
+For `r params$spn` the following SBS and ID signatures are added to the simulated tumour:
+
+```{r mutation_engine, echo=FALSE}
+exposure_table <- phylo_forest$get_exposures()
+#exposure_table <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/exposure_table.rds")
+reactable(exposure_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE, fullWidth = FALSE)
+```
+
+To visualize how signature exposure changes over time, a merged visualization is showed below:
+
+```{r forest_exposure, echo=FALSE}
+sign_tree <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/signature_tree_SPN03.rds")
+sign_tree
+```
+
+And in the muller plot:
+
+```{r muller_exposure, echo=FALSE}
+sign_muller <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/signature_muller_SPN03.rds")
+sign_muller
+```
+
 # Sequencing results
 
 The **`r params$spn`** is sequenced with a coverage of **`r params$sequencing$coverage`**X and a simulated purity of **`r params$sequencing$purity`**.
+
+

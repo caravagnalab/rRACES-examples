@@ -1,0 +1,8 @@
+spn: "SPN03"
+sequencing:
+  coverage: 100
+  purity: 0.9
+files:
+  sample_forest: "/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/SPN03/samples_forest.sff"
+  phylo_forest: "/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/SPN03/phylo_forest.sff"
+  sample_info: "/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/sample_info_clones_SPN03.rds"
