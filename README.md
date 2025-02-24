@@ -1,5 +1,6 @@
 # Documentation for SCOUT cohort
 
+## Workflow
 For every SPN, the following steps are requested:
 
 1. **`rRACES` simulation**: perform simulation of tumour growth, sampling and mutation engine set up according to genomics information reported in [SCOUT](https://caravagnalab.github.io/rRACES/articles/SCOUT.html);
@@ -65,5 +66,80 @@ For every SPN, the following steps are requested:
 > 🟠: medium resource usage
 > 
 > 🔴: high resource usage
+
+## Folder structure
+
+For this project we will have a data folder where all the resulting files will be stored and a copy of the remote repository. This is the expected structure of the data folder for each SPN:
+
+```
+SCOUT/SPN{id}
+    ├── races
+    |   ├── sample_forest.sff
+    |   ├── phylo_forest.sff
+    |   ├── SPN{id}
+    |   └── cna_data
+    |       └── <sample>_cna.rds            
+    ├── sarek
+    |   ├── normal_sample
+    |   |    ├── multiqc
+    |   |    ├── pipeline_info
+    |   |    ├── preprocessing
+    |   |    │   ├── markduplicates
+    |   |    │   |   └── <sample>
+    |   |    │   ├── recal_table
+    |   |    │   |   └── <sample>
+    |   |    │   └── recalibrated
+    |   |    │       └── <sample>
+    |   |    └── variant_calling
+    |   |        └── haplotypecaller
+    |   |            └── <sample>                  
+    |   └── {coverage}x_{purity}p
+    |            ├── multiqc
+    |            ├── pipeline_info
+    |            ├── preprocessing
+    |            │   ├── markduplicates
+    |            │   |   └── <sample>
+    |            │   ├── recal_table
+    |            │   |   └── <sample>
+    |            │   └── recalibrated
+    |            │       └── <sample>
+    |            └── variant_calling
+    |                ├── mutect2
+    |                |   └── <patient>
+    |                └── strelka
+    |                   └── <sample>
+    ├──tumourevo
+    |   └── {coverage}x_{purity}p
+    |       └── {variant_caller}_ascat
+    |           ├── variant_annotation
+    |           |   └── <sample>
+    |           ├── signature_deconvolution
+    |           |   ├── SparseSignatures
+    |           |   └── SigProfiler
+    |           └── subclonal_deconvolution
+    |               ├── viber
+    |               ├── ctree
+    |               ├── pyclone                    
+    |               └── mobster
+    ├── validation
+    |   └── {coverage}x_{purity}p
+    |       ├── sarek
+    |       |   ├── somatic_mutations
+    |       │   |   ├── strelka
+    |       │   |   └── mutect2
+    |       |   ├── germline_mutations
+    |       │   |   └── haplotypecaller
+    |       │   └── copy_number
+    |       │       └── ascat
+    |       └── tumourevo
+    |           └── {variant_caller}_ascat
+    |               ├── drivers
+    |               ├── signature_deconvolution
+    |               └── subclonal_deconvolution
+    ├── report
+    |   └── Report_SPN{id}_{coverage}x_{purity}p.html
+    └── resources
+        └── 
+```
 
 
