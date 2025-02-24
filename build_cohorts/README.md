@@ -60,15 +60,15 @@ user="cdslab"
 spn="SPN01"
 
 # change with your own absolute path
-phylo="/orfeo/cephfs/fast/cdslab/ggandolfi/SPN01/phylo_forest_NEW_SIM.sff"
 tmp="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto/scratch_node"
 path="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto"
 
 # keep them as they are
+phylo="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/races/phylo_forest.sff"
 image="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/races_v3.sif"
 config="/orfeo/cephfs/scratch/cdslab/ggandolfi/races/sarek.config"
-out="/orfeo/cephfs/fast/cdslab/shared/rRACES/${spn}/sequencing"
-sarek_output_dir="/orfeo/cephfs/fast/cdslab/shared/rRACES/${spn}/sarek"
+out="/orfeo/cephfs/fast/cdslab/shared/rRACES/SCOUT/${spn}/sequencing"
+sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sarek"
 
 $path/build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $config -SD $sarek_output_dir
 ```
@@ -79,12 +79,12 @@ You need to modify the following variables in the script:
 - `partition`: the Orfeo HPC partition where the script will run.  
 - `user`: your Orfeo group.  
 - `spn`: the name of the SPN.  
-- `phylo`: absolute path to the phylogenetic forest.  
 - `tmp`: absolute path to a directory where temporary files will be written and later deleted.  
 - `path`: absolute path to the `build_cohort.py` script.  
 
 Leave the following variables unchanged:  
 
+- `phylo`: absolute path to the phylogenetic forest.  
 - `image`: absolute path to the Singularity image.  
 - `config`: absolute path to the Sarek config.  
 - `out`: absolute path where sequencing results will be written.  
@@ -166,7 +166,7 @@ It includes:
 
 
 ```
-<OUTPUT_DIR>
+SCOUT/SPNX/sequencing
 ├── tumour                                      # tumour data
 │   ├── purity_0.3                              # tumour data for purity 0.3
 │   │   ├── BAM
