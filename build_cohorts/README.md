@@ -40,7 +40,7 @@ The number of lots, i.e., 40, is tailored on this computational facility. -->
 This directory contains the Python script `build_cohort.py`, which builds the cohort of an SPN using its phylogenetic forest file on Orfeo.
 
 To run the script, create a `bash` executable file like the example below.  
-`run_build_cohort.sh` with SPN01 parameters is provided as a reference:
+`run_build_cohort.sbatch` with SPN01 parameters is provided as a reference:
 
 ```{sh}
 #!/bin/bash
