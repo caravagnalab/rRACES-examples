@@ -31,12 +31,18 @@ These files must be pushed to the rRACES-examples GitHub repository in the corre
 
 ## Required output files
 The following output files must be saved in the directory:
-`/orfeo/cephfs/scratch/cdslab/shared/rRACES/SPNX/races` (replace X with the number of your SPN):
+`/orfeo/cephfs/scratch/cdslab/shared/rRACES/SCOUT/SPNX/races` (replace X with the number of your SPN):
 
 - `samples_forest.sff`
 - `phylogenetic_forest.sff`
-- `cna_data`
-  - `<sample>_cna.rds`
+- `<sample>_cna_data.rds`
+- snapshot folder
+
+The `<sample>_cna.rds` has to be obtained by running the following command for each sample:
+```{r}
+phylo_forest$get_bulk_allelic_fragmentation()
+```
+
 
 ## How to run Rscript with singularity image
 To run the R scripts, a Singularity image with the latest version of rRACES must be used. You can do this with the following script:
