@@ -31,11 +31,12 @@ These files must be pushed to the rRACES-examples GitHub repository in the corre
 
 ## Required output files
 The following output files must be saved in the directory:
-`/orfeo/cephfs/scratch/cdslab/shared/rRACES/SPNX` (replace X with the number of your SPN):
+`/orfeo/cephfs/scratch/cdslab/shared/rRACES/SPNX/races` (replace X with the number of your SPN):
 
-- `SPNX_samples_forest.sff`
-- `SPNX_phylogenetic_forest.sff`
-- ``
+- `samples_forest.sff`
+- `phylogenetic_forest.sff`
+- `cna_data`
+  - `<sample>_cna.rds`
 
 ## How to run Rscript with singularity image
 To run the R scripts, a Singularity image with the latest version of rRACES must be used. You can do this with the following script:
