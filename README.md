@@ -35,6 +35,13 @@ For every SPN, the following steps are requested:
 
 8. perform plots for **resource usage**.
 
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="SCOUT_workflow.png">
+    <img alt="nf-core/tumourevo" src="SCOUT_workflow.png">
+  </picture>
+</h1>
+
 ## Summary table
 
 |       step       | sub-step                |   main script   |                  output file                  | expected n of files |
