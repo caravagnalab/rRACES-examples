@@ -76,19 +76,19 @@ $path/build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out 
 
 You need to modify the following variables in the script:  
 
-- `partition`: The Orfeo HPC partition where the script will run.  
-- `user`: Your Orfeo group.  
-- `spn`: The name of the SPN.  
-- `phylo`: Absolute path to the phylogenetic forest.  
-- `tmp`: Absolute path to a directory where temporary files will be written and later deleted.  
-- `path`: Absolute path to the `build_cohort.py` script.  
+- `partition`: the Orfeo HPC partition where the script will run.  
+- `user`: your Orfeo group.  
+- `spn`: the name of the SPN.  
+- `phylo`: absolute path to the phylogenetic forest.  
+- `tmp`: absolute path to a directory where temporary files will be written and later deleted.  
+- `path`: absolute path to the `build_cohort.py` script.  
 
 Leave the following variables unchanged:  
 
-- `image`: Absolute path to the Singularity image.  
-- `config`: Absolute path to the Sarek config.  
-- `out`: Absolute path where sequencing results will be written.  
-- `sarek_output_dir`: Absolute path to the directory where Sarek output will be stored.  
+- `image`: absolute path to the Singularity image.  
+- `config`: absolute path to the Sarek config.  
+- `out`: absolute path where sequencing results will be written.  
+- `sarek_output_dir`: absolute path to the directory where Sarek output will be stored.  
 
 After replacing the variables, ensure that `build_cohort.py` is executable by running:  
 
@@ -221,7 +221,9 @@ It includes:
 
 ## Run sarek
 ### Sarek Config  
-An example Sarek config file is provided in this directory, but some variables need to be updated as they are related to local paths.  
+An example Sarek config file is provided in this directory, but some variables need to be updated as they are related to local paths. 
+
+**TO DO**
 
 ### Mapping  
 As described previously, the `sarek` directory will store both `.csv` and `.sh` files for running Sarek steps.  
