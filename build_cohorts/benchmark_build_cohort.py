@@ -8,6 +8,121 @@ import time
 import subprocess
 import argparse
 
+
+merging_shell_script="""#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=5
+#SBATCH --time=2:00:00
+#SBATCH --mem=80GB
+#SBATCH --output=merge_%j
+
+module load singularity
+
+printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
+
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
+"""
+
+merging_R_script="""rm(list = ls())
+library(dplyr)
+args <- commandArgs(trailingOnly = TRUE)
+
+if (length(args) != 5) {
+  stop(paste("Syntax error: rRACES_merge_rds.R",
+             "<num_of_lots> <SPN> <input_dir> <purity> <type>"),
+       call. = FALSE)
+}
+
+lot_end <- as.double(args[1])
+spn <- args[2]
+input_dir <- args[3]
+purity <- args[4]
+type <- args[5]
+
+if (type=="tumour"){
+  muts_dir <- paste0(input_dir,"/tumour/purity_",purity,"/data/mutations/")
+  print(muts_dir)
+  max_coverage <- 200 ## this is hard-coded now
+  num_of_lots <- 40 ## this is hard-coded now
+  coverage<-(max_coverage*lot_end)/num_of_lots
+  data <- list()
+  
+  if (lot_end==10){
+    rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[1:lot_end]
+    data <- lapply(rds_files,function(x){
+      readRDS(x)  %>%
+        dplyr::select(-ends_with(".VAF"))
+    })
+  } else{
+    lot_start<-lot_end-10+1
+    previous_lot <- lot_end-10
+    previous_coverage <- (max_coverage*previous_lot)/num_of_lots
+    previous_lots <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_merged_coverage_",previous_coverage),full.names = T)
+    rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[lot_start:lot_end]
+    
+    rds_files_all <- c(rds_files,previous_lots)
+    data <- lapply(rds_files_all,function(x){
+      readRDS(x)  %>%
+        dplyr::select(-ends_with(".VAF"))
+    })
+  }
+  
+  ids <- grep(pattern = "coverage",x = colnames(data[[1]]),value = T) %>% strsplit("\\\.")
+  print("Combining dataframes ...")
+  combined_df <- bind_rows(data)
+  sample_names <- sapply(ids, function(x) {
+    parts <- unlist(strsplit(x, "\\\."))
+    paste(parts[1], parts[2], sep = ".")
+  })
+  
+  print("Summing up NV and DP...")
+  
+  columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
+  result <- combined_df %>%
+    group_by(chr, chr_pos,ref,alt,classes,causes) %>% 
+    summarize(across(all_of(columns), sum, .names = "{.col}"))
+  
+  print("Recalculate VAF...")
+  for (s in sample_names){
+    col_name_DP <- paste0(s,".coverage")
+    col_name_NV <- paste0(s,".occurrences")
+    col_name_VAF <- paste0(s,".VAF")
+    result <- result %>% 
+      mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
+    print(s)
+  }
+  print("Saving merged rds...")
+  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))
+  print("Done merging!")
+} else if (type=="normal"){
+  muts_dir <- paste0(input_dir,"/normal/purity_1/data/mutations/")
+  rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)
+  data <- lapply(rds_files,function(x){
+    readRDS(x)  %>%
+      dplyr::select(-ends_with(".VAF"))
+  })
+  print("Combining dataframes ...")
+  combined_df <- bind_rows(data)
+
+  print("Summing up NV and DP...")
+  columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
+
+  result <- combined_df %>%
+    group_by(chr, chr_pos,ref,alt,classes,causes) %>%
+    summarize(across(all_of(columns), sum, .names = "{.col}"))
+  
+  print("Recalculate VAF...")
+  s <- "normal_sample"
+  col_name_DP <- paste0(s,".coverage")
+  col_name_NV <- paste0(s,".occurrences")
+  col_name_VAF <- paste0(s,".VAF")
+  result <- result %>% 
+    mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
+  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",30,"x", ".rds"))
+}
+"""
+
 gender_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -49,7 +164,6 @@ fileConn<-file(file.path(dir, "subject_gender.txt"))
 writeLines(c(gender), fileConn)
 close(fileConn)
 """
-
 
 shell_script="""#!/bin/bash
 #SBATCH --nodes=1
@@ -107,7 +221,7 @@ if (type == "tumour") {
 }
 
 merge_sams <- function(output_local_dir, BAM_file,
-                       sam_filename_prefix, chromosomes, num_of_cores) {
+                       sam_filename_prefix, chromosomes, num_of_cores, resources_dir) {
     
     SAM_files <- ""
     for (i in 1:length(chromosomes)) {
@@ -118,7 +232,7 @@ merge_sams <- function(output_local_dir, BAM_file,
         SAM_files <- paste(SAM_files, chr_SAM_file)
     }
     
-    name = paste0("out_samtools_merge_", purity,"_",sam_filename_prefix)
+    name <- paste0(resources_dir, "/out_samtools_merge_", purity, "_", sam_filename_prefix, chromosomes[i])
     cmd <- paste("/usr/bin/time -o", name, "-p -v samtools merge -fc -@", num_of_cores,
 		 "-o", BAM_file, SAM_files)
     print(cmd)
@@ -145,7 +259,8 @@ simulate_seq_resources <- function(c,tumour,ref_path,coverage,purity){
                             chromosomes = c,
                             coverage = coverage,
                             purity = purity, 
-                            write_SAM = FALSE, read_size = 150,
+                            write_SAM = TRUE, 
+                            read_size = 150,
                             sequencer = basic_seq,
                             insert_size_mean = 350,
                             insert_size_stddev = 10,
@@ -160,7 +275,8 @@ simulate_seq_resources <- function(c,tumour,ref_path,coverage,purity){
     seq_res <- simulate_normal_seq(phylo_forest, reference_genome = ref_path,
                                    chromosomes = c,
                                    coverage = coverage,
-                                   write_SAM = FALSE, read_size = 150,
+                                   write_SAM = TRUE, 
+                                   read_size = 150,
                                    sequencer = basic_seq,
                                    insert_size_mean = 350,
                                    include_non_sequenced_mutations = TRUE,
@@ -220,6 +336,11 @@ if (!file.exists(fastq_dir)) {
   dir.create(fastq_dir)
 }
 
+resources_dir <- file.path(output_dir, "TIME")
+if (!file.exists(resources_dir)) {
+  dir.create(resources_dir)
+}
+
 data_dir_muts <- file.path(output_dir, "data/mutations")
 data_dir_params <- file.path(output_dir, "data/parameters")
 data_dir_resources <- file.path(output_dir, "data/resources")
@@ -269,7 +390,6 @@ if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
     # Simulate sequencing ####
     basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
     chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
-    chromosomes <- c("21","22")
     cat("parallel::mclapply(",chromosomes,",simulate_seq_resources,mc.cores = 4,tumour = ",
     seq_tumour,",ref_path=",ref_path,",coverage = ",coverage,",purity=",purity,")")
     
@@ -310,7 +430,7 @@ if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
     cat("done\\n4. Building overall BAM file...")
     merge_sams(output_local_dir, BAM_local_file,
                sam_filename_prefix, chromosomes,
-    		   num_of_cores)
+    		   num_of_cores, resources_dir)
     
     cat("done\\n5. Deleting SAM files...")
     delete_sams(output_local_dir, sam_filename_prefix, chromosomes)
@@ -335,10 +455,10 @@ if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
 cat(paste0(step, ". Splitting BAM file by sample..."))
 step <- step + 1
 
-split_bam_by_samples <- function(output_local_dir, BAM_file, remove_local_bam, num_of_cores) {
+split_bam_by_samples <- function(output_local_dir, BAM_file, remove_local_bam, num_of_cores, resources_dir) {
     name <- strsplit(BAM_file, '/') %>% unlist()
     name <- name[length(name)]
-    cmd <- paste0("/usr/bin/time -o out_samtools_split_", purity,"_",
+    cmd <- paste0("/usr/bin/time -o ", resources_dir, "/out_samtools_split_", purity,"_",
                   name, " -p -v samtools split -f \\"",
                   file.path(output_local_dir,"%*_%!.bam"),
                   "\\" ", BAM_file, " -@ ", num_of_cores)
@@ -348,7 +468,7 @@ split_bam_by_samples <- function(output_local_dir, BAM_file, remove_local_bam, n
         file.remove(BAM_file)
     }
 }
-invisible(split_bam_by_samples(output_local_dir, BAM_local_file, remove_local_bam, num_of_cores))
+invisible(split_bam_by_samples(output_local_dir, BAM_local_file, remove_local_bam, num_of_cores, resources_dir))
 unlink(bam_dir, recursive = TRUE)
 
 cat(paste0("done\\n", step,
@@ -357,7 +477,7 @@ step <- step + 1
 
 BAM_files <- list.files(output_local_dir, pattern = "\\\\.bam$")
 
-generate_fastq <- function(orig_file, fastq_dir) {
+generate_fastq <- function(orig_file, fastq_dir, resources_dir) {
   base_orig_file <- tools::file_path_sans_ext(basename(orig_file))
 
   file_prefix <- file.path(fastq_dir, base_orig_file)
@@ -368,7 +488,7 @@ generate_fastq <- function(orig_file, fastq_dir) {
 
   prefix <- strsplit(file_prefix,'/') %>% unlist()
   prefix <- prefix[length(prefix)]
-  name <- paste0("out_fastq_", purity,"_",prefix) 
+  name <- paste0(resources_dir, "/out_fastq_", purity,"_",prefix) 
   cmd <- paste("/usr/bin/time -o", name, "-p -v samtools fastq -@ 20 -c 9 -N -1", R1, "-2", R2, "-0", unpaired, 
                "-s", singleton, orig_file)
   invisible(system(cmd, intern = TRUE))
@@ -377,7 +497,7 @@ generate_fastq <- function(orig_file, fastq_dir) {
 result <- parallel::mclapply(BAM_files, function(c) {
     curr_BAM_file <- file.path(output_local_dir, c)
     if (BAM_file != curr_BAM_file) {
-        generate_fastq(curr_BAM_file, output_local_dir)
+        generate_fastq(curr_BAM_file, output_local_dir, resources_dir)
 
         unlink(curr_BAM_file)
     }
@@ -402,6 +522,58 @@ invisible(file.create(done_filename))
 cat("done\\n")
 """
 
+sarek_file_launcher="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=sarek_mapping_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=96:00:00
+#SBATCH --output=sarek_mapping_{JOB_NAME}_%J.out 
+#SBATCH --error=sarek_mapping_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/sarek_{JOB_NAME}.csv"
+
+output_base_dir={SAREK_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+/orfeo/cephfs/scratch/cdslab/ggandolfi/nextflow run nf-core/sarek -r 3.5.1 --input $input \
+    --outdir $output_dir_combination -profile singularity -c $config
+"""
+
+sarek_variant_calling_launcher="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=sarek_VC_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=96:00:00
+#SBATCH --output=sarek_VC_{JOB_NAME}_%J.out 
+#SBATCH --error=sarek_VC_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/sarek_variant_calling_{JOB_NAME}.csv"
+
+output_base_dir={SAREK_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+/orfeo/cephfs/scratch/cdslab/ggandolfi/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
+    --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
+    --outdir $output_dir_combination -profile singularity -c $config --igenomes_base /orfeo/LTS/CDSLab/LT_storage/ref_genomes
+"""
 
 def get_lot_prefix(seq_type):
     if seq_type=='normal':
@@ -469,6 +641,26 @@ def write_sarek_sample_lines(sarek_file, SPN, seq_type, sample_name, num_of_lots
         sarek_file.write(f'\n{SPN},{subject_gender},{status},{sample_name},'
                         + f'{line_name},{R1_filename},{R2_filename}')
 
+def write_sarek_sample_variant_calling_lines(sarek_file, SPN, seq_type, sample_name, sarek_dir,coverage,purity):
+    if (seq_type == 'tumour'):
+        status = 1
+    elif (seq_type == 'normal'):
+        status = 0
+    else:
+        raise RuntimeError(f'Unsupported sequence type "{seq_type}"')
+
+    recal_cram_suffix = '.recal.cram'
+    recal_crai_suffix = '.recal.cram.crai'
+
+    line = 1
+    cram_dir_base_name = f'{coverage}x_{purity}p/preprocessing/recalibrated/{sample_name}/'
+    cram_filename = os.path.abspath(os.path.join(sarek_dir,cram_dir_base_name,
+                                                sample_name+ recal_cram_suffix))
+    crai_filename = os.path.abspath(os.path.join(sarek_dir,cram_dir_base_name,
+                                                sample_name+recal_crai_suffix))
+    sarek_file.write(f'\n{SPN},{subject_gender},{status},{sample_name},'
+                    + f'{cram_filename},{crai_filename}')
+
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
                                      description=('Produces the cohorts of a SPN'))
@@ -484,9 +676,9 @@ if (__name__ == '__main__'):
     parser.add_argument('-s', '--node_scratch_directory', type=str,
                         default='/local_scratch',
                         help="The nodes' scratch directory")
-    parser.add_argument('-j', '--parallel_jobs', type=int, default=20,
+    parser.add_argument('-j', '--parallel_jobs', type=int, default=40,
                         help="The number of parallel jobs")
-    parser.add_argument('-x', '--exclude', type=str, default="",
+    parser.add_argument('-x', '--exclude', type=str, default="genoa011,genoa008",
                         help=("A list of nodes to exclude from the "
                               + "computation"))
     parser.add_argument('-F', '--force_completed_jobs', action='store_true',
@@ -499,19 +691,25 @@ if (__name__ == '__main__'):
                         help="The memory of each node in GB")
     parser.add_argument('-I', '--image_path', type=str, default="",
                         help="Path to singularity image")
+    parser.add_argument('-C', '--config', type=str, default="",
+                        help="Path to nextflow config file")
+    parser.add_argument('-SD', '--sarek_output_dir', type=str, default="",
+                       help="Path to sarek launching dir")
     
 
-    cohorts = { 'tumour': {
-                    'max_coverage': 200,
-                    'purities': list([0.3,0.6,0.9])
-                    },
-                'normal': {
+    cohorts = { 'normal': {
                     'max_coverage': 30,
                     'purities': list([1])
+                    },
+               'tumour': {
+                    'max_coverage': 200,
+                    'purities': [0.3,0.6,0.9]
                     }
                 }
 
-    num_of_lots = 40
+    num_of_lots_T = 40
+    num_of_lots_N = 6
+    
     cohort_coverages = list([50, 100, 150, 200])
     args = parser.parse_args()
 
@@ -544,7 +742,7 @@ if (__name__ == '__main__'):
     with open('rRACES_seq.R', 'w') as outstream:
         outstream.write(R_script)
 
-    space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots
+    space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots_T
     memory_per_lot = math.ceil(args.mem_per_node*space_per_lot/args.scratch_per_node)
     memory_per_lot = max(memory_per_lot, math.ceil(args.mem_per_node/5))
     shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
@@ -554,14 +752,22 @@ if (__name__ == '__main__'):
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-
-    zeros = math.ceil(math.log10(num_of_lots))
-
+    
+    sarek_dir = os.path.join(args.output_dir, 'sarek')
+    config_file = args.config
+    if not os.path.exists(sarek_dir):
+        os.mkdir(sarek_dir)
+        
     for seq_type, cohorts_data in cohorts.items():
+        if seq_type == 'normal':
+            num_of_lots = num_of_lots_N
+        else:
+            num_of_lots = num_of_lots_T
+            
+        zeros = math.ceil(math.log10(num_of_lots))
+        
         lot_coverage = cohorts_data['max_coverage']/num_of_lots
-
         lot_prefix = get_lot_prefix(seq_type)
-
         type_output_dir = f'{args.output_dir}/{seq_type}'
 
         if not os.path.exists(type_output_dir):
@@ -625,30 +831,110 @@ if (__name__ == '__main__'):
                     lot_ids = lot_ids[to_be_submitted:]
                 time.sleep(60)  # wait 1 minute
             completed_ids = get_completed_jobs(output_dir, lot_prefix)
+            
             while (len(completed_ids) != len(submitted)):
                 time.sleep(60)
                 completed_ids = get_completed_jobs(output_dir, lot_prefix)
+        
+            if seq_type == 'normal':
+                with open(gender_filename, "r") as gender_file:
+                    subject_gender = gender_file.read().strip('\n')
+                
+                normal_fastq_dir = os.path.join(f'{args.output_dir}', 'normal/purity_1/FASTQ')
+                lines = math.ceil(math.log10(num_of_lots+1))
+                with open(f'{sarek_dir}/sarek_normal.csv', 'w') as sarek_file:
+                    sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
+                    write_sarek_sample_lines(sarek_file, args.SPN, 'normal', 'normal_sample', num_of_lots, normal_fastq_dir, zeros, lines)
+                
+                job_id=seq_type
+                sarek_file_launcher_orig = sarek_file_launcher
+                sarek_file_launcher = sarek_file_launcher.replace('{ACCOUNT}', str(account))
+                sarek_file_launcher = sarek_file_launcher.replace('{JOB_NAME}', str(job_id))
+                sarek_file_launcher = sarek_file_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                sarek_file_launcher = sarek_file_launcher.replace('{CONFIG}', str(config_file))
+                sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
 
-    with open(gender_filename, "r") as gender_file:
-        subject_gender = gender_file.read().strip('\n')
-    
-    sarek_dir = os.path.join(args.output_dir, 'sarek')
-    if not os.path.exists(sarek_dir):
-        os.mkdir(sarek_dir)
+                with open(f'{sarek_dir}/sarek_mapping_normal.sh', 'w') as outstream:
+                    outstream.write(sarek_file_launcher)
+                sarek_file_launcher = sarek_file_launcher_orig
+                with open('rRACES_merge_rds.R', 'w') as outstream:
+                    outstream.write(merging_R_script)
 
-    normal_fastq_dir = os.path.join(f'{args.output_dir}', 'normal/purity_1/FASTQ')
-    for purity in cohorts['tumour']['purities']:
-        tumour_fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
-        sample_names = get_sample_names_from_FASTQ(tumour_fastq_dir)
+                with open('rRACES_merge_rds.sh', 'w') as outstream:
+                    outstream.write(merging_shell_script)
 
-        lines = math.ceil(math.log10(num_of_lots*(len(sample_names)+1)))
+                cmd = ['sbatch', '--account={}'.format(account),
+                    '--partition={}'.format(args.partition),
+                    '--job-name={}_{}_{}'.format(args.SPN, 1,30),
+                    ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_lots,args.SPN,
+                                                        args.output_dir,purity,seq_type,
+                                                        args.image_path, curr_dir),
+                    './rRACES_merge_rds.sh']
 
-        for cohort_cov in cohort_coverages:
-            num_of_tumour_lots = math.ceil((cohort_cov*num_of_lots)/cohorts['tumour']['max_coverage'])
-            with open(f'{sarek_dir}/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file:
-                sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
-                for sample_name in sample_names:
-                    write_sarek_sample_lines(sarek_file, args.SPN, 'tumour', sample_name,
-                                             num_of_tumour_lots, tumour_fastq_dir, zeros, lines)
-                write_sarek_sample_lines(sarek_file, args.SPN, 'normal', 'normal_sample',
-                                         num_of_lots, normal_fastq_dir, zeros, lines)
+                subprocess.run(cmd)
+                    
+            else:
+                with open(gender_filename, "r") as gender_file:
+                    subject_gender = gender_file.read().strip('\n')
+                    
+                tumour_fastq_dir = os.path.join(f'{args.output_dir}', f'tumour/purity_{purity}/FASTQ')
+                sample_names = get_sample_names_from_FASTQ(tumour_fastq_dir)
+                lines = math.ceil(math.log10(num_of_lots*(len(sample_names)+1)))
+                
+                for cohort_cov in cohort_coverages:
+                    num_of_tumour_lots = math.ceil((cohort_cov*num_of_lots)/cohorts['tumour']['max_coverage'])
+                    
+                    with open(f'{sarek_dir}/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file, open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file_vc:
+                        sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
+                        sarek_file_vc.write('patient,sex,status,sample,cram,crai')
+                        cram_normal = os.path.join(f'{args.sarek_output_dir}', f'normal_sample/preprocessing/recalibrated/normal_sample.cram')
+                        crai_normal = os.path.join(f'{args.sarek_output_dir}', f'normal_sample/preprocessing/recalibrated/normal_sample.cram.crai')
+                        sarek_file_vc.write(f'\n{args.SPN},{subject_gender},0,normal_sample,{cram_normal},{crai_normal}')
+                        for sample_name in sample_names:
+                            write_sarek_sample_lines(sarek_file, args.SPN, 'tumour', sample_name, num_of_tumour_lots, tumour_fastq_dir, zeros, lines)
+                            write_sarek_sample_variant_calling_lines(sarek_file_vc, args.SPN, 'tumour', sample_name, args.sarek_output_dir,cohort_cov,purity)
+
+                    #sarek mapping sh file
+                    sarek_file_launcher_orig = sarek_file_launcher    
+                    job_id=f'{cohort_cov}x_{purity}p'
+
+                    sarek_file_launcher = sarek_file_launcher.replace('{ACCOUNT}', str(account))
+                    sarek_file_launcher = sarek_file_launcher.replace('{JOB_NAME}', str(job_id))
+                    sarek_file_launcher = sarek_file_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                    sarek_file_launcher = sarek_file_launcher.replace('{CONFIG}', str(config_file))
+                    sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir)) 
+
+                    with open(f'{sarek_dir}/sarek_mapping_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
+                        outstream.write(sarek_file_launcher)
+                    sarek_file_launcher = sarek_file_launcher_orig
+                    
+                    #sarek VC sh file
+                    sarek_variant_calling_launcher_orig = sarek_variant_calling_launcher
+                    job_id=f'{cohort_cov}x_{purity}p'
+                    
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{ACCOUNT}', str(account))
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{JOB_NAME}', str(job_id))
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{CONFIG}', str(config_file))
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+                    
+                    
+                    with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
+                        outstream.write(sarek_variant_calling_launcher)
+                    sarek_variant_calling_launcher = sarek_file_launcher_orig
+                    
+                    with open('rRACES_merge_rds.R', 'w') as outstream:
+                        outstream.write(merging_R_script)
+
+                    with open('rRACES_merge_rds.sh', 'w') as outstream:
+                        outstream.write(merging_shell_script)
+
+                    cmd = ['sbatch', '--account={}'.format(account),
+                        '--partition={}'.format(args.partition),
+                        '--job-name={}_{}_{}'.format(args.SPN, purity,cohort_cov),
+                        ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_tumour_lots,args.SPN,
+                                                            args.output_dir,purity,seq_type,
+                                                            args.image_path, curr_dir),
+                        './rRACES_merge_rds.sh']
+
+                    subprocess.run(cmd)
