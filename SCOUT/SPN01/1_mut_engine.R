@@ -4,7 +4,7 @@ library(dplyr)
 set.seed(06117)
 
 
-outdir <- "/orfeo/scratch/cdslab/shared/races/SCOUT/SPN01/"
+outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/races/"
 forest <- load_samples_forest(paste0(outdir,"samples_forest.sff"))
 
 
@@ -40,5 +40,5 @@ phylo_forest$save(paste0(outdir,"phylo_forest.sff"))
 sample_names <- phylo_forest$get_samples_info()[["name"]]
 lapply(sample_names,function(s){
     cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
-    saveRDS(file=paste0(outdir,s,"_cna.rds"),object=cna)
+    saveRDS(file=paste0(outdir,"cna_data/",s,"_cna.rds"),object=cna)
 })
