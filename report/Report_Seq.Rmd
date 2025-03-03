@@ -33,8 +33,8 @@ library(patchwork)
 library(rRACES)
 library(dplyr)
 library(tidyverse)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/utils.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/plot_genome_wide.R")
+source("plotting/utils.R")
+source("plotting/plot_genome_wide.R")
 metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 img_dir <- "SCOUT_images/"
 ```
@@ -55,7 +55,6 @@ seq_dir <- params$files$seq_res
 phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
 seq_res_tumour <- readRDS(paste0(seq_dir,"purity_",purity,"/seq_results_muts_merged_coverage_",coverage,"x.rds"))
 seq_res_normal_rds <- paste0(seq_dir,"seq_results_muts_merged_coverage_30x.rds")
-# seq_res_tumour <- map_muts_to_karyotype(seq_res_rds,phylo_forest)
 seq_res_normal <- readRDS(seq_res_normal_rds)
 files_cna <- list.files(params$cna_dir, full.names = T)
 print(files_cna)
@@ -114,15 +113,6 @@ dp <- seq_res_tumour %>%
   geom_vline(aes(xintercept = coverage),colour = "red") +
   facet_wrap(~sample_name)+
   my_ggplot_theme()
-#
-# vaf <- seq_res_tumour %>%
-#   seq_to_long() %>%
-#   filter(classes!="germinal") %>%
-#   ggplot(aes(x=VAF))+
-#   ggplot2::geom_histogram(binwidth = 0.01)+
-#   facet_wrap(~sample_name)+
-#   xlim(0.02,1)+
-#   my_ggplot_theme()
 dp
 ```
 
@@ -166,7 +156,6 @@ wrap_plots(vaf_plots,ncol=1)
 ## Karyotypes information
 
 ```{r read_cna_data, echo=FALSE,fig.height=3,out.width = '100%'}
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/alluvial_plot_karyptypes.R", local = knitr::knit_global())
 alluvial_plot <- alluvial_plot_karyotypes(files_cna)
 alluvial_plot
 ```

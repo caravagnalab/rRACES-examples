@@ -1,0 +1,333 @@
+library(rRACES)
+library(dplyr)
+library(patchwork)
+library(ggplot2)
+#library(CNAqc)
+#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/scripts/my_functions/plot_genome_wide.R")
+#'
+#' Convert realtive coordinates to absolute coordinates
+#'
+#' This function takes CNAqc bject and converts relative coordinates
+#' to absolute coordinates given an input reference genome.
+#'
+#' @param x CNAqc object
+#' @param ref name of the reference genome
+#' @return x CNAqc object with absoluute coordinates
+#'
+#' @export
+
+
+relative_to_absolute_coords_pos = function(x, ref = "GRCh38") {
+  reference_genome = CNAqc:::get_reference(ref)
+  vfrom = reference_genome$from
+  names(vfrom) = reference_genome$chr
+
+  x = x %>%
+      dplyr::rename(pos=from) %>%
+      dplyr::mutate(chr = paste0("chr", chr)) %>%
+      dplyr::mutate(pos = pos + vfrom[chr])
+  return(x)
+}
+
+
+signatures_palette <- function(phylo_forest,seed){
+  ref_path <- phylo_forest$get_reference_path()
+  SBS_table_path <- gsub(pattern = "reference.fasta",replacement = "SBS_signatures.txt",x = ref_path)
+  IDS_table_path <- gsub(pattern = "reference.fasta",replacement = "indel_signatures.txt",x = ref_path)
+  SBS_table <-  read.csv(SBS_table_path,header=T,sep="\t")
+  SBS_sign <- colnames(SBS_table)
+  IDS_table <-  read.csv(IDS_table_path,header=T,sep="\t")
+  IDS_sign <- colnames(IDS_table)
+  set.seed(seed)
+  return(Polychrome::createPalette(length(sigs), c("#6B8E23","#4169E1"), M=1000,
+                                   target="normal", range=c(15,80)) %>%
+           setNames(sigs))
+}
+#'
+#' Generates CNAqc object given simulate_seq() dataframe and
+#' phylogenetic forest object. The final result will be a CNAqc 
+#' object.
+#'
+
+races2cnaqc <- function(seq_results,phylo_forest,sample_id,ref,purity){
+  ref_path <- phylo_forest$get_reference_path()
+  driver_table_path <- gsub(pattern = "reference.fasta",replacement = "drivers.txt",x = ref_path)
+  driver_table <-  read.csv(driver_table_path,header=T,sep="\t")
+  known_drivers <- driver_table %>%
+    dplyr::mutate(chr=as.character(chr)) %>%
+    dplyr::rename(driver_label=driver_code)
+  bulk <- phylo_forest$get_bulk_allelic_fragmentation(sample_id)
+  cna <- bulk %>% dplyr::rename("Major"=major,"from"=begin,"to"=end) %>%
+    dplyr::filter(ratio>=0.08)
+  cna <- cna %>%
+    group_by(chr, from, to) %>%            # Group by chr, begin, and end
+    arrange(desc(ratio)) %>%                 # Arrange by 'ratio' in descending order
+    mutate(ccf_label = paste0("ccf_", rank(-ratio)))  # Assign rank based on 'ratio'
+
+  mutations <- rRACES::seq_to_long(seq_results) %>%
+    dplyr::filter(sample_name==sample_id & classes!="germinal") %>%
+    dplyr::filter(VAF!=0) %>% mutate(is_driver=FALSE) %>%
+    left_join(known_drivers,by=c("chr","from","to","ref","alt")) %>%
+    dplyr::mutate(
+      is_driver = ifelse(!is.na(driver_label), TRUE,
+                         ifelse(is.na(driver_label) & classes == "driver", TRUE, FALSE)),
+      driver_label = ifelse(is.na(driver_label) & classes == "driver",
+                            paste(chr, from, ref, alt, sep = ":"), driver_label))
+  x <- CNAqc::init(mutations = mutations,cna = cna,
+                   purity = purity,sample = sample_id,
+                   ref = ref)
+  return(x)
+}
+
+
+get_classes_colors <- function(classes){
+  color = c(`driver` = "firebrick4",`passenger` = ggplot2::alpha("tan2",0.4),`pre-neoplastic` = "cornflowerblue",
+            `germinal` = "darkolivegreen")
+  missing = setdiff(names(color), classes)
+  nmissing = length(missing)
+  c(color, CNAqc:::nmfy(missing, rep("gray", nmissing)))
+}
+
+
+
+get_legend <- function(col_palette){
+  df <- data.frame(type = names(col_palette), color = col_palette)
+  p <- ggplot(df, aes(x = type, fill = type)) +
+    geom_bar() +
+    scale_fill_manual(values = col_palette) +
+    theme_void() +  # Remove axes and background
+    guides(fill = guide_legend(title = "Classes & Causes"))
+
+  legend_plot <- ggpubr::get_legend(p,position = "right")
+  pl <- ggpubr::as_ggplot(legend_plot)
+  return(pl)
+}
+
+
+squareplot = function(seq_res, samples_list,chrom)
+{
+  row_plots = NULL
+  for (s in seq(samples_list))
+  {
+    sn = samples_list[s]
+    s_seq <- seq_res %>% filter(classes!="germinal")
+    s_seq_long <- s_seq %>% rRACES::seq_to_long()
+    plot_vaf <- s_seq_long %>%
+      filter(sample_name==sn & chr==chrom) %>%
+      filter(VAF!=0) %>%
+      ggplot(aes(x=VAF)) +geom_histogram(binwidth = 0.01) +
+      xlim(c(0,1))+
+      ggplot2::ggtitle(label = sn) +
+      CNAqc:::my_ggplot_theme()
+
+
+
+    mb = list(plot_vaf+ labs(title = sn) )
+
+    idx_pre = 1:s
+    idx_post = s:length(samples_list)
+
+    pl_r = pl_l = NULL
+     
+    #palette <- RColorBrewer::brewer.pal(n = length(unique(s_seq$causes)), name = "Set3")
+    #col_causes <- setNames(palette, unique(s_seq$causes))
+    #cols_causes <- rRACES:::get_colors_for(unique(s_seq$causes))
+    #col_classes <- c("passenger" = "#CCCC99",
+    #                 "pre-neoplastic" = "#006699",
+    #                 "driver" = "#990033")
+    #cols <- c(col_causes,col_classes)
+
+    if (length(idx_pre) > 1)
+      pl_r = lapply(setdiff(idx_pre, s), function(x) {
+        s_sn <- s_seq_long %>% filter(sample_name==sn & chr==chrom)
+        s_sn_x <- s_seq_long %>% filter(sample_name==samples_list[x] & chr==chrom)
+        joined <- full_join(s_sn,s_sn_x,by=c("chr","from","ref","alt","to","causes","classes"))
+        plot <- joined %>% ggplot(aes(x=VAF.x,y=VAF.y,col=classes)) + geom_point() +
+          CNAqc:::my_ggplot_theme()
+          #scale_color_manual(values = col_classes)
+        plot + ggplot2::geom_point(alpha = 0.7) +
+          ggplot2::xlim(c(-0.01, 1.01)) +
+          ggplot2::ylim(c(-0.01, 1.01)) +
+          ggplot2::labs(x = sn, y = samples_list[x])+
+          ggplot2::theme(legend.position = "none")
+      })
+
+    if (length(idx_post) > 1)
+      pl_l = lapply(setdiff(idx_post, s), function(x) {
+        s_sn <- s_seq_long %>% filter(sample_name==sn & chr==chrom)
+        s_sn_x <- s_seq_long %>% filter(sample_name==samples_list[x] & chr==chrom)
+        joined <- full_join(s_sn,s_sn_x,by=c("chr","from","ref","alt","to","causes","classes"))
+        plot <- joined %>% ggplot(aes(x=VAF.x,y=VAF.y,col=causes)) + geom_point() +
+          CNAqc:::my_ggplot_theme()
+          #scale_color_manual(values = col_causes)
+        plot + ggplot2::geom_point(alpha = 0.7) +
+          ggplot2::xlim(c(-0.01, 1.01)) +
+          ggplot2::ylim(c(-0.01, 1.01)) +
+          ggplot2::labs(x = sn, y = samples_list[x])+
+          ggplot2::theme(legend.position = "none")
+      })
+
+    plotlist = append(append(pl_r, mb), pl_l)
+    row_plot = patchwork::wrap_plots(plotlist)+
+      patchwork::plot_layout(guides = "collect",ncol = length(pl_r) + length(pl_l) + 1,nrow = 1)
+    row_plots = append(row_plots, list(row_plot))
+  }
+  #pl <- get_legend(cols)
+  patchwork::wrap_plots(row_plots)+
+    patchwork::plot_layout(design = "AAAA\nBBBB\nCCCC")+
+    patchwork::plot_annotation(title = paste0("Chromosome ", chrom))
+}
+
+get_karyotypes_colors = function(karyotypes)
+{
+  karyo_colors = c(
+    '1:1' = ggplot2::alpha('seagreen4', .8),
+    '1:0' = 'steelblue',
+    '0:0' = 'darkblue',
+    '2:0' = 'turquoise4',
+    '2:1' = ggplot2::alpha('orange', .8),
+    '2:2' = 'firebrick3',
+    '3:0' = 'coral3',
+    '3:1' = 'palevioletred',
+    '3:2' = 'plum4',
+    '3:3' = 'gold2',
+    '4:0' = 'lightyellow3',
+    '4:1' = 'sandybrown',
+    '4:2' = 'tomato2',
+    '4:3' = 'darkolivegreen4',
+    '4:4' = 'orange3'
+  )
+  
+  missing = setdiff(karyotypes,names(karyo_colors))
+  nmissing = length(missing)
+  
+  
+  c(karyo_colors, CNAqc:::nmfy(missing, rep('gray', nmissing)))
+}
+
+my_ggplot_theme = function(cex = 1)
+{
+  cex_opt = getOption('CNAqc_cex', default = 1)
+  
+  ggplot2::theme_light(base_size = 10 * cex_opt) +
+    ggplot2::theme(
+      legend.position = "bottom",
+      legend.key.size = ggplot2::unit(.3 * cex_opt, "cm"),
+      panel.background = ggplot2::element_rect(fill = 'white')
+    )
+}
+
+map_muts_to_karyotype <- function(seq_res,phylo_forest){
+  samples <- phylo_forest$get_samples_info()$name
+  cna_list <- lapply(samples,function(x){
+    c <- phylo_forest$get_bulk_allelic_fragmentation(x) %>% 
+      mutate(sample_name=x) %>% 
+      mutate(segment_id=paste0(chr,":",begin,":",end))
+    
+  })
+  cna <- do.call("rbind",cna_list)
+  muts <- list()
+  
+  s_seq_long <- seq_res %>% 
+    seq_to_long()
+  
+  for (s in samples){
+    mutations <-  s_seq_long %>% 
+      filter(sample_name==s)
+    cna_sample <- cna %>%
+      filter(sample_name==s)
+    mapped_mutations <- mutations %>%
+      inner_join(cna_sample, by = c("chr","sample_name"), relationship = "many-to-many") %>%  # Allow many-to-many relationships
+      filter(from >= begin & to <= end) %>%   # Filter for correct segments
+      mutate(segment_id = paste0("chr", chr, ":", begin, ":", end),
+             karyotype = paste0(major, ":", minor))
+    
+    muts[[s]] <-mapped_mutations
+  }
+  muts_all <- do.call("rbind",muts)
+  return(muts_all)
+}
+
+absolute_to_relative_coordinates <- function(muts, reference = CNAqc::chr_coordinates_GRCh38){
+  vfrom = reference$from
+  names(vfrom) = reference$chr
+  
+  muts %>%
+    mutate(
+      begin = begin + vfrom[chr],
+      end = end + vfrom[chr])
+}
+
+blank_genome = function(ref = "GRCh38", 
+                        chromosomes = paste0('chr', c(1:22, 'X', 'Y')), 
+                        label_chr = -0.5, 
+                        cex = 1){
+  reference_coordinates = CNAqc::chr_coordinates_GRCh38 %>% filter(chr %in% chromosomes)
+  
+  low = min(reference_coordinates$from)
+  upp = max(reference_coordinates$to)
+  
+  
+  #change the solid and dashed lines for better separating chromosomes.
+  p1 = ggplot2::ggplot(reference_coordinates) +
+    CNAqc:::my_ggplot_theme(cex = cex) +
+    ggplot2::geom_segment(
+      ggplot2::aes(
+        x = centromerStart,
+        xend = centromerStart,#centromerEnd,
+        y = 0,
+        yend = Inf
+      ),
+      size = .1,
+      color = 'black',
+      linetype = 8
+    ) +
+    ggplot2::geom_segment(
+      ggplot2::aes(
+        x = centromerEnd,
+        xend = centromerEnd,#centromerEnd,
+        y = 0,
+        yend = Inf
+      ),
+      size = .1,
+      color = 'black',
+      linetype = 8
+    )
+  
+  
+  p1 = p1 + ggplot2::geom_rect(
+    data = reference_coordinates,
+    ggplot2::aes(
+      xmin = from,
+      xmax = from,
+      ymin = 0,
+      ymax = Inf
+    ),
+    alpha = 1,
+    colour = 'grey',
+  )
+  
+  p1 = p1 +
+    ggplot2::geom_hline(yintercept = 0,
+                        size = 1,
+                        colour = 'gainsboro') +
+    ggplot2::geom_hline(
+      yintercept = 1,
+      size = .3,
+      colour = 'black',
+      linetype = 'dashed'
+    ) +
+    ggplot2::labs(x = "Chromosome",
+                  y = "Major/ minor allele") +
+    ggpubr::rotate_y_text() +
+    # ggpubr::rotate_x_text() +
+    # xlim(low, upp) +
+    
+    #set the chr names in the centromer positions.
+    ggplot2::scale_x_continuous(
+      breaks = c(0, reference_coordinates$centromerStart, upp),
+      labels = c("", gsub(pattern = 'chr', replacement = '', reference_coordinates$chr), "")
+    )
+  
+  return(p1)
+}
