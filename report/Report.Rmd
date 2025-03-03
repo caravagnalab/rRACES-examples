@@ -40,18 +40,15 @@ img_dir <- "SCOUT_images/"
 ```{r params, include = FALSE}
 #Load params from YAML if running outside R Markdown
 if (!exists("params")) {
-  params <- yaml::read_yaml("params_SPN03.yml")
+  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/SCOUT/SPN01/params.yml")
 }
 ```
 
 <!-- Load the data  -->
 
 ```{r laod_data, echo=FALSE, include=FALSE}
-#phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/phylo_forest.sff")
-#sample_forest <- load_samples_forest("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/samples_forest.sff")
-# sim <- recover_simulation("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/SPN01/")
 sample_forest <- load_samples_forest(params$files$sample_forest)
-phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
+#phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
 ```
 
 ---
@@ -79,8 +76,16 @@ This part of the report shows how the tumour growth in time. Muller plot and tim
 `r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which samplig is perfomed. 
 
 ```{r samlping_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=8}
-source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
-print(final_plot)
+ggplot()
+#snapshot <- params$files$sim
+# source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R",
+#        local =knitr::knit_global())
+
+# plot_sample
+# plot <- plot_tumour_dynamics(params$files$sim)
+# plot$plot_dynamics
+# plot_dynamics <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/plot_dynamics.rds")[[1]]
+# plot_dynamics
 ```
 
 ## Sampling
@@ -89,18 +94,19 @@ print(final_plot)
 
 
 ```{r growth_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=2}
-source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
-print(plot_sampling)
+ggplot()
+#source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
+# plot$plot_sampling
 ```
 
 General information about the samples are reported in the table below.
 ```{r test_table}
 library(reactable)
 library(sparkline)
-table <- readRDS(params$files$sample_info)
-table <- table %>% 
-  select(!c("xmin","xmax","ymin","ymax")) %>% 
-  mutate(time=round(time,2))
+source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/tables.R", local = knitr::knit_global())
+table <- samples_table(snapshot=params$files$sim,
+                       forest=params$files$sample_forest)
+
 reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
           bordered = TRUE, striped = TRUE)
 ```
@@ -147,8 +153,5 @@ sign_muller <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_repor
 sign_muller
 ```
 
-# Sequencing results
-
-The **`r params$spn`** is sequenced with a coverage of **`r params$sequencing$coverage`**X and a simulated purity of **`r params$sequencing$purity`**.
 
 
