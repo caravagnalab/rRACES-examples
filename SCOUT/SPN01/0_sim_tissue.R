@@ -4,8 +4,8 @@ library(dplyr)
 
 
 dir <- getwd()
-outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/races"
-
+outdir <- "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/SCOUT/SPN01/"
+setwd(outdir)
 set.seed(06117)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
 sim$history_delta <- 1
