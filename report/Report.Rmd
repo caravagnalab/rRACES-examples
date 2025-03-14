@@ -20,6 +20,7 @@ htmltools::img(src = "logo.png",
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races')
 ```
 
 <!-- Libraries  -->
@@ -33,8 +34,14 @@ library(patchwork)
 library(rRACES)
 library(dplyr)
 library(tidyverse)
-metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
-img_dir <- "SCOUT_images/"
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/signature_rRACES.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/plot_genome_wide.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/dynamics_rRACES.R",local =T)
+metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
+metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
+img_dir <- "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_images/"
+#simulation <- rRACES::recover_simulation("SPN01")
 ```
 
 ```{r params, include = FALSE}
@@ -48,7 +55,14 @@ if (!exists("params")) {
 
 ```{r laod_data, echo=FALSE, include=FALSE}
 sample_forest <- load_samples_forest(params$files$sample_forest)
-#phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
+phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
+files_cna <- list.files(params$cna_dir, full.names = T)
+sample_names <- sapply(files_cna, function(path) {
+  base_name <- basename(path)
+  sub("_cna.rds$", "", base_name)
+})
+number_of_samples <- length(sample_names)
+cna_data <- lapply(list.files(params$cna_dir,recursive = T,full.names = T),readRDS)
 ```
 
 ---
@@ -63,10 +77,10 @@ info_spn <- metadata %>% filter(SPN_ID==params$spn)
 This report shows the results for patient **`r params$spn`** of SCOUT cohort. `r info_spn$Description` **`r params$spn`** is profiled by `r info_spn$N_Samples` samples collected at `r info_spn$N_Timepoints` time-point.
 
 
-```{r pressure, echo=FALSE, out.width = '100%'}
-spn_image <- paste0(img_dir,params$spn,".png")
-knitr::include_graphics(spn_image)
-```
+<!-- ```{r pressure, echo=FALSE, out.width = '100%'} -->
+<!-- spn_image <- paste0(img_dir,params$spn,".png") -->
+<!-- knitr::include_graphics(spn_image) -->
+<!-- ``` -->
 
 # Tissue Simulation and Sampling
 This part of the report shows how the tumour growth in time. Muller plot and time series plot show changing in cellular growth of the different clones.
@@ -75,17 +89,14 @@ This part of the report shows how the tumour growth in time. Muller plot and tim
 
 `r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which samplig is perfomed. 
 
-```{r samlping_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=8}
-ggplot()
-#snapshot <- params$files$sim
-# source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R",
-#        local =knitr::knit_global())
+```{r grouth_dynamics, out.width = '100%',fig.align='center',fig.height=8}
+snapshot_dir <- params$files$sim
+# knitr::opts_knit$set(root.dir = snapshot_dir)
+snapshot_name <- params$spn
 
-# plot_sample
-# plot <- plot_tumour_dynamics(params$files$sim)
-# plot$plot_dynamics
-# plot_dynamics <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/plot_dynamics.rds")[[1]]
-# plot_dynamics
+# simulation <- rRACES::recover_simulation("SPN01")
+plot <- plot_tumour_dynamics(paste0(snapshot_dir),sample_forest)
+plot$plot_dynamics
 ```
 
 ## Sampling
@@ -93,17 +104,15 @@ ggplot()
 `r params$spn` is sampled at `r info_spn$N_Timepoints` time-point, where a total of `r info_spn$N_Samples` samples are derived. Sampling dynamics is reported in the following plot:
 
 
-```{r growth_dynamics, echo=FALSE, out.width = '80%',fig.align='center',fig.height=2}
-ggplot()
-#source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/dynamics_rRACES.R", local = knitr::knit_global())
-# plot$plot_sampling
+```{r samlping_dynamics, echo=FALSE, out.width = '100%',fig.align='center',fig.height=3, fid.width=10}
+print(plot$plot_sampling)
 ```
 
 General information about the samples are reported in the table below.
 ```{r test_table}
 library(reactable)
 library(sparkline)
-source("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/tables.R", local = knitr::knit_global())
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/tables.R", local = knitr::knit_global())
 table <- samples_table(snapshot=params$files$sim,
                        forest=params$files$sample_forest)
 
@@ -112,7 +121,7 @@ reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize 
 ```
 
 
-# Mutation Engine
+# Tumour evolutionary parameters
 
 Mutational processes are added to the sampled cells based on the tumour type. In particular, the mutation engine is set up by specifing:
 
@@ -120,13 +129,40 @@ Mutational processes are added to the sampled cells based on the tumour type. In
 2. Driver SNVs and CNAs;
 3. SBS and ID mutational signatures.
 
+## Mutation rate
+
+The table below shows the mutation rate for SNVs, INDELs and CNAs added during `MutationEngine` set up.
+
+```{r species_info}
+library(reactable)
+library(sparkline)
+species_table <- phylo_forest$get_species_info()
+reactable(species_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE, fullWidth = TRUE)
+
+```
+
+Copy number profiles have specific segmentation given by the alterations that are appearing during tumour evolution. Segmented data are mapped to know karyotypes. The alluvial plot below shows
+
+```{r read_cna_data, echo=FALSE,fig.height=3,out.width = '100%'}
+alluvial_plot <- alluvial_plot_karyotypes(files_cna)
+alluvial_plot
+```
+
+Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/path/to/pdf).
+
 ## Drivers event
 
 For `r params$spn` drivers SNVs and CNAs are added to a particular clone, each chatacterized by a specific mutation rate.
 The following table summarizes the genomic and evolutionary features of the clones.
 
-
-<!-- report a table with the driver information and the mutation rate of every clone, as well as the SBS/ID-->
+<!-- ```{r driver_event} -->
+<!-- library(reactable) -->
+<!-- library(sparkline) -->
+<!-- driver_table <- phylo_forest$get_driver_mutations() -->
+<!-- reactable(driver_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5, -->
+<!--           bordered = TRUE, striped = TRUE, fullWidth = FALSE) -->
+<!-- ``` -->
 
 ## Signature exposure
 
@@ -134,24 +170,39 @@ For `r params$spn` the following SBS and ID signatures are added to the simulate
 
 ```{r mutation_engine, echo=FALSE}
 exposure_table <- phylo_forest$get_exposures()
-#exposure_table <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/exposure_table.rds")
 reactable(exposure_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
-          bordered = TRUE, striped = TRUE, fullWidth = FALSE)
+          bordered = TRUE, striped = TRUE, fullWidth = TRUE)
 ```
 
 To visualize how signature exposure changes over time, a merged visualization is showed below:
 
-```{r forest_exposure, echo=FALSE}
-sign_tree <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/signature_tree_SPN03.rds")
-sign_tree
+```{r forest_exposure, echo=FALSE, fig.width=20, fig.height=8,out.width = '100%'}
+plot_signatures <- plot_exposure_evolution(sample_forest,phylo_forest,snapshot_dir)
+print(plot_signatures$sign_tree)
 ```
 
 And in the muller plot:
 
-```{r muller_exposure, echo=FALSE}
-sign_muller <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/signature_muller_SPN03.rds")
-sign_muller
+```{r muller_exposure, echo=FALSE,out.width = '100%',fig.align='center'}
+print(plot_signatures$sign_muller)
 ```
+
+# Sequencing simulation
+
+Different combinations of purity and coverage have been simulate with parlleilze approach. You can find the report showing the results of specific purity-coverage combinations in the links listed in thefollowing table:
+
+```{r table_with_seq_report, }
+purities <- c("0.3","0.6","0.9")
+coverages <- c(50,100,150,200)
+df <- expand.grid(purity = purities, coverage = coverages, stringsAsFactors = FALSE)
+
+# Add a column for path_to_report (modify as needed)
+df$path_to_report <- paste0("reports/purity_", df$purity, "p_coverage_", df$coverage, "x.html")
+reactable(df,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE, fullWidth = TRUE)
+```
+
+
 
 
 
