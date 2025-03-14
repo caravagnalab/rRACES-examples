@@ -169,8 +169,8 @@ plot_rRACES_heatmap<-function(sample_forest,phylo_forest){
   
   col_clone = RColorBrewer::brewer.pal(4, "Paired")[3:4]
   names(col_clone)=unique(subgroup$mutant)
-  # n_samples <- length(unique(subgroup$sample_id))
-  # col_sample <- RColorBrewer::brewer.pal(n_samples, "Set1")
+  n_samples <- length(unique(subgroup$sample_id))
+  col_sample <- RColorBrewer::brewer.pal(n_samples, "Set1")
   names(col_sample) = unique(subgroup$sample_id)
   col_clonality = c("monoclonal" = "#EEDD82","polyclonal"="lightgoldenrod4")
   

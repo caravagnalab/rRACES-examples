@@ -88,6 +88,9 @@ get_classes_colors <- function(classes){
   c(color, CNAqc:::nmfy(missing, rep("gray", nmissing)))
 }
 
+# get_clone_palette <- function(sample_forest){
+#   clones <- sample_forest
+# }
 
 
 get_legend <- function(col_palette){
@@ -176,6 +179,15 @@ squareplot = function(seq_res, samples_list,chrom)
   patchwork::wrap_plots(row_plots)+
     patchwork::plot_layout(design = "AAAA\nBBBB\nCCCC")+
     patchwork::plot_annotation(title = paste0("Chromosome ", chrom))
+}
+
+get_clone_map <- function(sample_forest){
+  n_clones <- nrow(sample_forest$get_species_info())
+  clones <- sample_forest$get_species_info() %>% 
+    pull(mutant)
+  clone_colors <- RColorBrewer::brewer.pal(n_clones, "Dark2")
+  names(clone_colors) <- clones
+  return(clone_colors)
 }
 
 get_karyotypes_colors = function(karyotypes)
@@ -421,4 +433,38 @@ average_in_window = function(window, gr, v, method = "weighted", empty_v = NA) {
   }
   
   return(u)
+}
+
+
+get_exposure_ends <- function(phylo_forest) {
+  exposure <- phylo_forest$get_exposures()
+  
+  time_points <- exposure%>% dplyr::pull(time) %>% unique
+  signatures <- exposure %>% dplyr::pull(signature) %>% unique
+  for (t in time_points) {
+    for (signature in signatures) {
+      if (nrow(exposure %>%
+               dplyr::filter(.data$time == t,
+                             .data$signature == signature)) == 0) {
+        exposure[nrow(exposure)+1,] <- c(as.numeric(t), signature,
+                                         as.numeric(0), gsub("[0-9]*$","",
+                                                             signature))
+      }
+    }
+  }
+  
+  last_time <- max(phylo_forest$get_samples_info()["time"])
+  time_points <- sort(unique(append(time_points, last_time)))
+  end_time <- apply(exposure, 1, function(x) {
+    time_points[which( round(time_points, 2) == round(as.numeric(x[1]), 2) ) + 1]
+  })
+  end_time[is.na(end_time)] <- as.numeric(last_time)
+  
+  exposure$end_time <- end_time
+  
+  exposure <- exposure[order(exposure$time, exposure$signature), ]
+  
+  exposure[, c(1, 3)] <- sapply(exposure[, c(1, 3)], as.numeric)
+  
+  return(exposure)
 }

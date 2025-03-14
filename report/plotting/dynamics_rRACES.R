@@ -3,13 +3,13 @@ library(ggplot2)
 library(patchwork)
 library(ggrepel)
 
-plot_tumour_dynamics <- function(snapshot){
+plot_tumour_dynamics <- function(snapshot,sample_forest){
 
   simulation <- rRACES::recover_simulation(snapshot)
   simulation_info <- simulation$get_samples_info()
-
-  muller <- plot_muller(simulation)
-  timeseries <- plot_timeseries(simulation)
+  color_map_clones <- get_clone_map(sample_forest)
+  muller <- plot_muller(simulation,color_map = color_map_clones)
+  timeseries <- plot_timeseries(simulation, color_map = color_map_clones)
 
 
   timing <- simulation_info %>% mutate(what = 'simulation time')
@@ -29,16 +29,16 @@ plot_tumour_dynamics <- function(snapshot){
 
   samples_name <- simulation_info$name
   plot_sample <- lapply(samples_name, FUN = function(s){
-    plot_tissue(simulation = simulation, before_sample = s)  + ggtitle(s)
+    plot_tissue(simulation = simulation, before_sample = s,color_map = color_map_clones)  + ggtitle(s)
   })
+  fixed_n_samples_per_row<-3
+  n_row <- ceiling(length(samples_name)/fixed_n_samples_per_row)
+  plot_sampling <- patchwork::wrap_plots(plot_sample, nrow = n_row, guides = 'collect') & theme(legend.position = 'bottom')
 
-  plot_sampling <- patchwork::wrap_plots(plot_sample, nrow = 1, guides = 'collect') & theme(legend.position = 'bottom')
 
-
-  final_plot <- time_plot + muller + timeseries + plot_layout(nrow = 3)
-  return(list("plot_sampling" = plot_sampling, "plot_dynamics" = final_plot))
+  plot_dynamics <- time_plot + muller + timeseries + plot_layout(nrow = 3)
+  return(list("plot_sampling" = plot_sampling, "plot_dynamics" = plot_dynamics))
 }
-snapshot<-"/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/SPN01"
-plot <- plot_tumour_dynamics(snapshot)
-saveRDS(file = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/plot_dynamics.rds",
-        object = plot)
+
+# saveRDS(file = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/plot_dynamics.rds",
+#         object = plot)

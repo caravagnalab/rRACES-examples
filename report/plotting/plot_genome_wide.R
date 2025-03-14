@@ -3,7 +3,7 @@ library(CNAqc)
 library(dplyr)
 library(ggplot2)
 library(ggalluvial)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/plotting/spn_blueprint/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'
@@ -103,8 +103,8 @@ plot_VAF_n <- function(
     seq_res,
     sample,
     chromosomes = NULL,
-    cuts = c(0, 1),
-    N = 5000) {
+    cuts = c(0.01, 1),
+    N = 80000) {
   data <- rRACES:::get_seq_data(as.data.frame(seq_res), sample, chromosomes)
   
   Ntotal <- nrow(data$tumour)
@@ -116,6 +116,7 @@ plot_VAF_n <- function(
     #dplyr::ungroup() %>%
     dplyr::arrange(chr, from) %>%
     dplyr::mutate(abs_pos = 1:dplyr::n()) %>%
+    dplyr::filter(VAF != 0) %>% 
     dplyr::filter(VAF <= max(cuts), VAF >= min(cuts)) %>% 
     dplyr::filter(causes!=" + errors")
   color_values <- c("50" = "lightgrey", "100" = "darkgrey", "150" = "grey", "200" = "black")
