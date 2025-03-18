@@ -5,7 +5,7 @@ set.seed(06117)
 
 
 outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/races/"
-forest <- load_samples_forest(paste0(outdir,"samples_forest.sff"))
+forest <- load_samples_forest(paste0(outdir,"sample_forest.sff"))
 
 
 setwd("/orfeo/scratch/cdslab/shared/races/GRCh38/")
@@ -36,9 +36,9 @@ m_engine$add_exposure(time = 0,coefficients = c(SBS1 = 0.20,SBS5 = 0.35,
 print("Mutation engine created")
 phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_SNVs=800, num_of_preneoplatic_indels=200)
 phylo_forest$save(paste0(outdir,"phylo_forest.sff"))
-
+dir.create(paste0(outdir,"cna_data_v4"))
 sample_names <- phylo_forest$get_samples_info()[["name"]]
 lapply(sample_names,function(s){
     cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
-    saveRDS(file=paste0(outdir,"cna_data/",s,"_cna.rds"),object=cna)
+    saveRDS(file=paste0(outdir,"cna_data_v4/",s,"_cna.rds"),object=cna)
 })
