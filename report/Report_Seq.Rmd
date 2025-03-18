@@ -33,8 +33,8 @@ library(patchwork)
 library(rRACES)
 library(dplyr)
 library(tidyverse)
-source("plotting/utils.R")
-source("plotting/plot_genome_wide.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/plot_genome_wide.R")
 metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 img_dir <- "SCOUT_images/"
 ```
@@ -46,31 +46,36 @@ if (!exists("params")) {
 }
 ```
 
-<!-- Load the data -->
+<!-- Read params files -->
 
-```{r load_data, include = FALSE, echo =TRUE}
+```{r assign_variables, include = FALSE, echo =TRUE}
 coverage <- params$sequencing$coverage
 purity <- params$sequencing$purity
 seq_dir <- params$files$seq_res
-phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
-seq_res_tumour <- readRDS(paste0(seq_dir,"purity_",purity,"/seq_results_muts_merged_coverage_",coverage,"x.rds"))
+seq_res_tumour_rds <- paste0(seq_dir,"purity_",purity,"/seq_results_muts_merged_coverage_",coverage,"x.rds")
 seq_res_normal_rds <- paste0(seq_dir,"seq_results_muts_merged_coverage_30x.rds")
-seq_res_normal <- readRDS(seq_res_normal_rds)
 files_cna <- list.files(params$cna_dir, full.names = T)
-print(files_cna)
 sample_names <- sapply(files_cna, function(path) {
   base_name <- basename(path)
   sub("_cna.rds$", "", base_name)
 })
-cna_data <- lapply(list.files(params$cna_dir,recursive = T,full.names = T),readRDS)
+number_of_samples <- length(sample_names)
 ```
 
+<!-- Load data -->
+
+```{r load_data, include = FALSE, echo =TRUE}
+phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
+seq_res_tumour <- readRDS(seq_res_tumour_rds)
+seq_res_normal <- readRDS(seq_res_normal_rds)
+cna_data <- lapply(list.files(params$cna_dir,recursive = T,full.names = T),readRDS)
+```
 
 # General sequencing information
 
 Tumor samples have been sequenced with a coverage of `r params$sequencing$coverage`x and a simulated purity of `r params$sequencing$purity`. The normal sample is simulated from a real individual at a sequencing depth of 30x.
 
-```{r individ}
+```{r germline_subject}
 library(reactable)
 library(sparkline)
 
@@ -79,90 +84,127 @@ reactable(germ,filterable = FALSE, resizable = T,highlight = T,defaultPageSize =
           bordered = TRUE, striped = TRUE)
 ```
 
+## Normal sample
+
+Normal sample was sequenced with a coverage of 30X. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+
 ```{r filter_muts, include = FALSE}
 normal_mutations_filtered <- seq_res_normal %>%
   filter(normal_sample.VAF < 0.8 & normal_sample.VAF >0.2)
 ```
 
-## Normal sample
 ```{r general_sequencing_normal, echo=FALSE,out.width = '80%',fig.align='center',fig.height=2}
 dp <- seq_res_normal %>%
   seq_to_long() %>%
   ggplot(aes(x=DP))+
   ggplot2::geom_histogram()+
-  geom_vline(aes(xintercept = mean(DP)),color = 'black',
-                 linetype = 'dashed',
-                  size = .5)+
-  geom_vline(aes(xintercept = 30),colour = "red") +
-  my_ggplot_theme()+
-  scale_color_manual(name = "statistics", values = c("real mean" = "black", "expected mean" = "red"))
+  geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
+    geom_vline(aes(xintercept = 30, color = "Expected Mean")) +
+    my_ggplot_theme() +
+    scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))
 dp
 ```
 
 ## Tumour samples
 
-```{r general_sequencing_tumour, echo=FALSE,out.width = '80%',fig.align='center',fig.height=2}
+<!-- All of the plots will have a fixed size, and the final dim of the figure is given by -->
+<!-- a parameters. -->
+
+```{r calulculate_fig_dims1, echo=TRUE, include=FALSE}
+width_single_plot <- 3
+height_single_plot <- 2
+number_of_samples
+
+### if the plot extends in width 
+fix_n_samples_per_width <- 3
+fig_width <- 3*3
+fig_height <- ceiling(number_of_samples/3)*2
+```
+
+Tumour sample were sequenced with a coverage of `r params$sequencing$coverage`x. The plot shows the depth of sequencing of simulated mutations in the tumour samples. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+
+```{r general_sequencing_tumour, echo=FALSE,out.width = '80%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
 dp <- seq_res_tumour %>%
   seq_to_long() %>%
   ggplot(aes(x=DP))+
   ggplot2::geom_histogram()+
-  geom_vline(aes(xintercept = mean(DP)),
-                 color = 'black',
-                 linetype = 'dashed',
-                  size = .5)+
-  geom_vline(aes(xintercept = coverage),colour = "red") +
-  facet_wrap(~sample_name)+
-  my_ggplot_theme()
+  geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
+    geom_vline(aes(xintercept = params$sequencing$coverage, color = "Expected Mean")) +
+    my_ggplot_theme() +
+    scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))+
+  facet_wrap(~sample_name)
 dp
 ```
 
-# Genome wide plots
+# Copy number profile
 
-## Depth Ratio
+This section show copy number profiles of the sequenced tumour samples, which results by the rate of passenger CNAs and the
+driver CNA events added during the setup of th `MutationEngine`.
 
-```{r depth_ratio, echo=FALSE,out.width = '100%',fig.align='center',fig.height=6}
+## Genome wide plot of Depth Ratio
+
+In Copy Number Alteration (CNA) analysis, the depth ratio is a crucial metric used to infer copy number variations (CNVs) from sequencing data. It represents the relative read depth of a genomic region compared to a reference, helping to determine duplications, deletions, or normal copy states. Driver events are highlighted.
+
+```{r filter_germline,echo=FALSE, include=FALSE}
+## keep only germline mutations for genome-wide plots
 g_seq <- left_join(normal_mutations_filtered,seq_res_tumour,
                    by =c("chr","chr_pos", "ref", "alt","causes","classes")) %>%
       as.data.frame()
+```
 
+
+```{r calulculate_fig_dims2, echo=TRUE, include=FALSE}
+width_single_plot <- 8
+height_single_plot <- 2
+
+### if the plot extends in width 
+fix_n_samples_per_height <- 3
+fig_height <- number_of_samples*height_single_plot
+fig_width <- ceiling(number_of_samples/3)*8
+```
+
+```{r depth_ratio, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
 dr_plots <- lapply(sample_names, function(s){
       dr <- plot_DR_n(seq_res = g_seq,sample = s)
 })
-wrap_plots(dr_plots,ncol=1)
+wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height)
 ```
 
-## BAF
+## Genome wide plot of B Allele Frequency
 
-```{r baf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=6}
+B Allele Frequency (BAF) is a key metric used in Copy Number Alteration (CNA) analysis to assess allelic imbalances. It represents the proportion of sequencing reads supporting the B allele (one of the two inherited alleles) at heterozygous single nucleotide polymorphisms (SNPs).
+
+```{r baf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
 
 baf_plots <- lapply(sample_names, function(s){
       baf <- plot_BAF_n(seq_res = g_seq,sample = s)
 })
-wrap_plots(baf_plots,ncol=1)
+wrap_plots(baf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height)
 ```
 
-## VAF
+## Genome wide plot of Variant Allele Frequency
 
-```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=6}
+```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
 s_seq <- seq_res_tumour %>%
   filter(classes!="germinal")
 vaf_plots <- lapply(sample_names, function(s){
       vaf <- plot_VAF_n(seq_res = s_seq,sample = s)
 })
-wrap_plots(vaf_plots,ncol=1)
+wrap_plots(vaf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height)
 ```
 
 
-## Karyotypes information
-
-```{r read_cna_data, echo=FALSE,fig.height=3,out.width = '100%'}
-alluvial_plot <- alluvial_plot_karyotypes(files_cna)
-alluvial_plot
-```
 
 ## Segmented Data
 
-```{r segmented_data, echo=FALSE,out.width = '100%'}
+```{r segmented_data, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
 segmented_plot <- plot_clone_segments(files_cna)
 segmented_plot
 ```
+
+# Somatic mutations
+
+## Clonal e Subclonal Variant Allele Frequency Spectra
+
+## Multivariate VAF across samples
+

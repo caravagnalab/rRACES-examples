@@ -154,6 +154,7 @@ plot_VAF_data_n = function(x,
     ggplot2::xlim(-0.01, 1.01) +
     CNAqc:::my_ggplot_theme() +
     ggplot2::labs(title = "VAF",
+		  x="VAF",
                   caption = paste0(
                     "n = ",
                     nrow(raw_muts),
