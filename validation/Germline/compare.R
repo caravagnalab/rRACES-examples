@@ -2,6 +2,7 @@ library(tidyverse)
 library(vcfR)
 library(optparse)
 library(caret)
+library(dplyr)
 
 setwd('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/validation/Germline/')
 source('vcf_parser.R')
@@ -11,7 +12,6 @@ option_list <- list(
   make_option(c("-i", "--input"), type="character", default='/orfeo/LTS/LADE/LT_storage/lvaleriani/races/validation_data', help="path to input data"),
   make_option(c("-s", "--SPN"), type="character", default='SPN01', help="SPN name"),
   make_option(c("-t", "--tool"), type="character", default='freebayes', help="variant calling tool"),
-  make_option(c("-C", "--chr"), type="character", default='22', help="chromosome number"),
   make_option(c("-o", "--output"), type="character", default='/orfeo/LTS/LADE/LT_storage/lvaleriani/races/validation_data', help="path to output directory")
 )
 to_parse = TRUE
@@ -21,113 +21,224 @@ dir <- param$input
 spn <- param$SPN
 tool <- param$tool
 output <- param$output
-chr <- param$chr
 
-vcf_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/vcf/chr', chr, '_normal_sample.', tool, '.vcf.gz')
-rds_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/rds/chr', chr, '_normal_sample.', tool, '.rds')
-
-if (to_parse == TRUE){
-  if (tool == 'haplotypecaller'){
-    rds_vcf <- parse_HaplotypeCaller(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
-  } else if (tool == 'freebayes') {
-    rds_vcf <- parse_freebayes(file = vcf_file, out_file = rds_file, save = T, cutoff = 0.3)[[paste0(spn, '_normal_sample')]]$mutations
+vcf_list = lapply(1:22, FUN = function(chr){
+  vcf_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/vcf/chr', chr, '_normal_sample.', tool, '.vcf.gz')
+  rds_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/rds/chr', chr, '_normal_sample.', tool, '.rds')
+  
+  if (to_parse == TRUE){
+    if (tool == 'haplotypecaller'){
+      rds_vcf = parse_HaplotypeCaller(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
+    } else if (tool == 'freebayes') {
+      rds_vcf = parse_freebayes(file = vcf_file, out_file = rds_file, save = T, cutoff = 0.3)[[paste0(spn, '_normal_sample')]]$mutations
+    }
+  } else  {
+    rds_vcf = readRDS(rds_file)[[paste0(spn, '_normal_sample')]]$mutations    
   }
-} else  {
-  rds_vcf <- readRDS(rds_file)[[paste0(spn, '_normal_sample')]]$mutations    
-}
+  
+  rds_vcf = rds_vcf %>% 
+    dplyr::select(chr, from, to, ref, alt, NV, DP, BAF, QUAL, FILTER) %>% 
+    dplyr::mutate(mutationID = paste(chr,from, sep = ':'))
+  return(rds_vcf)
+})
 
-rds_vcf <- rds_vcf %>% select(chr, from, to, ref, alt, NV, DP, BAF, QUAL, FILTER) %>% mutate(mutationID = paste(chr,from, sep = ':'))
+rds_vcf <- bind_rows(vcf_list)
+rds_vcf_pass <- bind_rows(vcf_list) %>% dplyr::filter(FILTER == "PASS" & !is.na(FILTER))
 
-c <- chr
-rds_rRACES <- readRDS(paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/races/seq_results_muts_merged_coverage_30x.rds')) %>% filter(chr == c)
+# rds_rRACES <- readRDS(paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/races/seq_results_muts_merged_coverage_30x.rds'))  %>% 
+#   dplyr::filter(classes == 'germinal') %>%
+#   dplyr::mutate(chr = paste0('chr', chr)) %>% 
+#   dplyr::filter(chr != 'chrX') %>% 
+#   dplyr::filter(chr != 'chrY')  
+# 
+# rRACES <- seq_to_long(rds_rRACES) %>% 
+#   dplyr::rename(BAF = VAF) %>% 
+#   mutate(mutationID = paste(chr, from, sep = ':'))
 
-rRACES <- seq_to_long(rds_rRACES) %>% 
-  filter(classes == 'germinal') %>% 
-  rename(BAF = VAF) %>% 
-  mutate(chr = paste0('chr', chr)) %>% 
-  mutate(mutationID = paste(chr,from, sep = ':'))
+rRACES <- readRDS('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/validation/Germline/rRACES_germ.RDS')
 
+sample_N <- 500000
 p_baf_races <- rRACES %>% 
+  ungroup() %>% 
+  sample_n(sample_N) %>% 
   ggplot(aes(x=BAF)) + 
   geom_histogram(binwidth=0.01) +
   scale_x_continuous(limits = c(0,1)) +
   theme_bw() +
-  labs(x="BAF", y="Count") +
-  ggtitle("rRACES", subtitle = paste0(nrow(rRACES), " total mutations"))
+  labs(x="BAF", 
+       y="Count",
+       title = "rRACES BAF",
+       subtitle = paste0(nrow(rRACES), " mutations"),
+       caption = paste0('sample ', sample_N, ' mutations'),
+       color = "") 
 
-p_baf_caller <-  rds_vcf %>% 
-  dplyr::filter(FILTER == "PASS") %>% 
+p_dp_races <- rRACES %>% 
+  ungroup() %>% 
+  sample_n(sample_N) %>% 
+  ggplot(aes(x=DP)) + 
+  geom_histogram(binwidth=1) +
+  geom_vline(aes(xintercept = median(DP)), color = "indianred") +
+  theme_bw() +
+  labs(x="DP", 
+       y="Count",
+       title = "rRACES coverage",
+       subtitle = paste0(nrow(rRACES), " mutations; Median coverage = ",median(rRACES$DP)),
+       caption = paste0('sample ', sample_N, ' mutations'),
+       color = "") 
+
+p_baf_caller <-  rds_vcf_pass %>% 
+  sample_n(sample_N) %>% 
   ggplot(mapping = aes(x=BAF)) +
   geom_histogram(binwidth=0.01) +
   scale_x_continuous(limits = c(0,1)) +
   theme_bw() +
-  labs(x="BAF", y="Count") +
-  ggtitle(tool, subtitle = paste0(sum(rds_vcf$FILTER == "PASS"), " PASS mutations"))
+  labs(x="BAF", 
+       y="Count",
+       title = paste0(tool," BAF"),
+       subtitle = paste0(nrow(rds_vcf_pass), " PASS mutations"),
+       caption = paste0('sample ', sample_N, ' mutations'),
+       color = "")
 
-# all
-merged_df <- merge(rRACES, rds_vcf, by = "mutationID", all = TRUE, suffix=c(".races",".caller")) %>% 
-  mutate_all(~ifelse(is.nan(.), NA, .))
+p_dp_caller <- rds_vcf_pass %>% 
+  sample_n(sample_N) %>% 
+  ggplot(mapping = aes(x=DP)) +
+  geom_histogram(binwidth=1) +
+  geom_vline(aes(xintercept = median(DP)), color = "indianred") +
+  theme_bw() +
+  labs(x="DP", 
+       y="Count",
+       title = paste0(tool ," coverage"),
+       subtitle = paste0(nrow(rds_vcf_pass), " PASS mutations; Median coverage = ", median(rds_vcf$DP)),
+       caption = paste0('sample ', sample_N, ' mutations'),
+       color = "") 
 
-p_filter_dist = plot_filter_distribution(merged_df, log_scale = TRUE) + ggtitle("Distribution of caller flags")
+merged_df <- merge_datasets(rds_vcf, rRACES)
+p_filter_dist = plot_filter_distribution(merged_df)
 
-p_scatter_BAF_all = plot_scatter_with_corr(merged_df, "BAF.races", "BAF.caller") +
-  ggtitle("BAF correlation w.o filters", subtitle = paste0(nrow(merged_df), " total mutations")) +
+baf_differences = plot_baf_difference(merged_df)
+cov_differences = plot_cov_difference(merged_df)
+
+colors <- get_colors(merged_df)
+
+#sample_N <- 1e5
+merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
+
+p_scatter_BAF_all = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.caller") +
+  ggtitle("BAF correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
   xlim(c(0,1)) +
-  ylim(c(0,1))
+  ylim(c(0,1)) +
+  theme(legend.position = "bottom") +
+  labs(
+    x = "BAF races",
+    y = paste0("BAF ", tool),
+    caption = paste0('sample ', sample_N, ' mutations')
+  ) +
+  scale_color_manual(values = colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
 
-p_scatter_DP_all = plot_scatter_with_corr(merged_df, "DP.races", "DP.caller") +
-  ggtitle("DP correlation w.o filters", subtitle = paste0(nrow(merged_df), " total mutations"))
+p_scatter_BAF_all = ggExtra::ggMarginal(p_scatter_BAF_all, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
+p_scatter_BAF_all = ggplotify::as.ggplot(p_scatter_BAF_all)
 
-y_true = as.numeric(factor(!is.na(merged_df$BAF.races), levels=c(FALSE, TRUE))) - 1
-y_pred = as.numeric(factor(!is.na(merged_df$BAF.caller), levels=c(FALSE, TRUE))) - 1
-p_confusion_all = plot_confusion_matrix(y_true, y_pred)
+p_scatter_DP_all = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.caller") +
+  ggtitle("DP correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
+  theme(legend.position = "bottom") +
+  labs(
+    x = "DP races",
+    y = paste0("DP ", tool),
+    caption = paste0('sample ', sample_N, ' mutations')
+  ) +
+  scale_color_manual(values = colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
 
-metrics_all <- compute_metrics(y_true, y_pred) %>% 
-  dplyr::mutate(Caller = tool, Filters = "Off")
+p_scatter_DP_all = ggExtra::ggMarginal(
+  p_scatter_DP_all,
+  type = "boxplot",      # For density plots
+  groupFill = TRUE, groupColour = TRUE
+)
+p_scatter_DP_all = ggplotify::as.ggplot(p_scatter_DP_all)
 
+y_true = as.numeric(factor((merged_df$BAF.races > 0), levels=c(FALSE, TRUE))) - 1
+y_pred = as.numeric(factor((merged_df$BAF.caller > 0), levels=c(FALSE, TRUE))) - 1
 
-# pass
-merged_df = merge(rRACES, rds_vcf %>% dplyr::filter(FILTER=="PASS"), by = "mutationID", all = TRUE, suffix=c(".races",".caller")) %>% 
-  mutate_all(~ifelse(is.nan(.), NA, .))
+p_venn_all = plot_venn_diagram(merged_df, tool) +
+  ggtitle("All called mutations")
+metrics_all = compute_metrics(y_true, y_pred)
 
-p_scatter_BAF_pass = plot_scatter_with_corr(merged_df, "BAF.races", "BAF.caller") +
-  ggtitle("BAF correlation w filters", subtitle = paste0(nrow(merged_df), " total mutations")) +
+# PASS mutations
+merged_df = merge_datasets(rds_vcf_pass, rRACES)
+merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
+
+p_scatter_BAF_pass = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.caller") +
+  ggtitle("BAF correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
   xlim(c(0,1)) +
-  ylim(c(0,1))
+  ylim(c(0,1)) +
+  theme(legend.position = "bottom") +
+  labs(
+    x = "BAF races",
+    y = paste0("BAF ", tool),
+    caption = paste0('sample ', sample_N, ' mutations')
+  ) +
+  scale_color_manual(values = colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
 
-p_scatter_DP_pass = plot_scatter_with_corr(merged_df, "DP.races", "DP.caller") +
-  ggtitle("DP correlation w filters", subtitle = paste0(nrow(merged_df), " total mutations"))
+p_scatter_BAF_pass = ggExtra::ggMarginal(p_scatter_BAF_pass, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
+p_scatter_BAF_pass = ggplotify::as.ggplot(p_scatter_BAF_pass)
 
-y_true = as.numeric(factor(!is.na(merged_df$BAF.races), levels=c(FALSE, TRUE))) - 1
-y_pred = as.numeric(factor(!is.na(merged_df$BAF.caller), levels=c(FALSE, TRUE))) - 1
-p_confusion_pass = plot_confusion_matrix(y_true, y_pred)
+p_scatter_DP_pass = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.caller") +
+  ggtitle("DP correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
+  theme(legend.position = "bottom") +
+  labs(
+    x = "DP races",
+    y = paste0("DP ", tool),
+    caption = paste0('sample ', sample_N, ' mutations')
+  ) +
+  scale_color_manual(values = colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
 
-metrics_pass <- compute_metrics(y_true, y_pred) %>% 
-  dplyr::mutate(Caller = tool, Filters = "On")
+p_scatter_DP_pass = ggExtra::ggMarginal(
+  p_scatter_DP_pass,
+  type = "boxplot",      # For density plots
+  groupFill = TRUE, groupColour = TRUE
+)
+p_scatter_DP_pass = ggplotify::as.ggplot(p_scatter_DP_pass)
 
-# Build report
-metrics = dplyr::bind_rows(metrics_all, metrics_pass) %>% 
-  tidyr::pivot_longer(!c(Filters, Caller))
+y_true = as.numeric(factor((merged_df$BAF.races > 0), levels=c(FALSE, TRUE))) - 1
+y_pred = as.numeric(factor((merged_df$BAF.caller > 0), levels=c(FALSE, TRUE))) - 1
+
+p_venn_pass = plot_venn_diagram(merged_df, tool) +
+  ggtitle("Only PASS mutations")
+metrics_pass = compute_metrics(y_true, y_pred)
+
+metrics = dplyr::bind_rows(
+  metrics_all %>% tidyr::pivot_longer(cols = colnames(metrics_all)) %>% dplyr::mutate(Mutations = "All"),
+  metrics_pass %>% tidyr::pivot_longer(cols = colnames(metrics_pass)) %>% dplyr::mutate(Mutations = "Only Pass")  
+)
 
 p_metrics = metrics %>% 
-  ggplot(mapping = aes(x=name, y=value, fill=Filters)) +
+  ggplot(mapping = aes(x=name, y=value, fill=Mutations)) +
   geom_col(position = "dodge") +
   theme_bw() +
-  labs(x="", y="Value") +
-  ggtitle("Metrics comparison")
+  ylim(c(0,1))
 
 design = "
-AAABBB
-CCCDDD
-EEFFGG
-HHIILL
+AABBC
+AABBC
+DDEEF
+DDEEF
+GGHHI
+GGHHI
+LLMMN
+LLMMN
+OOOPP
 "
 
-report_plot = free(p_baf_races) + free(p_filter_dist) + 
-  free(p_baf_caller) + free(p_metrics) + 
-  free(p_scatter_BAF_all) + free(p_scatter_DP_all) + free(p_confusion_all) +
-  free(p_scatter_BAF_pass) + free(p_scatter_DP_pass) + free(p_confusion_pass) +
-  plot_layout(design = design) & 
-  theme(legend.position = "bottom")  
+title = paste0(spn, ", calls by ", tool)
+report_plot = free(p_dp_races) + free(p_dp_caller) + free(cov_differences) +
+  free(p_baf_races) + free(p_baf_caller) + free(baf_differences) +
+  free(p_scatter_DP_all) + free(p_scatter_BAF_all) + free(p_venn_all) +
+  free(p_scatter_DP_pass) + free(p_scatter_BAF_pass) + free(p_venn_pass) +
+  free(p_metrics) + free(p_filter_dist) +
+  plot_layout(design = design) +
+  plot_annotation(title)
 
-ggsave(plot = report_plot, filename = paste0(dir,'/', spn, '/normal_sample/', tool, '/plot/', tool, '_normal_chr', chr, '.png'), dpi = 400, width = 10, height = 15, units = 'in')
+ggsave(plot = report_plot, filename = paste0(dir,'/', spn, '/normal_sample/', tool, '/plot/', tool, '_normal.png'), dpi = 400, width = 15, height = 20, units = 'in')

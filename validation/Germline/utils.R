@@ -1,3 +1,51 @@
+get_colors = function(df) {
+  all_levels <- levels(factor(df$FILTER))
+  full_colors <- setNames(RColorBrewer::brewer.pal(8, "Set2")[1:length(all_levels)], all_levels)  
+  
+  original_names = names(full_colors)
+  if ("PASS" %in% names(full_colors)) {
+    names(full_colors)[which(names(full_colors)=="PASS")] = original_names[1]
+    names(full_colors)[1] = "PASS"
+  }
+  
+  if ("Other" %in% names(full_colors)) {
+    names(full_colors)[which(names(full_colors)=="Other")] = original_names[2]
+    names(full_colors)[2] = "Other"
+  }
+  
+  full_colors
+}
+
+merge_datasets <- function(snp_caller, ground_truth) {
+  df <- snp_caller %>%
+    full_join(ground_truth, by = c("mutationID"), suffix = c(".caller", ".races")) %>%
+    mutate(
+      positive_truth = !is.na(BAF.races) & BAF.races > 0,
+      positive_call = !is.na(BAF.caller) & BAF.caller > 0,
+      true_positive = positive_truth & positive_call,
+      false_positive = !positive_truth & positive_call,
+      false_negative = positive_truth & !positive_call,
+      true_negative = !positive_truth & !positive_call
+    ) %>% 
+    dplyr::mutate(BAF.races = ifelse(is.na(BAF.races), 0, BAF.races)) %>% 
+    dplyr::mutate(BAF.caller = ifelse(is.na(BAF.caller), 0, BAF.caller)) %>% 
+    dplyr::mutate(DP.races = ifelse(is.na(DP.races), 0, DP.races)) %>% 
+    dplyr::mutate(DP.caller = ifelse(is.na(DP.caller), 0, DP.caller))
+  
+  return(df)
+}
+
+
+plot_venn_diagram = function(merged_df, caller_name) {
+  id_muts_races = merged_df %>% dplyr::filter(positive_truth) %>% dplyr::pull(mutationID)
+  id_muts_caller = merged_df %>% dplyr::filter(positive_call) %>% dplyr::pull(mutationID)
+  x = list("races"=id_muts_races, caller_name=id_muts_caller)
+  names(x) = c("races", caller_name)
+  ggVennDiagram::ggVennDiagram(x) +
+    scale_fill_gradient2(low = "white", high = "#4981BF", mid = "white", midpoint=0) +
+    coord_flip() +
+    theme(legend.position = "none")
+}
 
 
 seq_to_long <- function(seq_results) {
@@ -16,50 +64,25 @@ seq_to_long <- function(seq_results) {
     dplyr::mutate(to = from)
 }
 
-library(caret)
-
-# Function to compute confusion matrix and performance metrics
-compute_metrics <- function(actual, predicted) {
-  cm <- table(Actual = actual, Predicted = predicted)
-  confusion_matrix <- confusionMatrix(as.factor(predicted), as.factor(actual), positive = "1")
+plot_baf_difference <- function(df) {
+  df <- df %>%
+    mutate(BAF_diff = BAF.caller - BAF.races)
   
-  metrics <- dplyr::tibble(
-    Accuracy = confusion_matrix$overall["Accuracy"],
-    Sensitivity = confusion_matrix$byClass["Sensitivity"],
-    Specificity = confusion_matrix$byClass["Specificity"],
-    Precision = confusion_matrix$byClass["Precision"],
-    Recall = confusion_matrix$byClass["Recall"],
-    F1_Score = confusion_matrix$byClass["F1"]
-  )
-  
-  return(metrics)
+  ggplot(df, mapping = aes(x=FILTER, y=BAF_diff)) +
+    geom_violin() +
+    labs(title = "Boxplot of BAF differences", y = "BAF Difference (Caller - Truth)", x = "") +
+    theme_bw()
 }
 
-# Function to plot the confusion matrix
-plot_confusion_matrix <- function(actual, predicted) {
-  # Create the confusion matrix
-  cm <- table(Actual = actual, Predicted = predicted)
+# Function to plot Histogram of depth Differences
+plot_cov_difference <- function(df) {
+  df <- df %>%
+    dplyr::mutate(DP_diff = DP.caller - DP.races)
   
-  # Convert to data frame for ggplot
-  cm_df <- as.data.frame(cm)
-  
-  # Calculate global percentages (out of total observations)
-  total <- sum(cm)
-  cm_df$Percentage <- (cm_df$Freq / total) * 100
-  
-  # Create labels with both count and percentage
-  cm_df$Label <- paste0(cm_df$Freq, "\n(", round(cm_df$Percentage, 1), "%)")
-  
-  # Add a column to identify diagonal vs. off-diagonal elements
-  cm_df$Diagonal <- ifelse(cm_df$Actual == cm_df$Predicted, "Correct", "Incorrect")
-  
-  # Plot
-  ggplot(cm_df, aes(x = Predicted, y = Actual, fill = Diagonal)) +
-    geom_tile() +
-    geom_text(aes(label = Label), color = "black", size = 4) +
-    scale_fill_manual(values = c("Correct" = alpha("#2E8B57", .9), "Incorrect" = alpha("indianred", .9))) +
-    theme_minimal() +
-    labs(title = "Confusion Matrix", x = "Predicted", y = "Actual")
+  ggplot(df, mapping = aes(x=FILTER, y=DP_diff)) +
+    geom_violin() +
+    labs(title = "Boxplot of DP differences", y = "DP Difference (Caller - Truth)", x = "") +
+    theme_bw()
 }
 
 plot_scatter_with_corr <- function(data, x_var, y_var, col_var = "FILTER", title = NULL) {
@@ -87,14 +110,31 @@ plot_scatter_with_corr <- function(data, x_var, y_var, col_var = "FILTER", title
   
   # Create plot
   p <- ggplot(data, aes_string(x = x_var, y = y_var, col = col_var)) +
-    geom_point(alpha = 0.8) +
-    #geom_smooth(method = "lm", se = TRUE, color = "black", fill = "gray90", alpha = 0.3, linewidth = .5) +
+    geom_point(alpha = 0.5, size = .4) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") +
     annotate("text", x = Inf, y = -Inf, label = corr_text,
              hjust = 1.1, vjust = -0.5) +
     theme_bw() +
     labs(x = x_var, y = y_var)
-  
   p
+}
+
+
+library(caret)
+
+compute_metrics <- function(actual, predicted) {
+  cm <- table(Actual = actual, Predicted = predicted)
+  confusion_matrix <- confusionMatrix(as.factor(predicted), as.factor(actual), positive = "1")
+  
+  metrics <- dplyr::tibble(
+    Accuracy = confusion_matrix$overall["Accuracy"],
+    Sensitivity = confusion_matrix$byClass["Sensitivity"],
+    Precision = confusion_matrix$byClass["Precision"],
+    Recall = confusion_matrix$byClass["Recall"],
+    F1_Score = confusion_matrix$byClass["F1"]
+  )
+  
+  return(metrics)
 }
 
 plot_filter_distribution = function(merged_df, log_scale = TRUE) {
@@ -115,4 +155,5 @@ plot_filter_distribution = function(merged_df, log_scale = TRUE) {
   
   p
 }
+
 
