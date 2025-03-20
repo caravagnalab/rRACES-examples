@@ -34,8 +34,8 @@ library(patchwork)
 library(rRACES)
 library(dplyr)
 library(tidyverse)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
 source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/signature_rRACES.R")
+source("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/report/plotting/signature_rRACES.R")
 source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/plot_genome_wide.R")
 source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/dynamics_rRACES.R",local =T)
 metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
@@ -120,6 +120,16 @@ reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize 
           bordered = TRUE, striped = TRUE)
 ```
 
+## Phylogenetic forest
+Sample forest plot with annotated MRCAs for all available sample.
+
+```{r forest, echo=FALSE,fig.height=6, out.width = '100%'}
+plt_sample <- plot_forest(sample_forest, color_map = color_map_clones) +
+  theme(legend.box = "vertical", 
+        legend.box.just = "left",
+        legend.spacing = unit(0.01, "cm"))
+annotate_forest(plt_sample, phylo_forest, samples = TRUE, MRCAs = TRUE, driver = F)
+```
 
 # Tumour evolutionary parameters
 
@@ -142,7 +152,60 @@ reactable(species_table,filterable = FALSE, resizable = T,highlight = T,defaultP
 
 ```
 
-Copy number profiles have specific segmentation given by the alterations that are appearing during tumour evolution. Segmented data are mapped to know karyotypes. The alluvial plot below shows
+## Drivers event
+
+For `r params$spn` drivers SNVs and CNAs are added to a particular clone, each chatacterized by a specific mutation rate (see above).
+The following table summarizes the genomic and evolutionary features of the clones.
+
+The somatic mutation drivers (SNVs and INDELs) are:
+```{r driver_event}
+library(reactable)
+library(sparkline)
+driver_table <- phylo_forest$get_driver_mutations()
+
+mut_event <- driver_table %>% 
+  filter(type != 'CNA') %>% 
+  filter(type != 'WGD') %>%
+  select(-CNA_type, -order, -allele, -src_allele)
+
+reactable(mut_event, filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE, fullWidth = FALSE)
+```
+
+And the copy number alteration (CNA) driver events are:
+```{r cna driver}
+get_event <- function(driver){
+  event <- driver %>% 
+    filter(type == 'CNA') %>% 
+    select(-ref, -alt) %>% 
+    group_by(mutant, chr, start, end, type) %>% 
+    summarize(A0 = sum(CNA_type == 'A' & src_allele == '0'),
+              A1 = sum(CNA_type == 'A' & src_allele == '1'),
+              D0 = sum(CNA_type == 'D' & allele == '0'),
+              D1 = sum(CNA_type == 'D' & allele == '1')) %>% 
+    mutate(M = 1 + A0 - D0,
+           m = 1 + A1 - D1) %>% 
+    mutate(major = max(M, m),
+           minor = min(M, m)) %>%
+    mutate(CN = paste(major, minor, sep = ':'),
+           length = end - start) %>% 
+    select(mutant, type, chr,  start, end, length, major, minor, CN) 
+  
+  return(event)
+}
+
+wgd <- driver_table %>% filter(type == 'WGD') %>% select(mutant, type, chr, start, end)
+cna_event <- get_event(driver_table)
+cna_event <- bind_rows(cna_event, wgd)
+
+reactable(cna_event, filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE, fullWidth = FALSE)
+```
+
+
+## Copy number events
+
+Copy number profiles (passenger and driver) have specific segmentation given by the alterations that are appearing during tumour evolution. Segmented data are mapped to know karyotypes. The alluvial plot below shows how CN events are distributed between different samples:
 
 ```{r read_cna_data, echo=FALSE,fig.height=3,out.width = '100%'}
 alluvial_plot <- alluvial_plot_karyotypes(files_cna)
@@ -151,18 +214,6 @@ alluvial_plot
 
 Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/path/to/pdf).
 
-## Drivers event
-
-For `r params$spn` drivers SNVs and CNAs are added to a particular clone, each chatacterized by a specific mutation rate.
-The following table summarizes the genomic and evolutionary features of the clones.
-
-<!-- ```{r driver_event} -->
-<!-- library(reactable) -->
-<!-- library(sparkline) -->
-<!-- driver_table <- phylo_forest$get_driver_mutations() -->
-<!-- reactable(driver_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5, -->
-<!--           bordered = TRUE, striped = TRUE, fullWidth = FALSE) -->
-<!-- ``` -->
 
 ## Signature exposure
 
@@ -174,16 +225,16 @@ reactable(exposure_table,filterable = FALSE, resizable = T,highlight = T,default
           bordered = TRUE, striped = TRUE, fullWidth = TRUE)
 ```
 
-To visualize how signature exposure changes over time, a merged visualization is showed below:
+To visualize how signature exposure changes over generation in the phylogenetic tree, a merged visualization is showed below:
 
-```{r forest_exposure, echo=FALSE, fig.width=20, fig.height=8,out.width = '100%'}
-plot_signatures <- plot_exposure_evolution(sample_forest,phylo_forest,snapshot_dir)
+```{r forest_exposure, echo=FALSE, fig.width=9, out.width = '100%'}
+plot_signatures <- plot_exposure_evolution(sample_forest, phylo_forest, snapshot_dir)
 print(plot_signatures$sign_tree)
 ```
 
-And in the muller plot:
+And in the muller plot below is showed how the signature exposures evolve over time:
 
-```{r muller_exposure, echo=FALSE,out.width = '100%',fig.align='center'}
+```{r muller_exposure, echo=FALSE, out.width = '100%',fig.align='center'}
 print(plot_signatures$sign_muller)
 ```
 
