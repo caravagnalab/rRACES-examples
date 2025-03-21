@@ -455,3 +455,65 @@ get_exposure_ends <- function(phylo_forest) {
   
   return(exposure)
 }
+
+annotate_drivers <- function(phylo_forest){
+  ref_path <- phylo_forest$get_reference_path()
+  driver_table_path <- gsub(pattern = "reference.fasta",replacement = "drivers.txt",x = ref_path)
+  driver_table <-  read.csv(driver_table_path,header=T,sep="\t")
+  known_drivers <- driver_table %>%
+    dplyr::mutate(chr=as.character(chr)) %>%
+    dplyr::rename(driver_label=driver_code) %>% 
+    dplyr::rename(pos=from) %>% 
+    dplyr::mutate(chr = paste0("chr", chr)) %>% 
+    dplyr::select(chr,pos,driver_gene,driver_label)
+  
+  drivers = phylo_forest$get_driver_mutations() %>%
+    dplyr::rename(pos=start) %>%
+    dplyr::mutate(chr = paste0("chr", chr)) %>%
+    dplyr::left_join(y = known_drivers,by = c("chr","pos"))
+  return(drivers)
+}
+
+annotate_plots <- function(plot,drivers,ref){
+  reference_genome = reference_genome = CNAqc:::get_reference(ref = ref)
+  vfrom = reference_genome$from
+  names(vfrom) = reference_genome$chr
+  
+  drivers <- drivers %>% 
+    dplyr::mutate(pos = pos + vfrom[chr]) %>% 
+    dplyr::mutate(end = end + vfrom[chr])
+  driver_SID <- drivers %>% filter(type=="SID")
+  driver_CNA <- drivers %>% filter(type=="CNA")
+  driver_WGD <- drivers %>% filter(type=="WGD")
+  L = ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
+  driver_CNA$y = L$y.range[2] * .9
+  driver_SID$y = L$y.range[2] * .9
+  p <- plot +
+    ggplot2::geom_vline(
+      data = driver_SID,
+      show.legend = FALSE,
+      ggplot2::aes(xintercept = pos),
+      linetype = 'dashed',
+      color = 'black',
+      size = .3
+    ) +
+    geom_rect(data=driver_CNA, aes(xmin=pos,xmax=end,fill=CNA_type),
+              ymin=0,ymax=(L$y.range[2]), size=0.5, alpha=0.2)+
+    ggrepel::geom_label_repel(
+      data = driver_SID,
+      ggplot2::aes(
+        x = pos,
+        y = y,
+        label = driver_label
+      ),
+      ylim = c(L$y.range[2] * .9, NA),
+      size = 2,
+      nudge_y = 0,
+      nudge_x = 0,
+      show.legend = FALSE
+    )+
+    geom_rect(data=driver_WGD, aes(xmin=L$x.range[1],xmax=L$x.range[2],fill=type),
+              ymin=0,ymax=(L$y.range[2]), size=0.5, alpha=0.2) +
+    scale_fill_manual(values=c("A" = "red", "D" = "blue","WGD" = "grey"))
+  return(p)
+}

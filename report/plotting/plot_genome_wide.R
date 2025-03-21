@@ -124,7 +124,7 @@ plot_VAF_n <- function(
   CNAqc:::blank_genome() +
     geom_point(data=d_mod, aes(x = pos, y = VAF), size = 0.5)+
     ggplot2::lims(y = c(0, 1)) +
-    ggplot2::labs(x = "", y = "BAF")+
+    ggplot2::labs(x = "", y = "VAF")+
     # scale_fill_manual(values = color_values[as.character()]
     ggplot2::ggtitle(sample)
 }
