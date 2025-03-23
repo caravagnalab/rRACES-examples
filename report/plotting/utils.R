@@ -517,3 +517,64 @@ annotate_plots <- function(plot,drivers,ref){
     scale_fill_manual(values=c("A" = "red", "D" = "blue","WGD" = "grey"))
   return(p)
 }
+
+
+subsample_somatic_mutations <- function(seq_res,fraction){
+  # Set desired fraction of total mutations to sample
+  fraction_to_sample <- fraction  # 30%
+  
+  # Compute number of samples per chromosome while keeping proportions
+  sample_sizes <- seq_res %>%
+    ungroup() %>% 
+    count(chr) %>%
+    mutate(sample_size = round(n * fraction_to_sample))
+  
+  # Sample mutations proportionally from each chromosome
+  df_sampled <- seq_res %>%
+    ungroup() %>%
+    group_by(chr) %>%
+    group_modify(~ slice_sample(.x, n = sample_sizes$sample_size[sample_sizes$chr == .y$chr])) %>%
+    # slice_sample(n = sample_sizes$sample_size[match(chr, sample_sizes$chr)], replace = FALSE) %>%
+    ungroup()
+  # data <- df_sampled
+  df_sampled = df_sampled %>%
+    tidyr::pivot_wider(
+      names_from = sample_name,
+      values_from = c(NV, DP, VAF),
+      names_glue = "{sample_name}.{.value}"
+    )
+  return(df_sampled)
+}
+
+label_mutations <- function(model_df){
+  mutation_ids <- unique(model_df$mutation_id)
+  labels <- c()
+  for (mut in mutation_ids){
+    muts_data <- model_df %>% 
+      # select(mutation_id,SPN01_1.1.VAF,SPN01_1.2.VAF) %>% 
+      filter(mutation_id==mut) %>% 
+      select(contains("VAF"))
+    
+    no_zeros <- muts_data[which(muts_data != 0)]
+    if (ncol(no_zeros)>1){
+      samples <- gsub(pattern = ".VAF",replacement = "",x = colnames(no_zeros))
+      label <- paste0(samples, collapse = "_")
+      label <- paste0("SHARED_",label)
+      # label <- "SHARED"
+      labels <- c(labels,label)
+    } else if (ncol(no_zeros)==1){
+      samples <- gsub(pattern = ".VAF",replacement = "",x = colnames(no_zeros))
+      label <- paste0(samples, collapse = "_")
+      label <- paste0("PRIVATE_",label)
+      labels <- c(labels,label)
+    }
+  }
+  model_df$label <- labels
+  return(model_df)
+}
+
+get_pairwise_combinations <- function(phylo_forest){
+  sample_names <- phylo_forest$get_samples_info()$name
+  pairwise_comb <- combn(sample_names, 2, simplify = FALSE)
+  return(pairwise_comb)
+}

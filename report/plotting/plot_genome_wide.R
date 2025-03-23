@@ -254,6 +254,178 @@ plot_clone_segments <- function(files_cna){
   return(plt)
 }
 
+plot_stats_sample <- function(params, sample_forest){
+  color_map_clones <- get_clone_map(sample_forest)
+  color_map_clones[['Normal']] = 'gray70'
+  
+  purity <- params$sequencing$purity
+  table <- samples_table(snapshot=params$files$sim,
+                         forest=params$files$sample_forest) %>% 
+    select(Sample_ID, contains('proportion')) %>% 
+    mutate(Normal = 1-purity) 
+  
+  clone_cols <- grep("proportion", names(table), value = TRUE)
+  
+  df_long <- table %>%
+    pivot_longer(cols = c(all_of(clone_cols), "Normal"),
+                 names_to = "Component",
+                 values_to = "Raw_Proportion") %>%
+    filter(Raw_Proportion != 0) %>% 
+    mutate(Adjusted_Proportion = ifelse(Component == "Normal", Raw_Proportion, Raw_Proportion * purity)) %>% 
+    mutate(Component = ifelse(Component == "Normal", "Normal", gsub(" proportion", "", Component))) 
+  
+  plt <- ggplot(df_long, aes(x = "", y = Adjusted_Proportion, fill = Component)) +
+    geom_bar(stat = "identity", width = 1) +
+    coord_polar("y", start = 0) +
+    my_ggplot_theme() +
+    ggplot2::labs(y = "", x = "") +
+    theme(axis.ticks = element_blank(), 
+          axis.text = element_blank()) + 
+    scale_fill_manual('Populations', values = color_map_clones) +
+    facet_wrap(~ Sample_ID)
+  
+  return(plt)
+}
+
+
+plot_stats_mut <- function(seq_res_tumour, phylo_forest){
+  signature <- phylo_forest$get_exposures()
+  palette <-  get_colors_for(signature %>% pull(signature) %>% unique())
+  palette[['germline']] <- 'darkseagreen'
+  palette[['errors']] <- 'antiquewhite3'
+  
+  tot_muts <- nrow(seq_res_tumour)
+  long_seq_res_tumour <- seq_res_tumour %>% 
+    mutate(causes = ifelse(grepl('errors', causes), 'errors', causes)) %>% 
+    mutate(causes = ifelse(causes == '', 'germline', causes)) %>% 
+    seq_to_long()
+  
+  data <- long_seq_res_tumour %>% 
+    group_by(causes, classes, sample_name) %>% 
+    filter(classes != 'driver') %>% 
+    filter(classes != 'pre-neoplastic') %>% 
+    summarize(n = n(),
+              p = n/tot_muts)  
+  
+  plt <- data %>% 
+    ggplot2::ggplot() +
+    my_ggplot_theme() +
+    geom_bar(aes(x = '', fill = causes, y = n),
+             position = 'stack',  
+             stat ="identity") +
+    ggplot2::labs(y = "", x = "") +
+    scale_fill_manual('Mutations', values = palette) + 
+    coord_polar("y", start=0) + 
+    ggh4x::facet_nested(.~sample_name)
+  plt
+  
+  return(plt)
+}
+
+
+plot_stats_cn <- function(files_cna){
+  offset <- 0.05
+  sample_names <- sapply(files_cna, function(path) {
+    base_name <- basename(path)
+    sub("_cna.rds$", "", base_name)
+  })
+  
+  upper <- 0.89
+  lower <- 0.11
+  
+  cna_seg <- lapply(files_cna, function(f){
+    base_name <- basename(f)
+    sample <- sub("_cna.rds$", "", base_name)
+    readRDS(f) %>% 
+      mutate(CN_type = ifelse(ratio < upper & ratio > lower, 'sub-clonal', 'clonal'),
+             CN = paste(major, minor, sep = ':'),
+             seg_id = paste(chr,begin,end, sep = ':'),
+             sample = sample)
+  })
+  names(cna_seg) <- sample_names
+  
+  data <- absolute_to_relative_coordinates(cna_seg %>% bind_rows() %>% mutate(chr = paste0('chr', chr))) %>% 
+    filter(!(CN_type == 'sub-clonal' & ratio  > upper)) %>% 
+    filter(!(CN_type == 'clonal' & ratio <= lower))  %>% 
+    mutate(ratio = ifelse(ratio < upper & ratio > lower, ratio, 1)) %>% 
+    mutate(ratio = round(ratio, digits=1))
+  
+  genome_size <- max(data %>% pull(end))  
+  
+  summary <- data %>% 
+    mutate(size = end-begin) %>% 
+    select(CN, size, ratio, sample ) %>% 
+    group_by(CN, ratio, sample) %>%
+    summarise(size = sum(size)) %>%
+    mutate(p = size/genome_size)
+  
+  plt_prop = ggplot2::ggplot(summary,
+                             ggplot2::aes(x = as.factor(ratio), fill = CN, y = p)) +
+    my_ggplot_theme() +
+    ggplot2::geom_bar(alpha = 1, color = 'white', size = .1, stat = 'identity') +
+    ggplot2::scale_fill_manual(values = get_karyotypes_colors(unique(data$CN))) +
+    ggplot2::labs(y = "Percentage of genome", x = 'CCF') +
+    ggplot2::guides(fill = ggplot2::guide_legend('')) + ggh4x::facet_nested(.~sample)
+  
+  return(plt_prop)
+}
+
+
+plot_circle_segments <- function(files_cna){
+  offset <- 0.05
+  sample_names <- sapply(files_cna, function(path) {
+    base_name <- basename(path)
+    sub("_cna.rds$", "", base_name)
+  })
+  
+  upper <- 0.89
+  lower <- 0.11
+  
+  cna_seg <- lapply(files_cna, function(f){
+    base_name <- basename(f)
+    sample <- sub("_cna.rds$", "", base_name)
+    readRDS(f) %>% 
+      mutate(CN_type = ifelse(ratio < upper & ratio > lower, 'sub-clonal', 'clonal'),
+             CN = paste(major, minor, sep = ':'),
+             seg_id = paste(chr,begin,end, sep = ':'),
+             sample = sample)
+  })
+  names(cna_seg) <- sample_names
+  
+  cns <- c('1:1', '2:1', '1:0', '2:0', '2:2')
+  
+  data <- absolute_to_relative_coordinates(cna_seg %>% bind_rows() %>% mutate(chr = paste0('chr', chr))) %>% 
+    filter(!(CN_type == 'sub-clonal' & ratio  > upper)) %>% 
+    filter(!(CN_type == 'clonal' & ratio <= lower))  %>% 
+    mutate(ratio = ifelse(ratio < upper & ratio > lower, ratio, 1)) %>% 
+    mutate(ratio = round(ratio, digits=1)) %>% 
+    mutate(CN = ifelse(CN %in% cns, CN, 'other'))
+  
+  
+  cn_color <- get_karyotypes_colors(unique(data$CN))
+  cn_color[['others']] <- 'gray60'
+  plt <- blank_genome()  +
+    geom_rect(data = data, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf, fill = factor(CN),  alpha = as.factor(ratio))) +
+    geom_segment(data = data, aes(x = begin, xend = end, y = major+offset, yend = major+offset), col = 'red', size = 1) +
+    geom_segment(data = data, aes(x = begin, xend = end, y = minor-offset, yend = minor-offset), col = 'steelblue', size = 1) +
+    scale_fill_manual('CN', values = cn_color) + 
+    scale_alpha_manual('CCF', values = c(0.3, 0.5, 0.8 )) + 
+    ggplot2::coord_polar(
+      theta = 'x',
+      start = 0,
+      clip = 'off'
+    ) +
+    ggplot2::ylim(-2, 5) +
+    ggplot2::labs(x = "",
+                  y = "") +
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_blank(),
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(size = .3)
+    ) + ggh4x::facet_nested(.~sample + ratio)
+  return(plt)
+}
 
 alluvial_plot_karyotypes <- function(files_cna){
   
