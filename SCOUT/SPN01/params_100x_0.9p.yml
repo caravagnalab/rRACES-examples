@@ -1,7 +1,7 @@
 spn: "SPN01"
 sequencing:
   coverage: 100
-  purity: 0.6
+  purity: 0.9
 files:
   sim: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/SPN01"
   sample_forest: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/sample_forest.sff"

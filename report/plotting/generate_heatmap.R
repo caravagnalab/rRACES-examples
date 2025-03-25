@@ -128,6 +128,7 @@ plot_rRACES_heatmap<-function(sample_forest,phylo_forest){
   
   chr = as.vector(seqnames(chr_window))
   chr_level = paste0("chr", 1:22)
+  # chr_level = paste0("chr",22)
   chr = factor(chr, levels = chr_level)
   
   
@@ -167,12 +168,11 @@ plot_rRACES_heatmap<-function(sample_forest,phylo_forest){
   
   
   
-  col_clone = RColorBrewer::brewer.pal(4, "Paired")[3:4]
-  names(col_clone)=unique(subgroup$mutant)
+  col_clone = get_clone_map(sample_forest = sample_forest)
   n_samples <- length(unique(subgroup$sample_id))
-  col_sample <- RColorBrewer::brewer.pal(n_samples, "Set1")
+  col_sample <- RColorBrewer::brewer.pal(n_samples, "Set2")
   names(col_sample) = unique(subgroup$sample_id)
-  col_clonality = c("monoclonal" = "#EEDD82","polyclonal"="lightgoldenrod4")
+  col_clonality = c("monoclonal" = "#ffff99","polyclonal"="#b15928")
   
   row_ha = rowAnnotation(clone = subgroup$mutant,
                          sample = subgroup$sample_id,
@@ -230,5 +230,8 @@ plot_rRACES_heatmap<-function(sample_forest,phylo_forest){
                column_gap = unit(0, "points"),
                column_title = ifelse(1:22 %% 2 == 0, paste0("\n", chr_level), paste0(chr_level, "\n")),
                heatmap_legend_param = list(direction = "horizontal", title_position = "lefttop"))
+  pdf("heatmap.pdf",width = 20,height = 20)
+  draw(ht)
+  dev.off()
   return(ht)
 }

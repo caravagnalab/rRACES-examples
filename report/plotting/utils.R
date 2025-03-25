@@ -486,8 +486,8 @@ annotate_plots <- function(plot,drivers,ref){
   driver_CNA <- drivers %>% filter(type=="CNA")
   driver_WGD <- drivers %>% filter(type=="WGD")
   L = ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
-  driver_CNA$y = L$y.range[2] * .9
-  driver_SID$y = L$y.range[2] * .9
+  driver_CNA$y = L$y.range[2] * .7
+  driver_SID$y = L$y.range[2] * .7
   p <- plot +
     ggplot2::geom_vline(
       data = driver_SID,
@@ -506,7 +506,7 @@ annotate_plots <- function(plot,drivers,ref){
         y = y,
         label = driver_label
       ),
-      ylim = c(L$y.range[2] * .9, NA),
+      ylim = c(L$y.range[2] * .7, NA),
       size = 2,
       nudge_y = 0,
       nudge_x = 0,
