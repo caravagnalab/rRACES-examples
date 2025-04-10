@@ -42,8 +42,8 @@ sim$update_rates("Clone 2", rates = c(growth = 0, death = 100))
 sim$run_up_to_size("Clone 3", 70000)
 
 # Sample A ####
-n_w <- n_h <- 20
-ncells <- .99*n_w*n_h
+n_w <- n_h <- 45
+ncells <- as.integer(.99*n_w*n_h)
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
 sim$sample_cells("Sample A", bbox$lower_corner, bbox$upper_corner)
 t1 <- plot_tissue(sim, num_of_bins = 300)
@@ -63,8 +63,8 @@ sim$update_rates("Clone 3",rates = c(growth = .5, death=.001))
 sim$run_up_to_size("Clone 3", 60000)
 
 # Sample B ####
-n_w <- n_h <- 20
-ncells <- .99*n_w*n_h
+n_w <- n_h <- 45
+ncells <- as.integer(.99*n_w*n_h)
 bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
 sim$sample_cells("Sample B", bbox$lower_corner, bbox$upper_corner)
 t2 <- plot_tissue(sim, num_of_bins = 300)
