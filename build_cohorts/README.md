@@ -65,7 +65,7 @@ path="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto"
 
 # keep them as they are
 phylo="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/races/phylo_forest.sff"
-image="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/races_v3.sif"
+image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif"
 config="/orfeo/cephfs/scratch/cdslab/ggandolfi/races/sarek.config"
 out="/orfeo/cephfs/fast/cdslab/shared/rRACES/SCOUT/${spn}/sequencing"
 sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sarek"
