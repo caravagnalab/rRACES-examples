@@ -36,15 +36,38 @@ The cluster consists of 8 nodes equipped with an AMD EPYC 7H12 64-core
 processor with 512GB of RAM and 352GB of local scratch.
 The number of lots, i.e., 40, is tailored on this computational facility. -->
 
+## Before sumbitting the sequencing
+
+Before submitting the main script, you **MUST** create a temporary folder in your `fast` directory that will be used to store the singularity temporary files. So please do:
+```{sh}
+mkdir /orfeo/cephfs/fast/cdslab/{userid}/tmp
+```
+
+Then configure your `.bashrc` to point to:
+
+1. The previously created singularity temporary folder (`/orfeo/cephfs/fast/cdslab/{userid}/tmp`);
+2. The path to the shared singularity cache directory, that will be used later to run nextflow pipelines (`/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/tumourevo`)
+3. The path to the `work/` folder that will contain all intermediate files of nextflow pipelines (`/orfeo/cephfs/fast/cdslab/{userid}/work`)
+
+So add the following line to your `.bashrc`:
+
+```{sh}
+export SINGULARITY_TMPDIR="/orfeo/cephfs/fast/cdslab/{userid}/tmp"
+export NXF_SINGULARITY_CACHEDIR="/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/tumourevo"
+export NXF_WORK="/orfeo/cephfs/fast/cdslab/{userid}/work"
+```
+> [!IMPORTANT]  
+> Remember to clean up your tmp folders once the main sequencing script as well as nextflow pipelines successfully finished.
+
 ## Generating the Tumour Cohort
-This directory contains the Python script `build_cohort.py`, which builds the cohort of an SPN using its phylogenetic forest file on Orfeo.
+This directory contains the Python script `build_cohort.py`, which builds the cohort of an SPN using its phylogenetic forest file on Orfeo. The sequencing results will be stored in `scratch/` and once the sequencining is done, you should copy the results in Long Term Storage (`LTS`) in order to have them properly backuped. Please see [After sequencing](#after-sequencing) section
 
 To run the script, create a `bash` executable file like the example below.  
 `run_build_cohort.sbatch` with SPN01 parameters is provided as a reference:
 
 ```{sh}
 #!/bin/bash
-#SBATCH --partition=GENOA
+#SBATCH --partition={EPYC,THIN,GENOA}
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem 20gb
@@ -55,19 +78,19 @@ To run the script, create a `bash` executable file like the example below.
 module load singularity
 
 # change them accordingly
-partition=GENOA
+partition={EPYC,THIN,GENOA}
 user="cdslab"
 spn="SPN01"
 
 # change with your own absolute path
-tmp="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto/scratch_node"
-path="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto"
+tmp="/orfeo/cephfs/fast/cdslab/{userid}/tmp_files"
+path="/path/of/directory/"
 
 # keep them as they are
 phylo="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/races/phylo_forest.sff"
 image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif"
 config="/orfeo/cephfs/scratch/cdslab/ggandolfi/races/sarek.config"
-out="/orfeo/cephfs/fast/cdslab/shared/rRACES/SCOUT/${spn}/sequencing"
+out="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sequencing"
 sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sarek"
 
 $path/build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $config -SD $sarek_output_dir
@@ -95,12 +118,10 @@ After replacing the variables, ensure that `build_cohort.py` is executable by ru
 ```{sh}
 chmod +x build_cohort.py
 ```
-
 Finally, submit the script using:
 ```{sh}
 sbatch run_build_cohort.sh
 ```
-
 ## Output files
 
 <!-- To generate the cohort, copy the scripts into a _writable_
@@ -218,12 +239,13 @@ SCOUT/SPNX/sequencing
     ├──sarek_variant_calling_50x_0.3p.sh       # .sh file for running sarek variant calling for tumour coverage 50X and purity 0.3 
     ├── ...             
 ```
+## After sequencing
+Once sequencing is terminated, please copy the entire folder in LTS folder using rsync. (ADD MORE DETAILS, LIKE THE CMD, THE OUTPUT FOLDER,
+THE NEED FOR RESOURCE)
 
 ## Run sarek
 ### Sarek Config  
-An example Sarek config file is provided in this directory, but some variables need to be updated as they are related to local paths. 
-
-**TO DO**
+An example Sarek config file is provided in this directory, but some variables need to be updated as they are related to local paths.
 
 ### Mapping  
 As described previously, the `sarek` directory will store both `.csv` and `.sh` files for running Sarek steps.  
