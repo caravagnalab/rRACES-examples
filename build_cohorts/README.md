@@ -46,14 +46,14 @@ mkdir /orfeo/cephfs/fast/cdslab/{userid}/tmp
 Then configure your `.bashrc` to point to:
 
 1. The previously created singularity temporary folder (`/orfeo/cephfs/fast/cdslab/{userid}/tmp`);
-2. The path to the shared singularity cache directory, that will be used later to run nextflow pipelines (`/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/tumourevo`)
+2. The path to the shared singularity cache directory, that will be used later to run nextflow pipelines (`/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/sarek_tumourevo`)
 3. The path to the `work/` folder that will contain all intermediate files of nextflow pipelines (`/orfeo/cephfs/fast/cdslab/{userid}/work`)
 
 So add the following line to your `.bashrc`:
 
 ```{sh}
 export SINGULARITY_TMPDIR="/orfeo/cephfs/fast/cdslab/{userid}/tmp"
-export NXF_SINGULARITY_CACHEDIR="/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/tumourevo"
+export NXF_SINGULARITY_CACHEDIR="/orfeo/cephfs/scratch/cdslab/shared/containers/singularity/sarek_tumourevo"
 export NXF_WORK="/orfeo/cephfs/fast/cdslab/{userid}/work"
 ```
 > [!IMPORTANT]  
