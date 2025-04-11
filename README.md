@@ -3,7 +3,7 @@
 ## Workflow
 For every SPN, the following steps are requested:
 
-1. **`rRACES` simulation**: perform simulation of tumour growth, sampling and mutation engine set up according to genomics information reported in [SCOUT](https://caravagnalab.github.io/rRACES/articles/SCOUT.html);
+1. **`rRACES` simulation**: perform simulation of tumour growth, sampling and mutation engine set up according to genomics information reported in [SCOUT](https://caravagnalab.github.io/rRACES/articles/SCOUT.html) and the instruction in the [SCOUT](https://github.com/caravagnalab/rRACES-examples/blob/main/SCOUT/README.md) section;
 2. **sequencing simulation**: perform rRACES sequencing of all 12 coverage-purity combinations (+ normal sample) following the step reporting in the [build cohort section](https://github.com/caravagnalab/rRACES-examples/blob/main/build_cohorts/README.md)
 3. **generate report** for each coverage-purity combination according to [report generation section](https://github.com/caravagnalab/rRACES-examples/blob/main/report/README.md);
 4. run **[nf-core/sarek](https://nf-co.re/sarek/3.5.1/)** for each coverage-purity combination. In particular:
