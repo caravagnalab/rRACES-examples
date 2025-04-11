@@ -59,7 +59,7 @@ To run the R scripts, a Singularity image with the latest version of rRACES must
 
 module load singularity
 
-image='/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/races_v3.sif'
+image='/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif'
 
 singularity exec --bind /orfeo:/orfeo --no-home $image Rscript simulate_tissue.R
 
