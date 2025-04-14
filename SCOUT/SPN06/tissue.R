@@ -5,15 +5,15 @@
 # ==============================================================================
 
 
-#devtools::install_github("caravagnalab/rRACES")
-#devtools::load_all("/u/cdslab/ahaghighi/scratch/packages/rRACES")
-#devtools::load_all("~/Documents/packages/rRACES")
+#devtools::install_github("caravagnalab/ProCESS")
+#devtools::load_all("/u/cdslab/ahaghighi/scratch/packages/ProCESS")
+#devtools::load_all("~/Documents/packages/ProCESS")
 
 .libPaths("/orfeo/cephfs/scratch/cdslab/ahaghighi/Rlibs")
 
 library(dplyr)
 library(ggplot2)
-library(rRACES)
+library(ProCESS)
 library(patchwork)
 
 seed <- 2024
@@ -198,7 +198,7 @@ message("final plot created!")
 #-------------------------------------------------------------------------------
 #----------------------------------- Save --------------------------------------
 #-------------------------------------------------------------------------------
-setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06")
+setwd("/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06")
 
 curr_dir <- getwd()
 
@@ -206,7 +206,7 @@ print(paste0("curr_dir: ", curr_dir))
 
 
 ggsave(filename = paste0(curr_dir, "/plots/final.png"), plot = p, width = 16, height = 10, dpi = 300)
-#ggsave(filename = "~/scratch/packages/rRACES-examples/SPN06/plots/final2.png", plot = p, width = 16, height = 10, dpi = 300)
+#ggsave(filename = "~/scratch/packages/ProCESS-examples/SPN06/plots/final2.png", plot = p, width = 16, height = 10, dpi = 300)
 #ggsave(filename = paste(curr_dir, "/plots/final_test2.png", sep = ""), plot = p, width = 16, height = 10, dpi = 300)
 
 forest$save( paste(curr_dir, "/data/forest.sff", sep = "") )

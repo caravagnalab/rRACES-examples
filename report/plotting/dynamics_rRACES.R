@@ -1,11 +1,11 @@
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 library(patchwork)
 library(ggrepel)
 
 plot_tumour_dynamics <- function(snapshot,sample_forest){
 
-  simulation <- rRACES::recover_simulation(snapshot)
+  simulation <- ProCESS::recover_simulation(snapshot)
   simulation_info <- simulation$get_samples_info()
   color_map_clones <- get_clone_map(sample_forest)
   muller <- plot_muller(simulation,color_map = color_map_clones)

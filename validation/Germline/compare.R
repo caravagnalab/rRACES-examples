@@ -4,7 +4,7 @@ library(optparse)
 library(caret)
 library(dplyr)
 
-setwd('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/validation/Germline/')
+setwd('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/validation/Germline/')
 source('vcf_parser.R')
 source('utils.R')
 
@@ -45,20 +45,20 @@ vcf_list = lapply(1:22, FUN = function(chr){
 rds_vcf <- bind_rows(vcf_list)
 rds_vcf_pass <- bind_rows(vcf_list) %>% dplyr::filter(FILTER == "PASS" & !is.na(FILTER))
 
-# rds_rRACES <- readRDS(paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/races/seq_results_muts_merged_coverage_30x.rds'))  %>% 
+# rds_ProCESS <- readRDS(paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/races/seq_results_muts_merged_coverage_30x.rds'))  %>% 
 #   dplyr::filter(classes == 'germinal') %>%
 #   dplyr::mutate(chr = paste0('chr', chr)) %>% 
 #   dplyr::filter(chr != 'chrX') %>% 
 #   dplyr::filter(chr != 'chrY')  
 # 
-# rRACES <- seq_to_long(rds_rRACES) %>% 
+# ProCESS <- seq_to_long(rds_ProCESS) %>% 
 #   dplyr::rename(BAF = VAF) %>% 
 #   mutate(mutationID = paste(chr, from, sep = ':'))
 
-rRACES <- readRDS('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/validation/Germline/rRACES_germ.RDS')
+ProCESS <- readRDS('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/validation/Germline/ProCESS_germ.RDS')
 
 sample_N <- 500000
-p_baf_races <- rRACES %>% 
+p_baf_races <- ProCESS %>% 
   ungroup() %>% 
   sample_n(sample_N) %>% 
   ggplot(aes(x=BAF)) + 
@@ -67,12 +67,12 @@ p_baf_races <- rRACES %>%
   theme_bw() +
   labs(x="BAF", 
        y="Count",
-       title = "rRACES BAF",
-       subtitle = paste0(nrow(rRACES), " mutations"),
+       title = "ProCESS BAF",
+       subtitle = paste0(nrow(ProCESS), " mutations"),
        caption = paste0('sample ', sample_N, ' mutations'),
        color = "") 
 
-p_dp_races <- rRACES %>% 
+p_dp_races <- ProCESS %>% 
   ungroup() %>% 
   sample_n(sample_N) %>% 
   ggplot(aes(x=DP)) + 
@@ -81,8 +81,8 @@ p_dp_races <- rRACES %>%
   theme_bw() +
   labs(x="DP", 
        y="Count",
-       title = "rRACES coverage",
-       subtitle = paste0(nrow(rRACES), " mutations; Median coverage = ",median(rRACES$DP)),
+       title = "ProCESS coverage",
+       subtitle = paste0(nrow(ProCESS), " mutations; Median coverage = ",median(ProCESS$DP)),
        caption = paste0('sample ', sample_N, ' mutations'),
        color = "") 
 
@@ -112,7 +112,7 @@ p_dp_caller <- rds_vcf_pass %>%
        caption = paste0('sample ', sample_N, ' mutations'),
        color = "") 
 
-merged_df <- merge_datasets(rds_vcf, rRACES)
+merged_df <- merge_datasets(rds_vcf, ProCESS)
 p_filter_dist = plot_filter_distribution(merged_df)
 
 baf_differences = plot_baf_difference(merged_df)
@@ -165,7 +165,7 @@ p_venn_all = plot_venn_diagram(merged_df, tool) +
 metrics_all = compute_metrics(y_true, y_pred)
 
 # PASS mutations
-merged_df = merge_datasets(rds_vcf_pass, rRACES)
+merged_df = merge_datasets(rds_vcf_pass, ProCESS)
 merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
 
 p_scatter_BAF_pass = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.caller") +

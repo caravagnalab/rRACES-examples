@@ -22,7 +22,7 @@ path="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/scripts_Alberto"
 # keep them as they are
 image="/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/races_v3.sif"
 config="/orfeo/cephfs/scratch/cdslab/ggandolfi/races/sarek.config"
-out="/orfeo/cephfs/fast/cdslab/shared/rRACES/${spn}/sequencing"
-sarek_output_dir="/orfeo/cephfs/fast/cdslab/shared/rRACES/${spn}/sarek"
+out="/orfeo/cephfs/fast/cdslab/shared/ProCESS/${spn}/sequencing"
+sarek_output_dir="/orfeo/cephfs/fast/cdslab/shared/ProCESS/${spn}/sarek"
 
 $path/build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $config -SD $sarek_output_dir

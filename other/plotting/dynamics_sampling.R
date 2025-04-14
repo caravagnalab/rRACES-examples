@@ -1,11 +1,11 @@
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
 library(ggrepel)
 library(ggpubr)
-source('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/plotting/utils_dynamics.R')
+source('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/plotting/utils_dynamics.R')
 
 dir <- getwd()
 set.seed(12345)

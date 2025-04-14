@@ -357,19 +357,19 @@ display: none;
 
 <div id="introduction-to-easyabc" class="section level1">
 <h1>Introduction to EasyABC</h1>
-<p>In this tutorial we will show how to implement models with rRACES
+<p>In this tutorial we will show how to implement models with ProCESS
 that can be used with EasyABC pakcage. Recall that the main steps of an
 ABC analysis follow the general scheme of any Bayesian analysis:
 formulating a model, fitting the model to data (parameter estimation),
 and improving the model by checking its fit (posterior predictive
 checks)</p>
 <p>Let’s start importing the library, remember to install
-<em>EasyABC</em> and <em>rRACES</em>, to do this just uncomment the
+<em>EasyABC</em> and <em>ProCESS</em>, to do this just uncomment the
 first two lines.</p>
 <pre class="r"><code># install.packages(EasyABC)
-# devtools::install_github(&quot;caravagnalab/rRACES&quot;)
+# devtools::install_github(&quot;caravagnalab/ProCESS&quot;)
 library(EasyABC)
-library(rRACES)
+library(ProCESS)
 library(ggplot2)</code></pre>
 <div id="parameter-inference" class="section level2">
 <h2>Parameter inference</h2>
@@ -396,7 +396,7 @@ show some examples.</p>
 <p>As we mentioned earlier, to estimate the parameter that interest us
 we must first have a summary statistic against which we can compare the
 results obtained.</p>
-<p>In the following example we simulate with <em>rRACES</em> the
+<p>In the following example we simulate with <em>ProCESS</em> the
 evolution of a mutant <span class="math inline">\(A\)</span>, with the
 folowing parameters:</p>
 <ul>
@@ -600,7 +600,7 @@ ABC_rej &lt;- ABC_rejection(
 <h3>More examples</h3>
 <div id="infer-growth-rate-of-sub-mutant" class="section level4">
 <h4>Infer growth rate of sub mutant</h4>
-<p>In the following example we simulate with <em>rRACES</em> the
+<p>In the following example we simulate with <em>ProCESS</em> the
 evolution of a mutant <span class="math inline">\(A\)</span> with
 subclonal expansion <span class="math inline">\(B\)</span>, with the
 folowing parameters:</p>
@@ -711,7 +711,7 @@ ABC_rej &lt;- ABC_rejection(
 ## gr B 0.06473397 0.08970000</code></pre>
 <div id="infer-growth-rate-of-one-mutant-and-sub-mutant" class="section level4">
 <h4>Infer growth rate of one mutant and sub mutant</h4>
-<p>In the following example we simulate with <em>rRACES</em> the
+<p>In the following example we simulate with <em>ProCESS</em> the
 evolution of a mutant <span class="math inline">\(A\)</span> with
 subclonal expansion <span class="math inline">\(B\)</span>, with the
 following parameters:</p>

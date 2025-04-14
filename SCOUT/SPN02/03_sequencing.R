@@ -1,8 +1,8 @@
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 
-phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/SPN02/results/phylo_forest.sff")
+phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/area/vgazziero/CDSlab/ProCESS/SPN02/results/phylo_forest.sff")
 # forest <- load_samples_forest("test/SPN02/forest.sff")
 
 # plot_forest(forest) %>% 

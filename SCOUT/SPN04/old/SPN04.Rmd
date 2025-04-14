@@ -1,5 +1,5 @@
 ---
-title: 'rRACES: SPN04'
+title: 'ProCESS: SPN04'
 author: "Giovanni Santacatterina"
 date: "`r Sys.Date()`"
 output:
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
 ```{r import, include=FALSE}
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)

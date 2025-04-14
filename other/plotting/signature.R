@@ -1,12 +1,12 @@
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 library(ggplot2)
 library(ggalluvial)
 
-phylo_forest <- rRACES::load_phylogenetic_forest('/orfeo/scratch/cdslab/shared/races/phylo_forest_smaller.sff')
-forest <- rRACES::load_samples_forest('/orfeo/scratch/cdslab/shared/races/samples_forest.sff')
+phylo_forest <- ProCESS::load_phylogenetic_forest('/orfeo/scratch/cdslab/shared/races/phylo_forest_smaller.sff')
+forest <- ProCESS::load_samples_forest('/orfeo/scratch/cdslab/shared/races/samples_forest.sff')
 
-exposures <- rRACES:::get_exposure_ends(phylo_forest)
+exposures <- ProCESS:::get_exposure_ends(phylo_forest)
 df <- exposures %>% tidyr::pivot_longer(c(time, end_time))
 
 

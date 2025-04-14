@@ -68,7 +68,7 @@ get_clone_info <- function(sim, forest){
 }
 
 plot_clonal_prop <- function(info, sim){
-  color_map <- rRACES:::get_species_colors(sim$get_species())
+  color_map <- ProCESS:::get_species_colors(sim$get_species())
   pi_sampling <- lapply(unique(info$sample), FUN = function(s){
     t <- info %>% filter(sample == s) 
     ggplot2::ggplot(t) +

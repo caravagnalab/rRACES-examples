@@ -1,14 +1,14 @@
 
 .libPaths("/orfeo/cephfs/scratch/cdslab/ahaghighi/Rlibs")
 
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 library(dplyr)
 
 seed <- 2024
 set.seed(seed)
 
-setwd("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06")
+setwd("/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06")
 
 curr_dir <- getwd()
 

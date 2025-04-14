@@ -1,6 +1,6 @@
 rm(list = ls())
 suppressPackageStartupMessages({
-  library(rRACES)
+  library(ProCESS)
   library(dplyr)
   library(ggplot2)
   library(patchwork)
@@ -71,7 +71,7 @@ get_vcf_name <- function(caller,variant_calling_dir,type,sample_id){
 #phylo_forest <- load_phylogenetic_forest("../SPN01/data/phylo_forest.sff")
 #seq_races = "/fast/cdslab/ggandolfi/SPN01/tumor_purity/50X_0.3p/data/seq_results_final.rds"
 #mutect2_dir = "/orfeo/cephfs/scratch/cdslab/ggandolfi/races/COMP_TIME/results_SPN01_MS/variant_calling/mutect2/"
-#strelka_dir = "/orfeo/cephfs/scratch/cdslab/shared/races/sarek_SPN01/purity_rRACES/results_SPN01_50X/variant_calling/strelka/"
+#strelka_dir = "/orfeo/cephfs/scratch/cdslab/shared/races/sarek_SPN01/purity_ProCESS/results_SPN01_50X/variant_calling/strelka/"
 #patientID = "SPN01"
 #samples = c("Sample_A_03p","Sample_B_03p","Sample_C_03p")
 plot_list = list()
@@ -85,7 +85,7 @@ for (i in seq_along(samples_vc)){
 					  sample_id=samples[i],20,
 	                                  sample_id_vcf=sample_id)
 	ggsave(filename = paste0(caller,samples_vc[i],".png"), plot=plot, dpi=300, width = 16, height = 16)
-	#ggsave(filename = paste0("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/plots/plot_mutect2_",i,".png"), plot=plot, dpi=300, width = 16, height = 16)
+	#ggsave(filename = paste0("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/ProCESS-examples/SPN01/plots/plot_mutect2_",i,".png"), plot=plot, dpi=300, width = 16, height = 16)
 }
 
 

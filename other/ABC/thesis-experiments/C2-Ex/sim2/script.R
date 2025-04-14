@@ -1,5 +1,5 @@
 library(EasyABC)
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 
 # Setting working space -----------------------------------------------

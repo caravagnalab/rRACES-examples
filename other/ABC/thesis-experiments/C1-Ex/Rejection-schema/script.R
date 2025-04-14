@@ -1,6 +1,6 @@
 # Import librarys
 library(EasyABC)
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 
 # Setting working directory path
@@ -78,7 +78,7 @@ ggsave("muller_plot_sim1.png", plot=p, path = paste0(path, "/plots"))
 
 
 ############################################################################
-# Creation of the rRACES model which reproduces the previous phenomenon and 
+# Creation of the ProCESS model which reproduces the previous phenomenon and 
 # which will be used for the ABC analysis
 
 # It simply reproduces the previous steps
@@ -201,7 +201,7 @@ p=plot_muller(sim)
 ggsave("muller_plot_sim2.png", plot=p, path = paste0(path, "/plots"))
 
 ############################################################################
-# Creation of the rRACES model which reproduces the previous phenomenon and 
+# Creation of the ProCESS model which reproduces the previous phenomenon and 
 # which will be used for the ABC analysis
 
 # It simply reproduces the previous steps

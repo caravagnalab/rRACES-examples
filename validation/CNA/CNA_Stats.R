@@ -1,7 +1,7 @@
 # Load necessary libraries
 library(dplyr)
 library(GenomicRanges)
-library(rRACES)
+library(ProCESS)
 library(optparse)
 library(tidyr)
 
@@ -9,7 +9,7 @@ option_list <- list(
   make_option(c("--phylo_forest_path"), type = "character", default = NULL,
               help = "Path to the phylogenetic forest file", metavar = "character"),
   make_option(c("--sample_id"), type = "character", default = NULL,
-              help = "Name of the rRACES sample", metavar = "character"),
+              help = "Name of the ProCESS sample", metavar = "character"),
   make_option(c("--segment_file"), type = "character", default = NULL,
               help = "Path to the segment file", metavar = "character"),
   make_option(c("--overlap_threshold"), type = "numeric", default = NULL,

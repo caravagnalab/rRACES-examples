@@ -1,11 +1,11 @@
 # runned in Orfeo, on Epyc node on 5th November 2024 
 rm(list=ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
 library(english)
-source("rRACES-examples/SPN02/plotting_sampling.R")
+source("ProCESS-examples/SPN02/plotting_sampling.R")
 
 setwd("SPN02/results/")
 
@@ -102,7 +102,7 @@ bbox2 = new(TissueRectangle, c(350, 530), 35, 35)
 #   for (t in seq_along(samples_timing)) {
 #     samples = samples_timing[[t]]
 #     print(samples)
-#     p_list[[t]] <- rRACES::plot_tissue(sim)
+#     p_list[[t]] <- ProCESS::plot_tissue(sim)
 #     for (i in seq_along(samples)) {
 #       
 #       sample = samples[i]

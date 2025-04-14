@@ -1,5 +1,5 @@
 library(dplyr)
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 seq_res <- readRDS("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/purity_0.9/seq_results_muts_merged_coverage_100x.rds")
 phylo_forest <- load_phylogenetic_forest("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/phylo_forest.sff")
@@ -15,7 +15,7 @@ data <- seq_res %>%
   filter(classes!="germinal") %>% 
   # filter(chr %in% driver_chroms) %>%
   filter(!stringr::str_detect(causes, 'errors')) %>%
-  rRACES::seq_to_long()
+  ProCESS::seq_to_long()
 
 # Set desired fraction of total mutations to sample
 fraction_to_sample <- 0.1  # 30%

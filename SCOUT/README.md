@@ -27,11 +27,11 @@ For each SPN, the following files must be present:
 - `simulate_mutation.R`
 - `params.yml` (this file is described in details in `report/README.md`)
 
-These files must be pushed to the rRACES-examples GitHub repository in the corresponding folder SCOUT/SPNX.
+These files must be pushed to the ProCESS-examples GitHub repository in the corresponding folder SCOUT/SPNX.
 
 ## Required output files
 The following output files must be saved in the directory:
-`/orfeo/cephfs/scratch/cdslab/shared/rRACES/SCOUT/SPNX/races` (replace X with the number of your SPN):
+`/orfeo/cephfs/scratch/cdslab/shared/ProCESS/SCOUT/SPNX/races` (replace X with the number of your SPN):
 
 - `samples_forest.sff`
 - `phylogenetic_forest.sff`
@@ -45,7 +45,7 @@ phylo_forest$get_bulk_allelic_fragmentation()
 
 
 ## How to run Rscript with singularity image
-To run the R scripts, a Singularity image with the latest version of rRACES must be used. You can do this with the following script:
+To run the R scripts, a Singularity image with the latest version of ProCESS must be used. You can do this with the following script:
 
 ```{sh}
 #!/bin/bash
@@ -54,8 +54,8 @@ To run the R scripts, a Singularity image with the latest version of rRACES must
 #SBATCH --cpus-per-task=2
 #SBATCH --mem 100gb
 #SBATCH --time=1:00:00
-#SBATCH --output=rRACES.out
-#SBATCH --error=rRACES.err
+#SBATCH --output=ProCESS.out
+#SBATCH --error=ProCESS.err
 
 module load singularity
 

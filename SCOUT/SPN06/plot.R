@@ -3,12 +3,12 @@
 
 rm(list = ls()) # clears objects from the workspace
 
-#devtools::install_github("caravagnalab/rRACES")
+#devtools::install_github("caravagnalab/ProCESS")
 #devtools::install_github("caravagnalab/CNAqc")
 
 # load the required packages
 #-------------------------------------------------------------------------------
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
@@ -18,8 +18,8 @@ library(ggrepel)
 
 # load the auxiliary functions
 #-------------------------------------------------------------------------------
-source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_blueprint/utils.R")
-source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_blueprint/plot_genome_wide.R")
+source("/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/plotting/spn_blueprint/utils.R")
+source("/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/plotting/spn_blueprint/plot_genome_wide.R")
 
 # load the sequence and phylogenetic forest objects
 #-------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ for (i in samples) {
 #-------------------------------------------------------------------------------
 expousures_table <- phylo_forest$get_exposures() %>% dplyr::rename(causes=signature)
 s_seq <- seq_results %>% filter(classes!="germinal")
-s_seq_long <- s_seq %>% rRACES::seq_to_long()
+s_seq_long <- s_seq %>% ProCESS::seq_to_long()
 
 for (c in unique(seq_results$chr)) {
   

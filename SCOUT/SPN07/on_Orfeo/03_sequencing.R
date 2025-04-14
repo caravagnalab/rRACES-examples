@@ -1,5 +1,5 @@
 #rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
@@ -7,7 +7,7 @@ library(patchwork)
 seed <- 12345
 set.seed(seed)
 
-phylo_forest <- load_phylogenetic_forest("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo/phyloforest.sff")
+phylo_forest <- load_phylogenetic_forest("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo/phyloforest.sff")
 
 #curr_dir = getwd()
 setwd("/orfeo/cephfs/scratch/cdslab/shared/races")
@@ -22,5 +22,5 @@ seq_results <- parallel::mclapply(chromosomes, function(c) {
 }, mc.cores = parallel::detectCores())
 
 seq_results_final<- do.call("bind_rows", seq_results)
-saveRDS(seq_results_final,"/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo/seq_results_80X_with_error_paired.rds")
+saveRDS(seq_results_final,"/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo/seq_results_80X_with_error_paired.rds")
 #print("sequencing ended")

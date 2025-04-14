@@ -1,7 +1,7 @@
 # How to Build The Cohort from The Phylogenetic Forests
 For every SPN, the cohort contains 13 sets of reads: 12 simulate tumor sequencing with coverages of 50X, 100X, 150X, and 200X, and purities of 0.3, 0.6, and 0.9. The last set corresponds to a 30X simulated sequencing of normal samples. The cells in the normal sample share the same mutations, i.e., the germline mutations.
 
-For efficiency, not all 12 tumor read sets were directly produced by rRACES. Instead, for each purity level, the generation of the 200X-coverage read set was split into 40 lots of 5X coverage each. The lots are pairwise different due to their sequencing simulation random seeds: the random seed for the $i$-th lot is $i$.
+For efficiency, not all 12 tumor read sets were directly produced by ProCESS. Instead, for each purity level, the generation of the 200X-coverage read set was split into 40 lots of 5X coverage each. The lots are pairwise different due to their sequencing simulation random seeds: the random seed for the $i$-th lot is $i$.
 
 The 50X, 100X, 150X, and 200X coverage sets were assembled by grouping 10, 20, 30, and 40 lots, respectively.
 
@@ -18,7 +18,7 @@ sequencing of normal samples. The cells in the normal sample share the same
 mutations, i.e., the germline mutations.
 
 For efficiency purposes, not all the 12 tumour read sets were directly
-produced by rRACES. Instead, for each purity, we split the generation 
+produced by ProCESS. Instead, for each purity, we split the generation 
 of the 200X-coverage read set into 40 5X-coverage lots.
 The lots are pairwise different because of their sequencing simulation
 random seeds: the $i$-th lot random seed is $i$.
@@ -191,16 +191,16 @@ SCOUT/SPNX/sequencing
 ├── tumour                                      # tumour data
 │   ├── purity_0.3                              # tumour data for purity 0.3
 │   │   ├── BAM
-│   │   │   ├── t00.bam                         # rRACES BAM file of lot 00
+│   │   │   ├── t00.bam                         # ProCESS BAM file of lot 00
 │   │   │   └── ...
 │   │   ├── data
 │   │   │   ├── mutations
-│   │   │   │    ├── seq_results_muts_SPN01_t00.rds           # rRACES sequencing result for lot 00
+│   │   │   │    ├── seq_results_muts_SPN01_t00.rds           # ProCESS sequencing result for lot 00
 │   │   │   │    └── ...
-│   │   │   │    └── seq_results_muts_merged_50x_SPN01.rds    # rRACES merged sequencing results for coverage 50X     
+│   │   │   │    └── seq_results_muts_merged_50x_SPN01.rds    # ProCESS merged sequencing results for coverage 50X     
 │   │   │   │    └── ...
 │   │   │   ├── parameters
-│   │   │   │    ├── seq_results_params_SPN01_t00.rds         # rRACES sequencing parameters for lot 00
+│   │   │   │    ├── seq_results_params_SPN01_t00.rds         # ProCESS sequencing parameters for lot 00
 │   │   │   │    └── ...
 │   │   │   ├── resources
 │   │   │   │    ├── seq_results_resources_SPN01_t00.rds      # resources required for sequencing lot 00

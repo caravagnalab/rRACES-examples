@@ -1,5 +1,5 @@
 rm(list=ls())
-library(rRACES)
+library(ProCESS)
 library(tidyverse)
 
 phylo_forest <- load_phylogenetic_forest("data/phylo_forest.sff")

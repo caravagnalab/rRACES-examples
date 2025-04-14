@@ -7,9 +7,9 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=200gb
 #SBATCH --time=03:00:00
-#SBATCH --output=/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/logs/mutations_%j.log
+#SBATCH --output=/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06/logs/mutations_%j.log
 
-cd /u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06
+cd /u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06
 
 module purge
 module load R

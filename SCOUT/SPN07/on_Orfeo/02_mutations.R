@@ -1,11 +1,11 @@
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 
 # sshfs Orfeo:/ dati_Orfeo 
 
 #library(ggpubr)
-# setwd("~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo")
+# setwd("~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/ProCESS-examples/SPN07/on_Orfeo")
 #setwd("~/dati_Orfeo/orfeo/cephfs/scratch/cdslab/shared/races/")
 setwd("/orfeo/cephfs/scratch/cdslab/shared/races/")
 
@@ -59,14 +59,14 @@ m_engine$add_exposure(time = 110.4, c(SBS1 = .1, SBS5 = .1,SBS6=.4,
                                       SBS21=.2, SBS44=.2))
 
 
-samples_forest <- load_samples_forest("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff")
-#samples_forest <- load_samples_forest('~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/rRACES-examples/SPN07/on_Orfeo/forest_sampling.sff')
+samples_forest <- load_samples_forest("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo/forest_sampling.sff")
+#samples_forest <- load_samples_forest('~/dati_Orfeo/orfeo/cephfs/home/cdslab/antonelloa/ProCESS-examples/SPN07/on_Orfeo/forest_sampling.sff')
 phylo_forest <- m_engine$place_mutations(samples_forest, 500, 200)
 
 # phylo_forest$get_sampled_cell_mutations() %>% head()
 # phylo_forest$get_sampled_cell_CNAs() %>% head()
 # phylo_forest$get_germline_mutations() %>% head()
-phylo_forest$save("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo/phyloforest.sff")
+phylo_forest$save("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo/phyloforest.sff")
 
 #phylo_forest <- load_phylogenetic_forest("phyloforest.sff")
 #seq_results <- simulate_seq(phylo_forest, coverage = 50)
@@ -97,7 +97,7 @@ pl = patchwork::wrap_plots(
   design = st
 )
 #pl <- annot_forest + sticks + exp_timeline + plot_layout(nrow = 3, design = 'A\nA\nB\nB\nC')
-ggsave("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo/SPN07_mutations.png",plot = pl, dpi = 300, height = 30, width = 15)
+ggsave("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo/SPN07_mutations.png",plot = pl, dpi = 300, height = 30, width = 15)
 
 
 

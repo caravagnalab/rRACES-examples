@@ -1,4 +1,4 @@
-library(rRACES)
+library(ProCESS)
 library(tidyverse)
 
 setwd('/orfeo/cephfs/scratch/cdslab/shared/races/')
@@ -18,7 +18,7 @@ seq_results <- parallel::mclapply(chromosomes, function(c) {
                      sequencer = basic_seq,
                      insert_size_mean = 350, 
                      insert_size_stddev = 10,
-                     output_dir = '/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/rRACES_SAM',
+                     output_dir = '/orfeo/LTS/LADE/LT_storage/lvaleriani/races/SPN03/ProCESS_SAM',
                      update_SAM = TRUE, 
                      with_normal_sample = FALSE
                      )

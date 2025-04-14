@@ -1,12 +1,12 @@
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
 library(vcfR)
 library(naniar)
 #library(ggExtra)
-source("/u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/races_validation/utils/vcf_parser.R") ## vcf parser
+source("/u/cdslab/ggandolfi/scratch/prj_races/ProCESS-examples/races_validation/utils/vcf_parser.R") ## vcf parser
 
 ## set ggplot2 theme
 my_ggplot_theme<- function (cex = 1) {
@@ -78,7 +78,7 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     my_ggplot_theme()+
     labs(x = "VAF races", y = paste0("VAF ",caller))+
     geom_miss_point() +
-    ggtitle(paste0("Comparison between rRACES VAF and ",caller," VAF"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
+    ggtitle(paste0("Comparison between ProCESS VAF and ",caller," VAF"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
                                                                                          round(precision,digits=3),
                                                                                          "\nVAF RMSE: ", round(acc_vaf,3)))
 
@@ -88,7 +88,7 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     my_ggplot_theme()+
     labs(x = "DP races", y = paste0("DP ",caller))+
     geom_miss_point() +
-    ggtitle(paste0("Comparison between rRACES DP and ",caller," DP"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
+    ggtitle(paste0("Comparison between ProCESS DP and ",caller," DP"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
                                                                                         round(precision,digits=3),
                                                                                          "\nDP RMSE: ", round(acc_dp,3)))
   p_nv <- merged_df %>% ggplot(aes(x=NV.races,y=NV.caller, color=classes))+
@@ -97,7 +97,7 @@ mutation_calling_accuracy <- function(seq_races,vcf_file,caller, sample_id,top_f
     my_ggplot_theme()+
     labs(x = "NV races", y = paste0("NV ",caller))+
     geom_miss_point() +
-    ggtitle(paste0("Comparison between rRACES NV and ",caller," NV"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
+    ggtitle(paste0("Comparison between ProCESS NV and ",caller," NV"),subtitle = paste0("Sensitivity: ", round(sensitivity, digits = 3), "\nPrecision: ",
                                                                                          round(precision,digits=3),
                                                                                          "\nNV RMSE: ", round(acc_nv,3)))
 

@@ -1,7 +1,7 @@
 # adding mutations
 
 # Mutation generation ####
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 
@@ -68,7 +68,7 @@ mut_forest = annotate_forest(tree_plot,
                 add_driver_label = T) +
             ggplot2::facet_wrap( ~ signature, scales = "free")
 
-ggsave(filename = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/phylogenetic_forest_cycles.png", plot = mut_forest, width = 20, height = 15, bg = "white")
+ggsave(filename = "/orfeo/cephfs/scratch/area/vgazziero/CDSlab/ProCESS/ProCESS-examples/SPN02/phylogenetic_forest_cycles.png", plot = mut_forest, width = 20, height = 15, bg = "white")
 print("done everything")
 
 exposure_time = plot_exposure_timeline(
@@ -76,7 +76,7 @@ exposure_time = plot_exposure_timeline(
   linewidth = 0.8,
   emphatize_switches = TRUE
 ) 
-ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/exposure_plot.png", plot = exposure_time, bg = "white")
+ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/ProCESS/ProCESS-examples/SPN02/exposure_plot.png", plot = exposure_time, bg = "white")
 
 all = mut_forest / exposure_time
-ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/rRaces/rRACES-examples/SPN02/recap_phylo.png", plot = all)
+ggsave(filename = "/orfeo/scratch/area/vgazziero/CDSlab/ProCESS/ProCESS-examples/SPN02/recap_phylo.png", plot = all)

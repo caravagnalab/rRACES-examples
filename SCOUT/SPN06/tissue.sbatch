@@ -7,9 +7,9 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=30gb
 #SBATCH --time=1:00:00
-#SBATCH --output=/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/logs/tissue_%j.log
+#SBATCH --output=/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06/logs/tissue_%j.log
 
-cd /u/cdslab/ahaghighi/scratch/packages/rRACES-examples/SPN06/
+cd /u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/SPN06/
 
 #conda deactivate
 

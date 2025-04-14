@@ -1,5 +1,5 @@
 ---
-title: "rRACES Copy Number"
+title: "ProCESS Copy Number"
 output: html_document
 ---
 
@@ -15,7 +15,7 @@ options(crayon.enabled = F)
 ```{r setup, warning=FALSE, message=FALSE}
 set.seed(1234567)
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 require(dplyr)
 library(knitr)
 library(ggplot2)
@@ -24,7 +24,7 @@ library(patchwork)
 
 ## Copy Number
 
-Let's see how one can produce a copy number event using rRACES.
+Let's see how one can produce a copy number event using ProCESS.
 We will try to model a CNLOH.
 To do so we need to create three populations: 
 
@@ -101,11 +101,11 @@ SBS_url <- paste0("https://cancer.sanger.ac.uk/signatures/documents/2123/",
                   "COSMIC_v3.4_SBS_GRCh37.txt")
 
 drivers_url <- paste0("https://raw.githubusercontent.com/",
-                      "caravagnalab/rRACES/main/inst/extdata/",
+                      "caravagnalab/ProCESS/main/inst/extdata/",
                       "driver_mutations_hg19.csv")
 
 passenger_CNAs_url <- paste0("https://raw.githubusercontent.com/",
-                             "caravagnalab/rRACES/main/inst/extdata/",
+                             "caravagnalab/ProCESS/main/inst/extdata/",
                              "passenger_CNAs_hg19.csv")
 
 germline_url <- paste0("https://www.dropbox.com/scl/fi/g9oloxkip18tr1r",

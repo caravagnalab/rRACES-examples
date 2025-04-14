@@ -3,11 +3,11 @@ library(tidyverse)
 library(GenomicRanges)
 library(circlize)
 library(ComplexHeatmap)
-library(rRACES)
+library(ProCESS)
 
 source("plotting/utils.R")
 
-plot_rRACES_heatmap<-function(sample_forest,phylo_forest){
+plot_ProCESS_heatmap<-function(sample_forest,phylo_forest){
   samples <- phylo_forest$get_samples_info()$name
   bulk_cell_cna_list <- lapply(samples, function(x){
     c <- phylo_forest$get_bulk_allelic_fragmentation(x) %>% 

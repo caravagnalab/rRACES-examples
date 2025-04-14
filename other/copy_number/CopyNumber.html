@@ -11,7 +11,7 @@
 
 
 
-<title>rRACES Copy Number</title>
+<title>ProCESS Copy Number</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -348,21 +348,21 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">rRACES Copy Number</h1>
+<h1 class="title toc-ignore">ProCESS Copy Number</h1>
 
 </div>
 
 
 <pre class="r"><code>set.seed(1234567)
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 require(dplyr)
 library(knitr)
 library(ggplot2)
 library(patchwork)</code></pre>
 <div id="copy-number" class="section level2">
 <h2>Copy Number</h2>
-<p>Let’s see how one can produce a copy number event using rRACES. We
+<p>Let’s see how one can produce a copy number event using ProCESS. We
 will try to model a CNLOH. To do so we need to create three
 populations:</p>
 <ul>
@@ -443,11 +443,11 @@ SBS_url &lt;- paste0(&quot;https://cancer.sanger.ac.uk/signatures/documents/2123
                   &quot;COSMIC_v3.4_SBS_GRCh37.txt&quot;)
 
 drivers_url &lt;- paste0(&quot;https://raw.githubusercontent.com/&quot;,
-                      &quot;caravagnalab/rRACES/main/inst/extdata/&quot;,
+                      &quot;caravagnalab/ProCESS/main/inst/extdata/&quot;,
                       &quot;driver_mutations_hg19.csv&quot;)
 
 passenger_CNAs_url &lt;- paste0(&quot;https://raw.githubusercontent.com/&quot;,
-                             &quot;caravagnalab/rRACES/main/inst/extdata/&quot;,
+                             &quot;caravagnalab/ProCESS/main/inst/extdata/&quot;,
                              &quot;passenger_CNAs_hg19.csv&quot;)
 
 germline_url &lt;- paste0(&quot;https://www.dropbox.com/scl/fi/g9oloxkip18tr1r&quot;,

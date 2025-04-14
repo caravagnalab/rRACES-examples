@@ -1,7 +1,7 @@
-# devtools::install_github("caravagnalab/rRACES")
+# devtools::install_github("caravagnalab/ProCESS")
 
 
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 
 sim <- new(Simulation, "SPN07",

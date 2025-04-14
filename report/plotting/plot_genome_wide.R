@@ -1,9 +1,9 @@
-library(rRACES)
+library(ProCESS)
 library(CNAqc)
 library(dplyr)
 library(ggplot2)
 library(ggalluvial)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'
@@ -24,7 +24,7 @@ plot_DR_n <- function(
     chromosomes = NULL,
     N = 5000) {
   
-  data <- rRACES:::get_seq_data(seq_res, sample, chromosomes)
+  data <- ProCESS:::get_seq_data(seq_res, sample, chromosomes)
   
   Ntotal <- nrow(data$tumour)
   N = min(N, Ntotal)
@@ -63,7 +63,7 @@ plot_BAF_n <- function(
     chromosomes = NULL,
     cuts = c(0, 1),
     N = 5000) {
-  data <- rRACES:::get_seq_data(as.data.frame(seq_res), sample, chromosomes)
+  data <- ProCESS:::get_seq_data(as.data.frame(seq_res), sample, chromosomes)
 
   Ntotal <- nrow(data$tumour)
   N = min(N, Ntotal)
@@ -105,7 +105,7 @@ plot_VAF_n <- function(
     chromosomes = NULL,
     cuts = c(0.01, 1),
     N = 80000) {
-  data <- rRACES:::get_seq_data(as.data.frame(seq_res), sample, chromosomes)
+  data <- ProCESS:::get_seq_data(as.data.frame(seq_res), sample, chromosomes)
   
   Ntotal <- nrow(data$tumour)
   N = min(N, Ntotal)

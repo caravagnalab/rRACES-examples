@@ -30,13 +30,13 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(ggplot2)
 library(patchwork)
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(tidyverse)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/signature_rRACES.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/plot_genome_wide.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/tables.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/signature_ProCESS.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/plot_genome_wide.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/tables.R")
 metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 img_dir <- "SCOUT_images/"
 ```
@@ -44,7 +44,7 @@ img_dir <- "SCOUT_images/"
 ```{r params, include = FALSE}
 # Load params from YAML if running outside R Markdown
 if (!exists("params")) {
-  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/SCOUT/SPN01/params_50x_0.3p.yml")
+  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/SCOUT/SPN01/params_50x_0.3p.yml")
 }
 ```
 
@@ -345,7 +345,7 @@ Additionally, the mutations are highlighted in the phylogenetic tree, providing 
 s_seq_long <- s_seq %>%
   # filter(chr %in% driver_chroms) %>%
   filter(!stringr::str_detect(causes, 'errors')) %>%
-  rRACES::seq_to_long()
+  ProCESS::seq_to_long()
 
 # Set desired fraction of total mutations to sample
 fraction_to_sample <- 0.6  # 30%

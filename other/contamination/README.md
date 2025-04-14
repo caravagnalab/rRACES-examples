@@ -1,9 +1,9 @@
 > [!WARNING]
-> Outdated information. Please refer to [this directory](https://github.com/caravagnalab/rRACES-examples/tree/main/building_cohorts) to produce the cohort.
+> Outdated information. Please refer to [this directory](https://github.com/caravagnalab/ProCESS-examples/tree/main/building_cohorts) to produce the cohort.
 
 # Downsampling and data preparation
 
-## 1. rRACES sequencing
+## 1. ProCESS sequencing
 In order to have different combination of purity and coverage starting from the same simulation, we need to sequence two times:
 
 1. Run `simulate_seq` without the normal sample at a maximum coverage;

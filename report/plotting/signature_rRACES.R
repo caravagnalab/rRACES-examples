@@ -1,11 +1,11 @@
 #setwd('/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/SPN03/')
 
-library(rRACES)
+library(ProCESS)
 library(ggalluvial)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
 
 get_colors_for <- function(values, pal_name = "Set3") {
   colors <- NULL
@@ -23,7 +23,7 @@ get_colors_for <- function(values, pal_name = "Set3") {
 }
 
 plot_exposure_evolution <- function(sample_forest,phylo_forest,snapshot){
-  simulation <- rRACES::recover_simulation(snapshot)
+  simulation <- ProCESS::recover_simulation(snapshot)
   color_map_clones <- get_clone_map(sample_forest)
   muller <- plot_muller(simulation,color_map = color_map_clones)
   

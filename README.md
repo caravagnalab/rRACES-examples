@@ -3,9 +3,9 @@
 ## Workflow
 For every SPN, the following steps are requested:
 
-1. **`rRACES` simulation**: perform simulation of tumour growth, sampling and mutation engine set up according to genomics information reported in [SCOUT](https://caravagnalab.github.io/rRACES/articles/SCOUT.html) and the instruction in the [SCOUT](https://github.com/caravagnalab/rRACES-examples/blob/main/SCOUT/README.md) section;
-2. **sequencing simulation**: perform rRACES sequencing of all 12 coverage-purity combinations (+ normal sample) following the step reporting in the [build cohort section](https://github.com/caravagnalab/rRACES-examples/blob/main/build_cohorts/README.md)
-3. **generate report** for each coverage-purity combination according to [report generation section](https://github.com/caravagnalab/rRACES-examples/blob/main/report/README.md);
+1. **`ProCESS` simulation**: perform simulation of tumour growth, sampling and mutation engine set up according to genomics information reported in [SCOUT](https://caravagnalab.github.io/ProCESS/articles/SCOUT.html) and the instruction in the [SCOUT](https://github.com/caravagnalab/ProCESS-examples/blob/main/SCOUT/README.md) section;
+2. **sequencing simulation**: perform ProCESS sequencing of all 12 coverage-purity combinations (+ normal sample) following the step reporting in the [build cohort section](https://github.com/caravagnalab/ProCESS-examples/blob/main/build_cohorts/README.md)
+3. **generate report** for each coverage-purity combination according to [report generation section](https://github.com/caravagnalab/ProCESS-examples/blob/main/report/README.md);
 4. run **[nf-core/sarek](https://nf-co.re/sarek/3.5.1/)** for each coverage-purity combination. In particular:
 
     4.1 Mapping and preprocessing of normal sample;
@@ -17,19 +17,19 @@ For every SPN, the following steps are requested:
 5. run **[nf-core/tumourevo](https://nf-co.re/tumourevo/dev/)** on nf-core/sarek results.
 6. perform **validation** of nf-core/sarek results by comparing:
     
-    6.1 Variant Allele Frequency of called somatic mutations (Strelka, Mutect2) vs Variant Allele Frequency of rRACES ground truth mutations;
+    6.1 Variant Allele Frequency of called somatic mutations (Strelka, Mutect2) vs Variant Allele Frequency of ProCESS ground truth mutations;
 
-    6.2 Variant Allele Frequency of called germline mutations (Haplotypecaller) vs Variant Allele Frequency of rRACES ground truth mutations;
+    6.2 Variant Allele Frequency of called germline mutations (Haplotypecaller) vs Variant Allele Frequency of ProCESS ground truth mutations;
 
     6.3 Purity and ploidy estimates from ASCAT given the set purity;
 
-    6.4 Segments and karyotypes from ASCAT vs `phylo_forest$get_bulk_allelic_fragmentation` of rRACES ground truth CNAs.
+    6.4 Segments and karyotypes from ASCAT vs `phylo_forest$get_bulk_allelic_fragmentation` of ProCESS ground truth CNAs.
 
 7. perform **validation** of nf-core/tumourevo results by comparing:
 
     7.1 Driver mutations;
 
-    7.2 Clonal and subclonal clusters given the set rRACES samples composition;
+    7.2 Clonal and subclonal clusters given the set ProCESS samples composition;
 
     7.3 Signature exposure vs `phylo_forest$get_exposures()`
 

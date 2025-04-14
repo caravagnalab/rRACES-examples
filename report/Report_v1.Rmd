@@ -31,23 +31,23 @@ knitr::opts_knit$set(root.dir = '/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(ggplot2)
 library(patchwork)
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(tidyverse)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/signature_rRACES.R")
-#source("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/rRACES-examples/report/plotting/signature_rRACES.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/plot_genome_wide.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/dynamics_rRACES.R",local =T)
-metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
-metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
-img_dir <- "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/SCOUT_images/"
-#simulation <- rRACES::recover_simulation("SPN01")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/signature_ProCESS.R")
+#source("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/report/plotting/signature_ProCESS.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/plot_genome_wide.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/dynamics_ProCESS.R",local =T)
+metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
+metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
+img_dir <- "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_images/"
+#simulation <- ProCESS::recover_simulation("SPN01")
 ```
 
 ```{r params, include = FALSE}
 #Load params from YAML if running outside R Markdown
 if (!exists("params")) {
-  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/SCOUT/SPN01/params_50x_0.3p.yml")
+  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/SCOUT/SPN01/params_50x_0.3p.yml")
 }
 ```
 
@@ -97,7 +97,7 @@ snapshot_dir <- params$files$sim
 # knitr::opts_knit$set(root.dir = snapshot_dir)
 snapshot_name <- params$spn
 
-# simulation <- rRACES::recover_simulation("SPN01")
+# simulation <- ProCESS::recover_simulation("SPN01")
 plot <- plot_tumour_dynamics(paste0(snapshot_dir),sample_forest)
 plot$plot_dynamics
 ```
@@ -115,7 +115,7 @@ General information about the samples are reported in the table below.
 ```{r test_table}
 library(reactable)
 library(sparkline)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/plotting/tables.R", local = knitr::knit_global())
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/tables.R", local = knitr::knit_global())
 table <- samples_table(snapshot=params$files$sim,
                        forest=params$files$sample_forest)
 
@@ -219,7 +219,7 @@ alluvial_plot <- alluvial_plot_karyotypes(files_cna)
 alluvial_plot
 ```
 
-Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/rRACES-examples/report/heatmap.pdf).
+Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/heatmap.pdf).
 
 ### Genomic Karyotype Composition Across Samples and Subclones  
 

@@ -1,8 +1,8 @@
 set.seed(58)
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
-setwd("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/rRACES-examples/SPN07/on_Orfeo")
+setwd("/orfeo/LTS/CDSLab/LT_storage/antonelloa/new_home/ProCESS-examples/SPN07/on_Orfeo")
 #source('utils.R')
 
 sim <- SpatialSimulation("SPN07",
@@ -52,7 +52,7 @@ ggsave(p4, filename='./plots/tissue4.png')
 
 #m1 = my_muller_plot(sim)
 #ggsave(m1, filename='./plots/log_muller.png')
-m2 = rRACES::plot_muller(sim)
+m2 = ProCESS::plot_muller(sim)
 ggsave(m2, filename='./plots/muller_plot1.png')
 
 state1= plot_state(sim)
@@ -131,7 +131,7 @@ state2= plot_state(sim)
 
 #m2 = my_muller_plot(sim)
 #ggsave(m2, filename='./plots/log_muller2.png')
-m2 = rRACES::plot_muller(sim)
+m2 = ProCESS::plot_muller(sim)
 ggsave(m2, filename='./plots/muller_plot2.png')
 
 ### Sampling 2

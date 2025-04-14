@@ -14,16 +14,16 @@ options(knitr.duplicate.label = "allow")
 
 # Introduction to EasyABC
 
-In this tutorial we will show how to implement models with rRACES that can be used with EasyABC pakcage.
+In this tutorial we will show how to implement models with ProCESS that can be used with EasyABC pakcage.
 Recall that the main steps of an ABC analysis follow the general scheme of any Bayesian analysis: formulating a model, fitting the model to data (parameter estimation), and improving the model by checking its fit (posterior predictive checks)
 
-Let's start importing the library, remember to install  *EasyABC* and *rRACES*, to do this just uncomment the first two lines.
+Let's start importing the library, remember to install  *EasyABC* and *ProCESS*, to do this just uncomment the first two lines.
 
 ```{r echo=T, results='hide', warning=FALSE, message=FALSE, error=FALSE}
 # install.packages(EasyABC)
-# devtools::install_github("caravagnalab/rRACES")
+# devtools::install_github("caravagnalab/ProCESS")
 library(EasyABC)
-library(rRACES)
+library(ProCESS)
 library(ggplot2)
 ```
 
@@ -35,7 +35,7 @@ Particular attention must be paid to the model being used, as the summary static
 ### Sumamry statics observed
 As we mentioned earlier, to estimate the parameter that interest us we must first have a summary statistic against which we can compare the results obtained.
 
-In the following example we simulate with *rRACES* the evolution of a mutant $A$, with the folowing parameters:
+In the following example we simulate with *ProCESS* the evolution of a mutant $A$, with the folowing parameters:
 
 - **growth_rates** as **gr** = 0.08
 
@@ -289,7 +289,7 @@ tab
 ### More examples
  
 #### Infer growth rate of sub mutant
-In the following example we simulate with *rRACES* the evolution of a mutant $A$ with subclonal expansion $B$, with the folowing parameters:
+In the following example we simulate with *ProCESS* the evolution of a mutant $A$ with subclonal expansion $B$, with the folowing parameters:
 
 - **gr1** = 0.0568 (mutant $A$)
 
@@ -410,7 +410,7 @@ tab
 ```
 
 #### Infer growth rate of one mutant and sub mutant
-In the following example we simulate with *rRACES* the evolution of a mutant $A$ with subclonal expansion $B$, with the following parameters:
+In the following example we simulate with *ProCESS* the evolution of a mutant $A$ with subclonal expansion $B$, with the following parameters:
 
 - **gr1** = 0.0777 (mutant $A$)
 

@@ -1,4 +1,4 @@
-library(rRACES)
+library(ProCESS)
 library(tidyverse)
 library(patchwork)
 
@@ -18,9 +18,9 @@ chromosomes <- c("1","2","3","4","5","6","7","8","9","10","11","12","13","14","1
 seq_res_filt = seq_res %>% filter(classes != "germinal")
 seq_res_germ = seq_res %>% filter(classes == "germinal")
 lapply(samples, function(s) {
-    vaf = rRACES::plot_VAF(seq_res_filt,sample = s)
-    baf = rRACES::plot_BAF(seq_res_germ, sample =s)
-    dr = rRACES::plot_DR(seq_res_germ, sample =s)
+    vaf = ProCESS::plot_VAF(seq_res_filt,sample = s)
+    baf = ProCESS::plot_BAF(seq_res_germ, sample =s)
+    dr = ProCESS::plot_DR(seq_res_germ, sample =s)
 
     p = vaf / baf / dr
 

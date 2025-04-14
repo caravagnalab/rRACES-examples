@@ -1,5 +1,5 @@
 ---
-title: 'rRACES: SPN07 - part 2'
+title: 'ProCESS: SPN07 - part 2'
 author: "Alice and Riccardo"
 date: "`r Sys.Date()`"
 output: 
@@ -19,8 +19,8 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 
 ```{r import, include=FALSE}
 rm(list = ls())
-setwd("~/Documents/GitHub/rRACES-examples/SPN07/scripts")
-library(rRACES)
+setwd("~/Documents/GitHub/ProCESS-examples/SPN07/scripts")
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)

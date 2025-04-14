@@ -19,9 +19,9 @@ merging_shell_script="""#!/bin/bash
 
 module load singularity
 
-printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
+printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
 
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
 """
 
 merging_R_script="""rm(list = ls())
@@ -29,7 +29,7 @@ library(dplyr)
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 5) {
-  stop(paste("Syntax error: rRACES_merge_rds.R",
+  stop(paste("Syntax error: ProCESS_merge_rds.R",
              "<num_of_lots> <SPN> <input_dir> <purity> <type>"),
        call. = FALSE)
 }
@@ -131,16 +131,16 @@ gender_shell_script="""#!/bin/bash
 #SBATCH --mem=20GB
 
 module load singularity
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_subject_gender.R ${PHYLO_FOREST}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_subject_gender.R ${PHYLO_FOREST}
 """
 
 gender_R_script="""rm(list = ls())
-library(rRACES)
+library(ProCESS)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 1) {
-  stop(paste("Syntax error: rRACES_subject_gender.R",
+  stop(paste("Syntax error: ProCESS_subject_gender.R",
 	         "<phylo_forest>"),
        call. = FALSE)
 }
@@ -173,20 +173,20 @@ shell_script="""#!/bin/bash
 #SBATCH --mem={MEMORY}GB
 
 module load singularity
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
 
 rm -rf ${NODE_SCRATCH}/${SPN}_${LOT}
 """
 
 R_script="""rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(bench)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 10) {
-  stop(paste("Syntax error: rRACES_seq.R",
+  stop(paste("Syntax error: ProCESS_seq.R",
 	         "<phylo_forest> <SPN> <lot_name>",
 	         "<node_local_dir> <output_dir>",
 	         "<coverage> <type> <num_of_cores>",
@@ -666,7 +666,7 @@ if (__name__ == '__main__'):
                                      description=('Produces the cohorts of a SPN'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
-                        help = ('A rRACES phylogenetic forest'))
+                        help = ('A ProCESS phylogenetic forest'))
     parser.add_argument('output_dir', type=str,
                         help = ('The output directory'))
     parser.add_argument('-P', '--partition', type=str, required=True,
@@ -725,21 +725,21 @@ if (__name__ == '__main__'):
 
     curr_dir = os.getcwd()
     if not os.path.exists(gender_filename):
-        with open('rRACES_subject_gender.R', 'w') as outstream:
+        with open('ProCESS_subject_gender.R', 'w') as outstream:
             outstream.write(gender_R_script)
 
-        with open('rRACES_subject_gender.sh', 'w') as outstream:
+        with open('ProCESS_subject_gender.sh', 'w') as outstream:
             outstream.write(gender_shell_script)
 
         cmd = ['sbatch', '--account={}'.format(account),
             '--partition={}'.format(args.partition),
             ('--export=PHYLO_FOREST={},IMAGE={},DIR={}').format(args.phylogenetic_forest,
                                                 args.image_path, curr_dir),
-            './rRACES_subject_gender.sh']
+            './ProCESS_subject_gender.sh']
 
         subprocess.run(cmd)
 
-    with open('rRACES_seq.R', 'w') as outstream:
+    with open('ProCESS_seq.R', 'w') as outstream:
         outstream.write(R_script)
 
     space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots_T
@@ -747,7 +747,7 @@ if (__name__ == '__main__'):
     memory_per_lot = max(memory_per_lot, math.ceil(args.mem_per_node/5))
     shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
 
-    with open('rRACES_seq.sh', 'w') as outstream:
+    with open('ProCESS_seq.sh', 'w') as outstream:
         outstream.write(shell_script)
 
     if not os.path.exists(args.output_dir):
@@ -818,7 +818,7 @@ if (__name__ == '__main__'):
                                                 seq_type, args.node_scratch_directory,
                                                 i, purity, args.image_path, curr_dir),
                         '--output={}/lot_{}.log'.format(log_dir, lot_name),
-                        './rRACES_seq.sh']
+                        './ProCESS_seq.sh']
                     if args.exclude != "":
                         cmd.insert(-1,"--exclude={}".format(args.exclude))
 
@@ -857,10 +857,10 @@ if (__name__ == '__main__'):
                 with open(f'{sarek_dir}/sarek_mapping_normal.sh', 'w') as outstream:
                     outstream.write(sarek_file_launcher)
                 sarek_file_launcher = sarek_file_launcher_orig
-                with open('rRACES_merge_rds.R', 'w') as outstream:
+                with open('ProCESS_merge_rds.R', 'w') as outstream:
                     outstream.write(merging_R_script)
 
-                with open('rRACES_merge_rds.sh', 'w') as outstream:
+                with open('ProCESS_merge_rds.sh', 'w') as outstream:
                     outstream.write(merging_shell_script)
 
                 cmd = ['sbatch', '--account={}'.format(account),
@@ -869,7 +869,7 @@ if (__name__ == '__main__'):
                     ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_lots,args.SPN,
                                                         args.output_dir,purity,seq_type,
                                                         args.image_path, curr_dir),
-                    './rRACES_merge_rds.sh']
+                    './ProCESS_merge_rds.sh']
 
                 subprocess.run(cmd)
                     
@@ -923,10 +923,10 @@ if (__name__ == '__main__'):
                         outstream.write(sarek_variant_calling_launcher)
                     sarek_variant_calling_launcher = sarek_file_launcher_orig
                     
-                    with open('rRACES_merge_rds.R', 'w') as outstream:
+                    with open('ProCESS_merge_rds.R', 'w') as outstream:
                         outstream.write(merging_R_script)
 
-                    with open('rRACES_merge_rds.sh', 'w') as outstream:
+                    with open('ProCESS_merge_rds.sh', 'w') as outstream:
                         outstream.write(merging_shell_script)
 
                     cmd = ['sbatch', '--account={}'.format(account),
@@ -935,6 +935,6 @@ if (__name__ == '__main__'):
                         ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_tumour_lots,args.SPN,
                                                             args.output_dir,purity,seq_type,
                                                             args.image_path, curr_dir),
-                        './rRACES_merge_rds.sh']
+                        './ProCESS_merge_rds.sh']
 
                     subprocess.run(cmd)

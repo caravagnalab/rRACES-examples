@@ -1,8 +1,8 @@
-library(rRACES)
+library(ProCESS)
 library(tidyverse)
 
 samples_table <- function(snapshot, forest) {
-    sim <- rRACES::recover_simulation(snapshot)
+    sim <- ProCESS::recover_simulation(snapshot)
     sample_forest <- load_samples_forest(forest)
     info = sim$get_samples_info() ## requested from either the simulation recovery or as saved table
 

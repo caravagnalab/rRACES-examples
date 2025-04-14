@@ -1,9 +1,9 @@
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(patchwork)
 library(ggplot2)
 #library(CNAqc)
-#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/rRACES-examples/SPN01/scripts/my_functions/plot_genome_wide.R")
+#source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/ProCESS-examples/SPN01/scripts/my_functions/plot_genome_wide.R")
 #'
 #' Convert realtive coordinates to absolute coordinates
 #'
@@ -51,7 +51,7 @@ races2cnaqc <- function(seq_results,phylo_forest,sample_id,ref,purity){
     arrange(desc(ratio)) %>%                 # Arrange by 'ratio' in descending order
     mutate(ccf_label = paste0("ccf_", rank(-ratio)))  # Assign rank based on 'ratio'
 
-  mutations <- rRACES::seq_to_long(seq_results) %>%
+  mutations <- ProCESS::seq_to_long(seq_results) %>%
     dplyr::filter(sample_name==sample_id & classes!="germinal") %>%
     dplyr::filter(VAF!=0) %>% mutate(is_driver=FALSE) %>%
     left_join(known_drivers,by=c("chr","from","to","ref","alt")) %>%
@@ -101,7 +101,7 @@ squareplot = function(seq_res, samples_list,chrom)
   {
     sn = samples_list[s]
     s_seq <- seq_res %>% filter(classes!="germinal")
-    s_seq_long <- s_seq %>% rRACES::seq_to_long()
+    s_seq_long <- s_seq %>% ProCESS::seq_to_long()
     plot_vaf <- s_seq_long %>%
       filter(sample_name==sn & chr==chrom) %>%
       filter(VAF!=0) %>%
@@ -121,7 +121,7 @@ squareplot = function(seq_res, samples_list,chrom)
      
     #palette <- RColorBrewer::brewer.pal(n = length(unique(s_seq$causes)), name = "Set3")
     #col_causes <- setNames(palette, unique(s_seq$causes))
-    #cols_causes <- rRACES:::get_colors_for(unique(s_seq$causes))
+    #cols_causes <- ProCESS:::get_colors_for(unique(s_seq$causes))
     #col_classes <- c("passenger" = "#CCCC99",
     #                 "pre-neoplastic" = "#006699",
     #                 "driver" = "#990033")

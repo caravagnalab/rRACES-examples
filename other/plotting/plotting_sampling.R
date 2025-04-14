@@ -1,9 +1,9 @@
 #' plotting_sample
 #'
-#' @param sim rRACES simulation object
+#' @param sim ProCESS simulation object
 #' @param samples_timing a list of vector. names are the time point of sampling, and each element is a vector with names (indicating if the sample is clonal or not) 
 #' with name of the samples present at that time point
-#' @param boxes a list of Rcpp_TissueRectangle objects from rRACES. Must have the names of the correspondent sample. 
+#' @param boxes a list of Rcpp_TissueRectangle objects from ProCESS. Must have the names of the correspondent sample. 
 #'
 #' @return plot
 #' @export
@@ -33,7 +33,7 @@ plotting_sample = function(sim, samples_timing, boxes) {
   for (t in seq_along(samples_timing)) {
     samples = samples_timing[[t]]
     print(samples)
-    p_list[[t]] <- rRACES::plot_tissue(sim) 
+    p_list[[t]] <- ProCESS::plot_tissue(sim) 
 
     for (i in seq_along(samples)) {
       

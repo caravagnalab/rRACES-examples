@@ -1,5 +1,5 @@
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
@@ -48,7 +48,7 @@ m_engine$add_exposure(time = treatment_info$treatment_end, coefficients = c(SBS5
 phylo_forest <- m_engine$place_mutations(forest,
                                          num_of_preneoplatic_SNVs = 800,
                                          num_of_preneoplatic_indels = 200)
-phylo_forest$save("/u/cdslab/gsantacatterina/scratch/rRACES-examples/SPN04/data/phylo_forest.sff")
+phylo_forest$save("/u/cdslab/gsantacatterina/scratch/ProCESS-examples/SPN04/data/phylo_forest.sff")
 
 
 all_SNV <- phylo_forest$get_sampled_cell_mutations() %>% as_tibble()
@@ -77,5 +77,5 @@ sticks <- plot_sticks(forest, labels)
 
 pl <- annot_forest + sticks + exp_timeline + plot_layout(nrow = 3, design = 'A\nA\nB\nB\nC')
 pl <- annot_forest
-ggplot2::ggsave('/u/cdslab/gsantacatterina/scratch/rRACES-examples/SPN04/plots/mutations.png', plot = pl, width = 210, height = 297, units = "mm", dpi=300)
-ggplot2::ggsave('/u/cdslab/gsantacatterina/scratch/rRACES-examples/SPN04/plots/mutations.pdf', plot = pl, width = 210, height = 297, units = "mm", dpi=300)
+ggplot2::ggsave('/u/cdslab/gsantacatterina/scratch/ProCESS-examples/SPN04/plots/mutations.png', plot = pl, width = 210, height = 297, units = "mm", dpi=300)
+ggplot2::ggsave('/u/cdslab/gsantacatterina/scratch/ProCESS-examples/SPN04/plots/mutations.pdf', plot = pl, width = 210, height = 297, units = "mm", dpi=300)

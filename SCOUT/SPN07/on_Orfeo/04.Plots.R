@@ -1,6 +1,6 @@
-setwd("~/GitHub/rRACES-examples/SPN04")
+setwd("~/GitHub/ProCESS-examples/SPN04")
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 library(ggplot2)
 library(patchwork)

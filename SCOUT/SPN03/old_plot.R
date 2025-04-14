@@ -1,5 +1,5 @@
 library(dplyr)
-library(rRACES)
+library(ProCESS)
 library(tidyverse)
 library(patchwork)
 
@@ -9,17 +9,17 @@ samples <- c('Sample.A', 'Sample.B', 'Sample.C', 'Sample.D')
 
 
 gw_plots_baf <- lapply(samples, function(s){
-  rRACES::plot_BAF(seq_results, sample = s, cuts = c(0, 1))
+  ProCESS::plot_BAF(seq_results, sample = s, cuts = c(0, 1))
   })
 baf <- patchwork::wrap_plots(gw_plots_baf, nrow = 4)
 
 gw_plots_dr <- lapply(samples, function(s){
-  rRACES::plot_DR(seq_results, sample = s)
+  ProCESS::plot_DR(seq_results, sample = s)
 })
 dr <- patchwork::wrap_plots(gw_plots_dr, nrow = 4)
 
 gw_plots_vaf <- lapply(samples, function(s){
-  rRACES::plot_VAF(seq_results, sample = s)
+  ProCESS::plot_VAF(seq_results, sample = s)
 })
 vaf <- patchwork::wrap_plots(gw_plots_vaf, nrow = 4)
 gw_plot <- patchwork::wrap_plots(baf, dr, vaf)
@@ -31,11 +31,11 @@ seq_results <- seq_results %>%
 
 
 # Histogram
-hist_class <- rRACES::plot_VAF_histogram(seq_results, 
+hist_class <- ProCESS::plot_VAF_histogram(seq_results, 
                    cuts = c(0.05, 1), 
                    labels = seq_results["classes"])
 
-hist_cause <- rRACES::plot_VAF_histogram(seq_results, 
+hist_cause <- ProCESS::plot_VAF_histogram(seq_results, 
                    cuts = c(0.05, 1), 
                    labels = seq_results["causes"])
 hist <- hist_class + hist_cause + patchwork::plot_layout(nrow =2)
@@ -43,10 +43,10 @@ ggsave(filename = 'plots/SPN03_histogram.png', plot = hist, dpi = 300,  width = 
 
 
 # Marginals
-marg_class <- patchwork::wrap_plots(rRACES::plot_VAF_marginals(seq_results, 
+marg_class <- patchwork::wrap_plots(ProCESS::plot_VAF_marginals(seq_results, 
                                      chromosome = '1', 
                                      labels = seq_results["classes"]), guides = 'collect') & theme_bw() + theme(legend.position = 'bottom')
-marg_cause <-patchwork::wrap_plots(rRACES::plot_VAF_marginals(seq_results, 
+marg_cause <-patchwork::wrap_plots(ProCESS::plot_VAF_marginals(seq_results, 
                                      chromosome = '1', 
                                      labels = seq_results["causes"]), guides = 'collect') & theme_bw() + theme(legend.position = 'bottom')
 

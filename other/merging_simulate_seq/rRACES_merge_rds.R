@@ -2,7 +2,7 @@ library(dplyr)
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 5) {
-  stop(paste("Syntax error: rRACES_merge_rds.R",
+  stop(paste("Syntax error: ProCESS_merge_rds.R",
              "<num_of_lots> <SPN> <input_dir> <purity> <type>"),
        call. = FALSE)
 }

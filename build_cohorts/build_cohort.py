@@ -17,19 +17,19 @@ gender_shell_script="""#!/bin/bash
 
 module load R/4.3.3
 
-echo "Rscript rRACES_subject_gender.R ${PHYLO_FOREST}"
+echo "Rscript ProCESS_subject_gender.R ${PHYLO_FOREST}"
 
 
-Rscript rRACES_subject_gender.R ${PHYLO_FOREST}
+Rscript ProCESS_subject_gender.R ${PHYLO_FOREST}
 """
 
 gender_R_script="""rm(list = ls())
-library(rRACES)
+library(ProCESS)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 1) {
-  stop(paste("Syntax error: rRACES_subject_gender.R",
+  stop(paste("Syntax error: ProCESS_subject_gender.R",
 	         "<phylo_forest>"),
        call. = FALSE)
 }
@@ -65,22 +65,22 @@ shell_script="""#!/bin/bash
 module load R/4.3.3
 module load samtools
 
-echo "Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}"
+echo "Rscript ProCESS_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}"
 
 
-Rscript rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
+Rscript ProCESS_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
 
 rm -rf ${NODE_SCRATCH}/${SPN}_${LOT}
 """
 
 R_script="""rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 10) {
-  stop(paste("Syntax error: rRACES_seq.R",
+  stop(paste("Syntax error: ProCESS_seq.R",
 	         "<phylo_forest> <SPN> <lot_name>",
 	         "<node_local_dir> <output_dir>",
 	         "<coverage> <type> <num_of_cores>",
@@ -409,7 +409,7 @@ if (__name__ == '__main__'):
                                      description=('Produces the cohorts of a SPN'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
-                        help = ('A rRACES phylogenetic forest'))
+                        help = ('A ProCESS phylogenetic forest'))
     parser.add_argument('output_dir', type=str,
                         help = ('The output directory'))
     parser.add_argument('-P', '--partition', type=str, required=True,
@@ -459,20 +459,20 @@ if (__name__ == '__main__'):
                                    "subject_gender.txt")
 
     if not os.path.exists(gender_filename):
-        with open('rRACES_subject_gender.R', 'w') as outstream:
+        with open('ProCESS_subject_gender.R', 'w') as outstream:
             outstream.write(gender_R_script)
 
-        with open('rRACES_subject_gender.sh', 'w') as outstream:
+        with open('ProCESS_subject_gender.sh', 'w') as outstream:
             outstream.write(gender_shell_script)
 
         cmd = ['sbatch', '--account={}'.format(account),
             '--partition={}'.format(args.partition),
             f'--export=PHYLO_FOREST={args.phylogenetic_forest}',
-            './rRACES_subject_gender.sh']
+            './ProCESS_subject_gender.sh']
 
         subprocess.run(cmd)
 
-    with open('rRACES_seq.R', 'w') as outstream:
+    with open('ProCESS_seq.R', 'w') as outstream:
         outstream.write(R_script)
 
     space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots
@@ -481,7 +481,7 @@ if (__name__ == '__main__'):
 
     shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
 
-    with open('rRACES_seq.sh', 'w') as outstream:
+    with open('ProCESS_seq.sh', 'w') as outstream:
         outstream.write(shell_script)
 
     if not os.path.exists(args.output_dir):
@@ -544,7 +544,7 @@ if (__name__ == '__main__'):
                                                 seq_type, args.node_scratch_directory,
                                                 i, purity),
                         '--output={}/lot_{}.log'.format(log_dir, lot_name),
-                        './rRACES_seq.sh']
+                        './ProCESS_seq.sh']
                     if args.exclude != "":
                         cmd.insert(-1,"--exclude={}".format(args.exclude))
 

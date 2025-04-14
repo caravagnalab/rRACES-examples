@@ -1,5 +1,5 @@
 rm(list = ls())
-library(rRACES)
+library(ProCESS)
 library(dplyr)
 set.seed(06117)
 
@@ -16,7 +16,7 @@ m_engine <- MutationEngine(setup_code = "GRCh38",tumour_type = "COAD",
 mu_SNV = 1e-8
 mu_CNA = 1e-10
 ##112707518-112846239 
-CNA_Clone2 = rRACES::CNA(type = "D", "5",
+CNA_Clone2 = ProCESS::CNA(type = "D", "5",
                          chr_pos = 107707518, len = 2e7,allele = 0)
 
 ## Drivers for the tumors

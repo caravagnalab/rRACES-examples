@@ -1,9 +1,9 @@
-library(rRACES)
+library(ProCESS)
 library(CNAqc)
 library(dplyr)
 library(ggplot2)
-#source("/u/cdslab/ggandolfi/scratch/prj_races/rRACES-examples/plotting/spn_blueprint/utils.R")
-source("/u/cdslab/ahaghighi/scratch/packages/rRACES-examples/plotting/spn_blueprint/utils.R")
+#source("/u/cdslab/ggandolfi/scratch/prj_races/ProCESS-examples/plotting/spn_blueprint/utils.R")
+source("/u/cdslab/ahaghighi/scratch/packages/ProCESS-examples/plotting/spn_blueprint/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'
@@ -24,7 +24,7 @@ plot_DR_n <- function(
     chromosomes = NULL,
     N = 5000) {
   
-  data <- rRACES:::get_seq_data(seq_res, sample, chromosomes)
+  data <- ProCESS:::get_seq_data(seq_res, sample, chromosomes)
   
   Ntotal <- nrow(data$tumour)
   N = min(N, Ntotal)
@@ -62,7 +62,7 @@ plot_BAF_n <- function(
     chromosomes = NULL,
     cuts = c(0, 1),
     N = 5000) {
-  data <- rRACES:::get_seq_data(seq_res, sample, chromosomes)
+  data <- ProCESS:::get_seq_data(seq_res, sample, chromosomes)
 
   Ntotal <- nrow(data$tumour)
   N = min(N, Ntotal)

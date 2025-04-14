@@ -11,7 +11,7 @@ my_muller_plot = function (simulation)
                                                                  .data$progeny) %>% dplyr::rename(Parent = .data$ancestor, 
                                                                                                   Identity = .data$progeny) %>% dplyr::select(.data$Parent, 
                                                                                                                                               .data$Identity)
-  df_edges <- rRACES:::collapse_loops(df_edges)
+  df_edges <- ProCESS:::collapse_loops(df_edges)
   max_tumour_size <- df_populations %>% dplyr::group_by(.data$Generation) %>% 
     dplyr::summarise(Population = sum(.data$Population)) %>% 
     dplyr::pull(.data$Population) %>% max()
@@ -22,12 +22,12 @@ my_muller_plot = function (simulation)
     dplyr::mutate(Identity = "Wild-type", Population = max_tumour_size - 
                     .data$Population)
   t_wt_dynamics <- dplyr::bind_rows(wt_dynamics, df_populations)
-  color_map <- rRACES:::get_species_colors(simulation$get_species())
+  color_map <- ProCESS:::get_species_colors(simulation$get_species())
   suppressWarnings({
     muller_df <- ggmuller::get_Muller_df(df_edges, t_wt_dynamics)
     plot <- ggmuller::Muller_pop_plot(muller_df, add_legend = TRUE, 
                                       palette = c(`Wild-type` = "gainsboro", color_map)) + 
-      rRACES:::my_theme() + ggplot2::guides(fill = ggplot2::guide_legend("Species"))
+      ProCESS:::my_theme() + ggplot2::guides(fill = ggplot2::guide_legend("Species"))
   })
   plot
 }
