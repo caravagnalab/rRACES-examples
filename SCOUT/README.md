@@ -11,6 +11,13 @@ Set mutation rates in MutationEngine to:
 - ID: `1e-9`
 - CNA: depends on tumour type (eg. SPN01 simulation have a lot of CN events and 1e-10 rate, low number of CN with 1e-12 rate)
 
+### Reference path
+The references to generated the `MutationEngine` are stored in `/orfeo/cephfs/scratch/cdslab/shared/ProCESS/GRCh38`. Please when setting the `MutationEngine` do:
+
+```{r}
+setwd("/orfeo/cephfs/scratch/cdslab/shared/ProCESS/GRCh38")
+```
+
 ### Set tumour type in MutationEngine
 ```
 # check available tumour type
