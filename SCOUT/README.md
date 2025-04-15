@@ -7,8 +7,8 @@ Remember to sample around **2k cells** per sample.
 
 ### Mutations rates
 Set mutation rates in MutationEngine to:
-- SNV: 1e-8 (except for the SPN02 that is hypermutant)
-- ID: 1e-9
+- SNV: `1e-8` (except for the SPN02 that is hypermutant)
+- ID: `1e-9`
 - CNA: depends on tumour type (eg. SPN01 simulation have a lot of CN events and 1e-10 rate, low number of CN with 1e-12 rate)
 
 ### Set tumour type in MutationEngine
@@ -32,15 +32,15 @@ m_engine$set_germline_subject("")
 ```
 
 Male samples:
-- SPN01
-- SPN03
-- SPN04
-- SPN06
+- `SPN01`
+- `SPN03`
+- `SPN04`
+- `SPN06`
 
 Female samples:
-- SPN02
-- SPN05
-- SPN07
+- `SPN02`
+- `SPN05`
+- `SPN07`
 
 ### Set pre-neoplastic mutations
 ```
@@ -49,7 +49,7 @@ phylo_forest <- m_engine$place_mutations(samples_forest, num_of_preneoplatic_SNV
 
 
 ## Saving snapshot and set seed
-Remember to save the snapshot of the simulations by running:  
+Remember to save the snapshot of the simulations and set the seed by running:  
 
 ```{r}
 set.seed(12345)
