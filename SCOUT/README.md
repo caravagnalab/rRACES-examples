@@ -1,10 +1,58 @@
 # SPN simulations
 To ensure uniformity in the creation of each SPN, certain requirements must be met.  
 
-## Saving Snapshot  
+## Simulation parameters
+### Number of cells to sample 
+Remember to sample around **2k cells** per sample.
+
+### Mutations rates
+Set mutation rates in MutationEngine to:
+- SNV: 1e-8 (except for the SPN02 that is hypermutant)
+- ID: 1e-9
+- CNA: depends on tumour type (eg. SPN01 simulation have a lot of CN events and 1e-10 rate, low number of CN with 1e-12 rate)
+
+### Set tumour type in MutationEngine
+```
+# check available tumour type
+get_available_tumours_in(setup_code = "GRCh38") %>% head()
+
+
+m_engine <- MutationEngine(setup_code = "GRCh38",
+                           tumour_type = "COAD",
+                           tumour_study = "US")
+```
+
+### Set gender of simulation
+```
+#return available germline subject with gender
+m_engine$get_germline_subjects()
+
+#select the one that you want based on gender that you need
+m_engine$set_germline_subject("")
+```
+
+Male samples:
+- SPN01
+- SPN03
+- SPN04
+- SPN06
+
+Female samples:
+- SPN02
+- SPN05
+- SPN07
+
+### Set pre-neoplastic mutations
+```
+phylo_forest <- m_engine$place_mutations(samples_forest, num_of_preneoplatic_SNVs = 800, num_of_preneoplatic_indels = 200)
+```
+
+
+## Saving snapshot and set seed
 Remember to save the snapshot of the simulations by running:  
 
 ```{r}
+set.seed(12345)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
 ```
 
@@ -43,6 +91,14 @@ The `<sample>_cna.rds` has to be obtained by running the following command for e
 phylo_forest$get_bulk_allelic_fragmentation()
 ```
 
+Eg.
+```
+sample_names <- phylo_forest$get_samples_info()[["name"]]
+lapply(sample_names,function(s){
+    cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
+    saveRDS(file=paste0(outdir,"cna_data/",s,"_cna.rds"),object=cna)
+})
+```
 
 ## How to run Rscript with singularity image
 To run the R scripts, a Singularity image with the latest version of ProCESS must be used. You can do this with the following script:
