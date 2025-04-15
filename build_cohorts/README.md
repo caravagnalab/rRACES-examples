@@ -63,11 +63,11 @@ export NXF_WORK="/orfeo/cephfs/fast/cdslab/{userid}/work"
 This directory contains the Python script `build_cohort.py`, which builds the cohort of an SPN using its phylogenetic forest file on Orfeo. The sequencing results will be stored in `scratch/` and once the sequencining is done, you should copy the results in Long Term Storage (`LTS`) in order to have them properly backuped. Please see [After sequencing](#after-sequencing) section
 
 To run the script, create a `bash` executable file like the example below.  
-`run_build_cohort.sbatch` with SPN01 parameters is provided as a reference:
+`run_build_cohort.sh` with SPN01 parameters is provided as a reference:
 
 ```{sh}
 #!/bin/bash
-#SBATCH --partition={EPYC,THIN,GENOA}
+#SBATCH --partition=EPYC
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem 20gb
@@ -78,45 +78,46 @@ To run the script, create a `bash` executable file like the example below.
 module load singularity
 
 # change them accordingly
-partition={EPYC,THIN,GENOA}
+partition=EPYC
 user="cdslab"
 spn="SPN01"
 
 # change with your own absolute path
-tmp="/orfeo/cephfs/fast/cdslab/{userid}/tmp_files"
-path="/path/of/directory/"
+path="/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/build_cohorts"
 
 # keep them as they are
-phylo="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/races/phylo_forest.sff"
-image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif"
-config="/orfeo/cephfs/scratch/cdslab/ggandolfi/races/sarek.config"
-out="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sequencing"
-sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/races/SCOUT/${spn}/sarek"
+phylo="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/races/phylo_forest.sff"
+tmp="/orfeo/cephfs/fast/cdslab/${USER}/tmp_files"
+image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.0.sif"
+out="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sequencing"
+sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sarek"
+tumourevo_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/tumourevo"
 
-$path/build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $config -SD $sarek_output_dir
+
+$path/benchmark_build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $path/orfeo.config -SD $sarek_output_dir -TD $tumourevo_output_dir
 ```
 
 
 You need to modify the following variables in the script:  
 
-- `partition`: the Orfeo HPC partition where the script will run.  
 - `user`: your Orfeo group.  
 - `spn`: the name of the SPN.  
-- `tmp`: absolute path to a directory where temporary files will be written and later deleted.  
-- `path`: absolute path to the `build_cohort.py` script.  
+- `path`: absolute path to the `benchmark_build_cohort.py` script.  
 
 Leave the following variables unchanged:  
 
+- `tmp`: absolute path to a directory where temporary files will be written and later deleted.
+- `partition`: the Orfeo HPC partition where the script will run.
 - `phylo`: absolute path to the phylogenetic forest.  
 - `image`: absolute path to the Singularity image.  
 - `config`: absolute path to the Sarek config.  
 - `out`: absolute path where sequencing results will be written.  
 - `sarek_output_dir`: absolute path to the directory where Sarek output will be stored.  
 
-After replacing the variables, ensure that `build_cohort.py` is executable by running:  
+After replacing the variables, ensure that `benchmark_build_cohort.py` is executable by running:  
 
 ```{sh}
-chmod +x build_cohort.py
+chmod +x benchmark_build_cohort.py
 ```
 Finally, submit the script using:
 ```{sh}

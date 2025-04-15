@@ -19,9 +19,9 @@ merging_shell_script="""#!/bin/bash
 
 module load singularity
 
-printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
+printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
 
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
 """
 
 merging_R_script="""rm(list = ls())
@@ -29,7 +29,7 @@ library(dplyr)
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 5) {
-  stop(paste("Syntax error: ProCESS_merge_rds.R",
+  stop(paste("Syntax error: rRACES_merge_rds.R",
              "<num_of_lots> <SPN> <input_dir> <purity> <type>"),
        call. = FALSE)
 }
@@ -131,16 +131,16 @@ gender_shell_script="""#!/bin/bash
 #SBATCH --mem=20GB
 
 module load singularity
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_subject_gender.R ${PHYLO_FOREST}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_subject_gender.R ${PHYLO_FOREST}
 """
 
 gender_R_script="""rm(list = ls())
-library(ProCESS)
+library(rRACES)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 1) {
-  stop(paste("Syntax error: ProCESS_subject_gender.R",
+  stop(paste("Syntax error: rRACES_subject_gender.R",
 	         "<phylo_forest>"),
        call. = FALSE)
 }
@@ -173,20 +173,20 @@ shell_script="""#!/bin/bash
 #SBATCH --mem={MEMORY}GB
 
 module load singularity
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
+singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/rRACES_seq.R ${PHYLO_FOREST} ${SPN} ${LOT} ${NODE_SCRATCH} ${DEST} ${COVERAGE} ${TYPE} 4 ${SEED} ${PURITY}
 
 rm -rf ${NODE_SCRATCH}/${SPN}_${LOT}
 """
 
 R_script="""rm(list = ls())
-library(ProCESS)
+library(rRACES)
 library(dplyr)
 library(bench)
 
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) != 10) {
-  stop(paste("Syntax error: ProCESS_seq.R",
+  stop(paste("Syntax error: rRACES_seq.R",
 	         "<phylo_forest> <SPN> <lot_name>",
 	         "<node_local_dir> <output_dir>",
 	         "<coverage> <type> <num_of_cores>",
@@ -544,7 +544,7 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-/orfeo/cephfs/scratch/cdslab/ggandolfi/nextflow run nf-core/sarek -r 3.5.1 --input $input \
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
     --outdir $output_dir_combination -profile singularity -c $config
 """
 
@@ -570,9 +570,45 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-/orfeo/cephfs/scratch/cdslab/ggandolfi/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
     --outdir $output_dir_combination -profile singularity -c $config --igenomes_base /orfeo/LTS/CDSLab/LT_storage/ref_genomes
+"""
+
+tumourevo_launcher="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=tumourevo_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=96:00:00
+#SBATCH --output=tumourevo_{JOB_NAME}_%J.out 
+#SBATCH --error=tumourevo_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/tumourevo_{JOB_NAME}.csv"
+
+output_base_dir={TUMOUREVO_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run /orfeo/cephfs/scratch/cdslab/shared/SCOUT/tumourevo/main.nf --input $input \
+    --tools mobster,viber,pyclone-vi,sparsesignatures,sigprofiler \
+    --genome GRCh38 \
+    --fasta /orfeo/LTS/CDSLab/LT_storage/ref_genomes/Homo_sapiens/GATK/GRCh38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta \
+    --download_cache_vep false \
+    --vep_cache /orfeo/LTS/CDSLab/LT_storage/ref_genomes/VEP \
+    --vep_genome GRCh38 \
+    --vep_cache_version 110 \
+    --vep_species Homo_sapiens \
+    --filter false \
+    --outdir $output_dir_combination -profile singularity -c $config
 """
 
 def get_lot_prefix(seq_type):
@@ -660,13 +696,33 @@ def write_sarek_sample_variant_calling_lines(sarek_file, SPN, seq_type, sample_n
                                                 sample_name+recal_crai_suffix))
     sarek_file.write(f'\n{SPN},{subject_gender},{status},{sample_name},'
                     + f'{cram_filename},{crai_filename}')
+    
+def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
+    variant_caller = combination[0]
+    path = f'{sarek_output_dir}/{coverage}x_{purity}p/variant_calling'
+    
+    if variant_caller == 'mutect2':
+        rel_path = f'{path}/{variant_caller}/{SPN}'
+        name = f'{SPN}.mutect2.filtered.vcf.gz'
+    elif variant_caller == 'strelka':
+        rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
+        name= f'{sample_name}_vs_normal_sample.strelka.somatic_snvs.vcf.gz'
+    elif variant_caller == 'freebayes':
+        rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
+        name = f'{sample_name}_vs_normal_sample.freebayes.vcf.gz'
+    
+    path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
+    segment = f'{sample_name}_vs_normal_sample.segments.txt'
+    purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
+    cn_caller = 'ASCAT'
+    tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
                                      description=('Produces the cohorts of a SPN'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
-                        help = ('A ProCESS phylogenetic forest'))
+                        help = ('A rRACES phylogenetic forest'))
     parser.add_argument('output_dir', type=str,
                         help = ('The output directory'))
     parser.add_argument('-P', '--partition', type=str, required=True,
@@ -695,6 +751,8 @@ if (__name__ == '__main__'):
                         help="Path to nextflow config file")
     parser.add_argument('-SD', '--sarek_output_dir', type=str, default="",
                        help="Path to sarek launching dir")
+    parser.add_argument('-TD', '--tumourevo_output_dir', type=str, default="",
+                       help="Path to tumourevo result path")
     
 
     cohorts = { 'normal': {
@@ -725,21 +783,21 @@ if (__name__ == '__main__'):
 
     curr_dir = os.getcwd()
     if not os.path.exists(gender_filename):
-        with open('ProCESS_subject_gender.R', 'w') as outstream:
+        with open('rRACES_subject_gender.R', 'w') as outstream:
             outstream.write(gender_R_script)
 
-        with open('ProCESS_subject_gender.sh', 'w') as outstream:
+        with open('rRACES_subject_gender.sh', 'w') as outstream:
             outstream.write(gender_shell_script)
 
         cmd = ['sbatch', '--account={}'.format(account),
             '--partition={}'.format(args.partition),
             ('--export=PHYLO_FOREST={},IMAGE={},DIR={}').format(args.phylogenetic_forest,
                                                 args.image_path, curr_dir),
-            './ProCESS_subject_gender.sh']
+            './rRACES_subject_gender.sh']
 
         subprocess.run(cmd)
 
-    with open('ProCESS_seq.R', 'w') as outstream:
+    with open('rRACES_seq.R', 'w') as outstream:
         outstream.write(R_script)
 
     space_per_lot = 3 * cohorts['tumour']['max_coverage'] * 5 / num_of_lots_T
@@ -747,16 +805,21 @@ if (__name__ == '__main__'):
     memory_per_lot = max(memory_per_lot, math.ceil(args.mem_per_node/5))
     shell_script = shell_script.replace('{MEMORY}', str(memory_per_lot))
 
-    with open('ProCESS_seq.sh', 'w') as outstream:
+    with open('rRACES_seq.sh', 'w') as outstream:
         outstream.write(shell_script)
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
     
     sarek_dir = os.path.join(args.output_dir, 'sarek')
+    tumourevo_dir = os.path.join(args.output_dir, 'tumourevo')
+    
     config_file = args.config
     if not os.path.exists(sarek_dir):
         os.mkdir(sarek_dir)
+        
+    if not os.path.exists(tumourevo_dir):
+        os.mkdir(tumourevo_dir)  
         
     for seq_type, cohorts_data in cohorts.items():
         if seq_type == 'normal':
@@ -818,7 +881,7 @@ if (__name__ == '__main__'):
                                                 seq_type, args.node_scratch_directory,
                                                 i, purity, args.image_path, curr_dir),
                         '--output={}/lot_{}.log'.format(log_dir, lot_name),
-                        './ProCESS_seq.sh']
+                        './rRACES_seq.sh']
                     if args.exclude != "":
                         cmd.insert(-1,"--exclude={}".format(args.exclude))
 
@@ -857,10 +920,10 @@ if (__name__ == '__main__'):
                 with open(f'{sarek_dir}/sarek_mapping_normal.sh', 'w') as outstream:
                     outstream.write(sarek_file_launcher)
                 sarek_file_launcher = sarek_file_launcher_orig
-                with open('ProCESS_merge_rds.R', 'w') as outstream:
+                with open('rRACES_merge_rds.R', 'w') as outstream:
                     outstream.write(merging_R_script)
 
-                with open('ProCESS_merge_rds.sh', 'w') as outstream:
+                with open('rRACES_merge_rds.sh', 'w') as outstream:
                     outstream.write(merging_shell_script)
 
                 cmd = ['sbatch', '--account={}'.format(account),
@@ -869,7 +932,7 @@ if (__name__ == '__main__'):
                     ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_lots,args.SPN,
                                                         args.output_dir,purity,seq_type,
                                                         args.image_path, curr_dir),
-                    './ProCESS_merge_rds.sh']
+                    './rRACES_merge_rds.sh']
 
                 subprocess.run(cmd)
                     
@@ -918,15 +981,42 @@ if (__name__ == '__main__'):
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{CONFIG}', str(config_file))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
                     
-                    
                     with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_variant_calling_launcher)
                     sarek_variant_calling_launcher = sarek_file_launcher_orig
                     
-                    with open('ProCESS_merge_rds.R', 'w') as outstream:
+                    #tumourevo sh file and csv file
+                    variant_callers = ['freebayes', 'strelka', 'mutect2']
+                    cn_caller = 'ascat'
+                    combinations = []
+                    for vc in variant_callers:
+                            combinations.append([vc, cn_caller])
+                    
+                    for comb in combinations:
+                        vc = comb[0]
+                        cc = comb[1]
+                        with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.csv', 'w') as tumourevo_file:
+                            tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            for sample_name in sample_names:
+                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
+                    
+                        tumourevo_launcher_orig = tumourevo_launcher
+                        job_id=f'{cohort_cov}x_{purity}p_{vc}_{cc}'
+                        tumourevo_launcher = tumourevo_launcher.replace('{ACCOUNT}', str(account))
+                        tumourevo_launcher = tumourevo_launcher.replace('{JOB_NAME}', str(job_id))
+                        tumourevo_launcher = tumourevo_launcher.replace('{INPUT_DIR}', str(tumourevo_dir))
+                        tumourevo_launcher = tumourevo_launcher.replace('{CONFIG}', str(config_file))
+                        tumourevo_launcher = tumourevo_launcher.replace('{TUMOUREVO_OUT}', str(args.tumourevo_output_dir))
+
+
+                        with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.sh', 'w') as outstream:
+                            outstream.write(tumourevo_launcher)
+                        tumourevo_launcher = tumourevo_launcher_orig
+                    
+                    with open('rRACES_merge_rds.R', 'w') as outstream:
                         outstream.write(merging_R_script)
 
-                    with open('ProCESS_merge_rds.sh', 'w') as outstream:
+                    with open('rRACES_merge_rds.sh', 'w') as outstream:
                         outstream.write(merging_shell_script)
 
                     cmd = ['sbatch', '--account={}'.format(account),
@@ -935,6 +1025,6 @@ if (__name__ == '__main__'):
                         ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_tumour_lots,args.SPN,
                                                             args.output_dir,purity,seq_type,
                                                             args.image_path, curr_dir),
-                        './ProCESS_merge_rds.sh']
+                        './rRACES_merge_rds.sh']
 
                     subprocess.run(cmd)
