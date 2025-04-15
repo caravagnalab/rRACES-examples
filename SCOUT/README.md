@@ -66,7 +66,7 @@ where:
 - `T` is the sampling time (1 = first time point, 2 = second time point, etc.)
 - `N` is the sample number for a given time point T (1 = first sample at T time point, 2 = second sample at T time point)
 
-If you are working on SPN01 and are sampling your third sample at the second time point, you must name it: `SPN01_2_3`
+If you are working on SPN01 and are sampling your third sample at the second time point, you must name it: `SPN01_2.3`
 
 
 ## Required script and files
@@ -79,7 +79,7 @@ These files must be pushed to the ProCESS-examples GitHub repository in the corr
 
 ## Required output files
 The following output files must be saved in the directory:
-`/orfeo/cephfs/scratch/cdslab/shared/ProCESS/SCOUT/SPNX/races` (replace X with the number of your SPN):
+`/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPNX/process` (replace X with the number of your SPN):
 
 - `samples_forest.sff`
 - `phylogenetic_forest.sff`
