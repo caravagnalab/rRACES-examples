@@ -83,7 +83,7 @@ The following output files must be saved in the directory:
 
 - `samples_forest.sff`
 - `phylogenetic_forest.sff`
-- `<sample>_cna_data.rds`
+- `<sample>_cna.rds`
 - snapshot folder
 
 The `<sample>_cna.rds` has to be obtained by running the following command for each sample:
@@ -105,19 +105,17 @@ To run the R scripts, a Singularity image with the latest version of ProCESS mus
 
 ```{sh}
 #!/bin/bash
-#SBATCH --partition=GENOA
+#SBATCH --partition=EPYC
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --mem 100gb
+#SBATCH --mem 50gb
 #SBATCH --time=1:00:00
 #SBATCH --output=ProCESS.out
 #SBATCH --error=ProCESS.err
 
 module load singularity
-
 image='/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif'
 
 singularity exec --bind /orfeo:/orfeo --no-home $image Rscript simulate_tissue.R
-
 singularity exec --bind /orfeo:/orfeo --no-home $image Rscript simulate_mutation.R
 ```
