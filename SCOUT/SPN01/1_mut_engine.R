@@ -8,7 +8,7 @@ outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/races/"
 forest <- load_samples_forest(paste0(outdir,"sample_forest.sff"))
 
 
-setwd("/orfeo/scratch/cdslab/shared/races/GRCh38/")
+setwd("/orfeo/cephfs/scratch/cdslab/shared/ProCESS/GRCh38")
 m_engine <- MutationEngine(setup_code = "GRCh38",tumour_type = "COAD",
                            tumour_study = "US")
 
