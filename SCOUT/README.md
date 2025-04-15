@@ -73,7 +73,7 @@ sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
 ## Sample naming requirments
 To standardize sample names, the following naming convention must be used:
 ```
-SPN{X}_{T}{N}
+SPN{X}_{T}.{N}
 ```
 where:
 - `X` is the SPN number (eg, 01, 02, ...)
