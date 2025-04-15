@@ -114,7 +114,7 @@ To run the R scripts, a Singularity image with the latest version of ProCESS mus
 #SBATCH --error=ProCESS.err
 
 module load singularity
-image='/orfeo/cephfs/scratch/cdslab/shared/SCOUT/races_v4.sif'
+image='/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.0.sif'
 
 singularity exec --bind /orfeo:/orfeo --no-home $image Rscript simulate_tissue.R
 singularity exec --bind /orfeo:/orfeo --no-home $image Rscript simulate_mutation.R
