@@ -3,7 +3,7 @@ library(ProCESS)
 library(dplyr)
 
 dir <- getwd()
-outdir <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/races/"
+outdir <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/process/"
 setwd(outdir)
 seed = 777
 set.seed(seed)
@@ -42,36 +42,45 @@ sim$update_rates("Clone 2", rates = c(growth = 0, death = 100))
 sim$run_up_to_size("Clone 3", 70000)
 
 # Sample A ####
-n_w <- n_h <- 45
-ncells <- as.integer(.99*n_w*n_h)
-bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
-sim$sample_cells("Sample A", bbox$lower_corner, bbox$upper_corner)
+x_center = 470
+y_center = 470
+d = 25
+bbox = list(lower_corner=c(x_center-d,y_center-d), upper_corner=c(x_center+d,y_center+d))
+sim$sample_cells("SPN04_1.1", bbox$lower_corner, bbox$upper_corner)
 t1 <- plot_tissue(sim, num_of_bins = 300)
 
 # Treatment ####
 treatment_start <- sim$get_clock()
 sim$update_rates("Clone 3",rates = c(growth = 0, death=.3))
 v <- sim$var("Clone 3")
+#condition <- v <= 5000
 condition <- v <= 1000
 sim$run_until(condition)
-sim$update_rates("Clone 3",rates = c(growth = .1, death=.08))
-sim$run_up_to_size("Clone 3", 1100)
 treatment_end <- sim$get_clock()
+sim$update_rates("Clone 3",rates = c(growth = .1, death=.08))
 
 # Relapse ####
 sim$update_rates("Clone 3",rates = c(growth = .5, death=.001))
 sim$run_up_to_size("Clone 3", 60000)
 
 # Sample B ####
-n_w <- n_h <- 45
-ncells <- as.integer(.99*n_w*n_h)
-bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
-sim$sample_cells("Sample B", bbox$lower_corner, bbox$upper_corner)
+# n_w <- n_h <- 45
+# ncells <- as.integer(.99*n_w*n_h)
+# bbox <- sim$search_sample(c("Clone 3" = ncells), n_w, n_h)
+# sim$sample_cells("SPN04_2.1", bbox$lower_corner, bbox$upper_corner)
+# t2 <- plot_tissue(sim, num_of_bins = 300)
+x_center = 470
+y_center = 470
+d = 35
+bbox = list(lower_corner=c(x_center-d,y_center-d), upper_corner=c(x_center+d,y_center+d))
+sim$sample_cells("SPN04_1.2", bbox$lower_corner, bbox$upper_corner)
 t2 <- plot_tissue(sim, num_of_bins = 300)
 
 # Save results ####
 # Forest
 forest <- sim$get_samples_forest()
+plot_forest(forest) %>% 
+  annotate_forest(forest, MRCAs = TRUE, samples = TRUE)
 forest$save(paste0(outdir,"sample_forest.sff"))
 
 # Treatment Info
