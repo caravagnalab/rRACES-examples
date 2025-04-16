@@ -123,7 +123,7 @@ To run the R scripts, a Singularity image with the latest version of ProCESS mus
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem 50gb
-#SBATCH --time=1:00:00
+#SBATCH --time=4:00:00
 #SBATCH --output=ProCESS.out
 #SBATCH --error=ProCESS.err
 
