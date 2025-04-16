@@ -86,7 +86,7 @@ path="/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/build_cohor
 # keep them as they are
 phylo="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/races/phylo_forest.sff"
 tmp="/orfeo/cephfs/fast/cdslab/${USER}/tmp_files"
-image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.0.sif"
+image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.sif"
 out="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sequencing"
 sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sarek"
 tumourevo_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/tumourevo"
