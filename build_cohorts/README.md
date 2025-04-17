@@ -73,10 +73,9 @@ To run the script, create a `bash` executable file like the example below.
 #SBATCH --output=seq.out
 #SBATCH --error=seq.err
 
-module load singularity
+module load singularity/3.10.4
 
 # change them accordingly
-partition=EPYC
 user="cdslab"
 spn="SPN01"
 
@@ -84,13 +83,13 @@ spn="SPN01"
 path="/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/build_cohorts"
 
 # keep them as they are
-phylo="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/races/phylo_forest.sff"
+partition=EPYC
+phylo="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/process/phylo_forest.sff"
 tmp="/orfeo/cephfs/fast/cdslab/${USER}/tmp_files"
 image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.0.sif"
 out="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sequencing"
 sarek_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/sarek"
 tumourevo_output_dir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${spn}/tumourevo"
-
 
 $path/benchmark_build_cohort.py -P $partition -A $user -s $tmp -I $image $spn $phylo $out -C $path/orfeo.config -SD $sarek_output_dir -TD $tumourevo_output_dir
 ```
