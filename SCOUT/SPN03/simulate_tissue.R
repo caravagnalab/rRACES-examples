@@ -1,8 +1,9 @@
 library(ProCESS)
 library(dplyr)
+library(ggplot2)
 
 rm(list = ls())
-base <- '/orfeo/cephfs/scratch/area/lvaleriani/races/SPN03_rRACES_report/'
+base <- '/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN03/process/'
 setwd(base)
 unlink("SPN03", recursive = TRUE)
 
@@ -91,7 +92,7 @@ t4 <- plot_tissue(sim) + geom_rect(xmin = bbox_lower_corner[1], xmax = bbox_uppe
                                    fill = NA, color = "black")
 
 forest <- sim$get_samples_forest()
-plt_forest <- plot_forest(forest) %>% 
-  annotate_forest(forest, MRCAs = T, samples = T)
+# plt_forest <- plot_forest(forest) %>% 
+#   annotate_forest(forest, MRCAs = T, samples = T)
 
-forest$save(paste0(base, "sample_forest.sff"))
+forest$save("sample_forest.sff")

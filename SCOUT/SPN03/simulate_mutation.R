@@ -1,7 +1,7 @@
 library(ProCESS)
 library(dplyr)
 
-base="/orfeo/cephfs/scratch/area/lvaleriani/races/SPN03_rRACES_report"
+base="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN03/process/"
 setwd(base)
 
 forest <- load_samples_forest("sample_forest.sff")
@@ -41,7 +41,8 @@ m_engine$add_mutant(mutant_name = "Clone 2",
 m_engine$add_mutant(mutant_name = "Clone 3",
                     passenger_rates = c(SNV = SNV_rate,
                                         CNA = CNA_rate,
-                                        indel = indel_rate)
+                                        indel = indel_rate),
+                    driver = list(SNV("10", 62813404, "A", allele = 0))
 )
 
 # Signatures
