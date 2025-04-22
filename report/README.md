@@ -30,8 +30,8 @@ For every SPN, the following data are necessary to generate the final report and
 
 Provvisory:
 Once you have all your data you should run the `render_report.R` script in Rstudio_server with the `orfeo_rstudio_v1.sif` singularity image.
-You need to change only 2 lines in the script:
-- `  make_option(c("-w", "--workdir"), type="character", default='/orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/report', help="path to ProCESS-examples/report directory"),
-` where to put the path to this directory
-- `make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name")` where you should put your SPN name
+
+You need to change only 2 variables in the script:
+- `workdir  <- "/orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/report"` where to put the path to this directory
+- `spn <- "SPN03"` where you should put your SPN name
 
