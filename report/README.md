@@ -3,7 +3,7 @@
 ## Before running the report
 Before rendering the report you should run a script for creating some dataframe that are required later.
 
-Open `run_map.sh` and modify:
+Open `run_map.sbatch` and modify:
 ```
 # path to tmp_dir
 dir="/orfeo/fast/area/lvaleriani/tmp_nf"
@@ -15,7 +15,7 @@ spn=SPN03
 
 and then 
 ```
-sbatch run_map.sh
+sbatch run_map.sbatch
 ```
 
 
