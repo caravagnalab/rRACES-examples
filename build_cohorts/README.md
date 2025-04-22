@@ -1,3 +1,4 @@
+
 # How to Build The Cohort from The Phylogenetic Forests
 For every SPN, the cohort contains 13 sets of reads: 12 simulate tumor sequencing with coverages of 50X, 100X, 150X, and 200X, and purities of 0.3, 0.6, and 0.9. The last set corresponds to a 30X simulated sequencing of normal samples. The cells in the normal sample share the same mutations, i.e., the germline mutations.
 
@@ -194,95 +195,95 @@ It includes:
 ```
 SCOUT/SPN01/sequencing
 ├── normal
-│   └── purity_1
-│       ├── data                                            # normal data
-│       │   ├── mutations                                   # the normal purity is 1
-│       │   │   ├── seq_results_muts_merged_coverage_30x.rds
-│       │   │   ├── seq_results_muts_SPN01_n0.rds
-│       │   │   └── ...
-│       │   ├── parameters
-│       │   │   ├── seq_results_params_SPN01_n0.rds
-│       │   │   └── ...
-│       │   └── resources
-│       │       ├── seq_results_resources_SPN01_n0.rds
-│       │       └── ...
-│       ├── FASTQ
-│       │   ├── n0_normal_sample.R1.fastq.gz
-│       │   ├── n0_normal_sample.R2.fastq.gz
-│       │   ├── n0_normal_sample.singleton.fastq.gz
-│       │   ├── n0_normal_sample.unpaired.fastq.gz
-│       │   └── ...
-│       ├── log
-│       │   ├── lot_n0.log                                  # lot 00 log 
-│       │   └── ...
-│       ├── n0_BAM.done
-│       ├── n0_final.done
-│       ├── ...
-│       └── TIME                                            # resource usage for bash commands
-│           ├── out_fastq_1_n0_normal_sample
-│           ├── ...
-│           ├── out_samtools_merge_1_n0_chr_Y
-│           ├── ...
-│           ├── out_samtools_split_1_n0.bam
-│           └── ...
+│   └── purity_1
+│       ├── data                                            # normal data
+│       │   ├── mutations                                   # the normal purity is 1
+│       │   │   ├── seq_results_muts_merged_coverage_30x.rds
+│       │   │   ├── seq_results_muts_SPN01_n0.rds
+│       │   │   └── ...
+│       │   ├── parameters
+│       │   │   ├── seq_results_params_SPN01_n0.rds
+│       │   │   └── ...
+│       │   └── resources
+│       │       ├── seq_results_resources_SPN01_n0.rds
+│       │       └── ...
+│       ├── FASTQ
+│       │   ├── n0_normal_sample.R1.fastq.gz
+│       │   ├── n0_normal_sample.R2.fastq.gz
+│       │   ├── n0_normal_sample.singleton.fastq.gz
+│       │   ├── n0_normal_sample.unpaired.fastq.gz
+│       │   └── ...
+│       ├── log
+│       │   ├── lot_n0.log                                  # lot 00 log 
+│       │   └── ...
+│       ├── n0_BAM.done
+│       ├── n0_final.done
+│       ├── ...
+│       └── TIME                                            # resource usage for bash commands
+│           ├── out_fastq_1_n0_normal_sample
+│           ├── ...
+│           ├── out_samtools_merge_1_n0_chr_Y
+│           ├── ...
+│           ├── out_samtools_split_1_n0.bam
+│           └── ...
 ├── sarek
-│   ├── sarek_50x_0.3p.csv                                  # sarek datasheet for tumour coverage 50X and purity 0.3 
-│   ├── ...
-│   ├── sarek_mapping_50x_0.3p.sh                           # .sh file for running sarek mapping for tumour coverage 50X and purity 0.3 
-│   ├── ...
-│   ├── sarek_mapping_normal.sh                             # .sh file for running sarek mapping for normal sample
-│   ├── sarek_normal.csv                                    # sarek datasheet for normal sample
-│   ├── sarek_variant_calling_50x_0.3p.csv                  # sarek datasheet for variant calling for tumour coverage 50X and purity 0.3
-│   ├── ...    
-│   ├── sarek_variant_calling_50x_0.3p.sh                   # .sh file for running sarek variant calling for tumour coverage 50X and purity 0.3 
-│   └── ...
+│   ├── sarek_50x_0.3p.csv                                  # sarek datasheet for tumour coverage 50X and purity 0.3 
+│   ├── ...
+│   ├── sarek_mapping_50x_0.3p.sh                           # .sh file for running sarek mapping for tumour coverage 50X and purity 0.3 
+│   ├── ...
+│   ├── sarek_mapping_normal.sh                             # .sh file for running sarek mapping for normal sample
+│   ├── sarek_normal.csv                                    # sarek datasheet for normal sample
+│   ├── sarek_variant_calling_50x_0.3p.csv                  # sarek datasheet for variant calling for tumour coverage 50X and purity 0.3
+│   ├── ...    
+│   ├── sarek_variant_calling_50x_0.3p.sh                   # .sh file for running sarek variant calling for tumour coverage 50X and purity 0.3 
+│   └── ...
 ├── tumour                                                  # tumour data
-│   ├── purity_0.3                                          # tumour data for purity 0.3
-│   │   ├── data
-│   │   │   ├── mutations                                   # ProCESS sequencing result for lot 00
-│   │   │   │   ├── seq_results_muts_SPN01_t0.rds
-│   │   │   │   └── ...
-│   │   │   │   ├── seq_results_muts_merged_50x_SPN01.rds   # ProCESS merged sequencing results for coverage 50X 
-│   │   │   │   └── ...
-│   │   │   ├── parameters
-│   │   │   │   ├── seq_results_params_SPN01_t0.rds         # ProCESS sequencing parameters for lot 00
-│   │   │   │   └── ...
-│   │   │   └── resources               
-│   │   │       ├── seq_results_resources_SPN01_t0.rds      # resources required for sequencing lot 00
-│   │   │       └── ...
-│   │   ├── FASTQ
-│   │   │   ├── t0_SPN01_1.1.R1.fastq.gz                    # 5' reads of sample "SPN01_1.1" for lot 00
-│   │   │   ├── t0_SPN01_1.1.R2.fastq.gz                    # 3' reads of sample "SPN01_1.1" for lot 00
-│   │   │   ├── t0_SPN01_1.1.singleton.fastq.gz
-│   │   │   ├── t0_SPN01_1.1.unpaired.fastq.gz
-│   │   │   ├── t0_SPN01_1.2.R1.fastq.gz                    # 5' reads of sample "SPN01_1.2" for lot 00
-│   │   │   ├── t0_SPN01_1.2.R2.fastq.gz                    # 3' reads of sample "SPN01_1.2" for lot 00
-│   │   │   ├── t0_SPN01_1.2.singleton.fastq.gz
-│   │   │   ├── t0_SPN01_1.2.unpaired.fastq.gz
-│   │   │   ├── t0_SPN01_1.3.R1.fastq.gz                    # 5' reads of sample "SPN01_1.3" for lot 00
-│   │   │   ├── t0_SPN01_1.3.R2.fastq.gz                    # 3' reads of sample "SPN01_1.3" for lot 00
-│   │   │   ├── t0_SPN01_1.3.singleton.fastq.gz
-│   │   │   ├── t0_SPN01_1.3.unpaired.fastq.gz
-│   │   │   └── ...
-│   │   ├── log
-│   │   │   ├── lot_t0.log                                  # lot 00 log 
-│   │   │   └── ...
-│   │   ├── t0_BAM.done
-│   │   ├── t0_final.done
-│   │   ├── ...
-│   │   └── TIME                                            # resource usage for bash commands
-│   │       ├── out_fastq_0.3_t0_SPN01_1.1                  
-│   │       ├── out_fastq_0.3_t0_SPN01_1.2
-│   │       ├── out_fastq_0.3_t0_SPN01_1.3
-│   │       ├── ...
-│   │       ├── out_samtools_merge_0.3_t0_chr_Y
-│   │       ├── ...
-│   │       ├── out_samtools_split_0.3_t0.bam
-│   │       └── ...
-│   ├── purity_0.6                                           # tumour data for purity 0.6
-│       └── ...
-│   ├── purity_0.9                                           # tumour data for purity 0.9 
-│       └── ...
+│   ├── purity_0.3                                          # tumour data for purity 0.3
+│   │   ├── data
+│   │   │   ├── mutations                                   # ProCESS sequencing result for lot 00
+│   │   │   │   ├── seq_results_muts_SPN01_t0.rds
+│   │   │   │   └── ...
+│   │   │   │   ├── seq_results_muts_merged_50x_SPN01.rds   # ProCESS merged sequencing results for coverage 50X 
+│   │   │   │   └── ...
+│   │   │   ├── parameters
+│   │   │   │   ├── seq_results_params_SPN01_t0.rds         # ProCESS sequencing parameters for lot 00
+│   │   │   │   └── ...
+│   │   │   └── resources               
+│   │   │       ├── seq_results_resources_SPN01_t0.rds      # resources required for sequencing lot 00
+│   │   │       └── ...
+│   │   ├── FASTQ
+│   │   │   ├── t0_SPN01_1.1.R1.fastq.gz                    # 5' reads of sample "SPN01_1.1" for lot 00
+│   │   │   ├── t0_SPN01_1.1.R2.fastq.gz                    # 3' reads of sample "SPN01_1.1" for lot 00
+│   │   │   ├── t0_SPN01_1.1.singleton.fastq.gz
+│   │   │   ├── t0_SPN01_1.1.unpaired.fastq.gz
+│   │   │   ├── t0_SPN01_1.2.R1.fastq.gz                    # 5' reads of sample "SPN01_1.2" for lot 00
+│   │   │   ├── t0_SPN01_1.2.R2.fastq.gz                    # 3' reads of sample "SPN01_1.2" for lot 00
+│   │   │   ├── t0_SPN01_1.2.singleton.fastq.gz
+│   │   │   ├── t0_SPN01_1.2.unpaired.fastq.gz
+│   │   │   ├── t0_SPN01_1.3.R1.fastq.gz                    # 5' reads of sample "SPN01_1.3" for lot 00
+│   │   │   ├── t0_SPN01_1.3.R2.fastq.gz                    # 3' reads of sample "SPN01_1.3" for lot 00
+│   │   │   ├── t0_SPN01_1.3.singleton.fastq.gz
+│   │   │   ├── t0_SPN01_1.3.unpaired.fastq.gz
+│   │   │   └── ...
+│   │   ├── log
+│   │   │   ├── lot_t0.log                                  # lot 00 log 
+│   │   │   └── ...
+│   │   ├── t0_BAM.done
+│   │   ├── t0_final.done
+│   │   ├── ...
+│   │   └── TIME                                            # resource usage for bash commands
+│   │       ├── out_fastq_0.3_t0_SPN01_1.1                  
+│   │       ├── out_fastq_0.3_t0_SPN01_1.2
+│   │       ├── out_fastq_0.3_t0_SPN01_1.3
+│   │       ├── ...
+│   │       ├── out_samtools_merge_0.3_t0_chr_Y
+│   │       ├── ...
+│   │       ├── out_samtools_split_0.3_t0.bam
+│   │       └── ...
+│   ├── purity_0.6                                           # tumour data for purity 0.6
+│       └── ...
+│   ├── purity_0.9                                           # tumour data for purity 0.9 
+│       └── ...
 └── tumourevo
     ├── tumourevo_50x_0.3p_freebayes_ascat.csv              # tumourevo datasheet for freebayes and ascat for tumour coverage 50X and purity 0.3      
     ├── tumourevo_50x_0.3p_freebayes_ascat.sh               # .sh file for running tumourevo for freebayes and ascat for tumour coverage 50X and purity 0.3      
@@ -294,14 +295,61 @@ SCOUT/SPN01/sequencing
 ```
 ## After sequencing
 Once sequencing is terminated, please copy the entire folder in LTS folder using rsync. (ADD MORE DETAILS, LIKE THE CMD, THE OUTPUT FOLDER,
-THE NEED FOR RESOURCE)
+THE NEED FOR RESOURCE).
 
-## Run sarek
-### Sarek Config  
-An example Sarek config file is provided in this directory, but some variables need to be updated as they are related to local paths.
+> [!IMPORTANT]
+> If the sequencing went straight without any issue, please remove the `BAM`
+> folder in the `SCOUT/{SPNID}/sequencing` folder.
+
+
+## Run nextflow pipelines
+
+Once the raw sequencing data have been generated and saved in the correct place,
+it is time to run two nextflow pipelines: nf-core/sarek and nf-core/tumourevo.
+Everyone involved in the SCOUT cohort generation will use the same `nextflow` executable available
+in a shared folder at `/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow`,
+ensuring that the same version is used (nextflow version 24.10.3.5933).
+Both nextflow pipelines will be run with the same configuration file available at [orfeo.config](orfeo.config).
+
+In summary you MUST run:
+
+1. Mapping and preprocessing of raw normal sequencing reads (see [Mapping section](#mapping));
+2. Mapping and preprocessing of raw tumour sequencing reads (see [Mapping section](#mapping)) for each coverage-purity combination;
+3. Variant calling for selected tools starting from mapped reads (see [Variant Calling section](#variant-calling)) for each coverage-purity combination;
+4. nf-core/tumourevo for three different combinations of SNVs caller (strelka, mutect2, freebayes) and CNA caller (ASCAT) and for each coverage-purity combination (see [Tumourevo section](#tumourevo)).
+
+### Before running nextflow pipelines
+
+Before running any nextflow pipeline, you need to configure the `SINGULARITY_TMPDIR` in a proper way, which in this case is specific for Orfeo cluster only. You will need to generate two files, `prolog.sh` and `epilog.sh` in your `/orfeo/cephfs/fast/cdslab/${USER}/` folder. Create and add to the `prolog.sh` the following lines:
+
+```{bash}
+#!/bin/bash
+echo "questo è il prolog $(hostname), jobid ${SLURM_JOB_ID}"
+mkdir -p /tmp/${SLURM_JOB_ID}
+export TMPDIR="/tmp/${SLURM_JOB_ID}"
+export NXF_TMP=$TMPDIR
+export SINGULARITY_TMPDIR=$TMPDIR
+export TMP=$TMPDIR
+```
+
+Create and add to the `epilog.sh` the following lines:
+
+```{bash}
+echo "questo è il epilog $(hostname), jobid ${SLURM_JOB_ID}"
+echo $SINGULARITY_TMPDIR
+echo $TMPDIR
+rm -rf /tmp/${SLURM_JOB_ID}
+```
+
+In this way, all temporary files generated by `singularity` will be saved
+into a job specific folder into the `/tmp` of each node. As soon as each process finishes
+the `/tmp/${SLURM_JOB_ID}` will be removed, in order not to fill the inodes of each node.
 
 ### Mapping  
 As described previously, the `sarek` directory will store both `.csv` and `.sh` files for running Sarek steps.  
+
+> [!IMPORTANT]
+> Before running `nf-core/sarek` install version 3.5.1. 
 
 The first files generated will be `sarek_normal.csv` and `sarek_mapping_normal.sh`. Once these files are created, you can start the mapping of the normal sample by running:  
 
@@ -327,15 +375,18 @@ After the 0.3 purity mapping is completed, the 0.6 and 0.9 purity mappings will 
 
 ### Variant Calling
 Once the mapping for a given purity level is completed, you can start the variant calling. For example, after the mapping of 50X_0.3p is finished, run:
+
 ```{sh}
 sbatch sarek_variant_calling_50x_0.3p.sh 
 ```
+
 Repeat this step for each combination of coverage and purity.
 
 ### Tumourevo
 Once the variant calling for a given purity level is completed, you can start running tumourevo with different tools. For example, after the variant calling of 50X_0.3p with ASCAT and mutect2 is finished, run:
+
 ```{sh}
 sbatch tumourevo_50x_0.3p_mutect2_ascat.sh
 ```
-Repeat this step for each combination of coverage and purity and different somatic mutation callers (mutect2, strelka and freebayes).
 
+Repeat this step for each combination of coverage and purity and different somatic mutation callers (mutect2, strelka and freebayes).
