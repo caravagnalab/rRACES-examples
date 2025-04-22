@@ -20,13 +20,11 @@ htmltools::img(src = "logo.png",
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = '/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races')
 ```
 
 <!-- Libraries  -->
 
 ```{r libraries, echo=FALSE, warning=FALSE, include=FALSE, message = FALSE}
-
 #load libraries
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(ggplot2)
@@ -34,22 +32,18 @@ library(patchwork)
 library(ProCESS)
 library(dplyr)
 library(tidyverse)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/signature_ProCESS.R")
-#source("/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/report/plotting/signature_ProCESS.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/plot_genome_wide.R")
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/dynamics_ProCESS.R",local =T)
-metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
-metadata <- read.table(file = "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_metadata.csv",header = T,sep = "\t")
-img_dir <- "/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/SCOUT_images/"
-#simulation <- ProCESS::recover_simulation("SPN01")
+source("plotting/signature_ProCESS.R")
+source("plotting/plot_genome_wide.R")
+source("plotting/dynamics_ProCESS.R",local =T)
+metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 ```
 
-```{r params, include = FALSE}
-#Load params from YAML if running outside R Markdown
-if (!exists("params")) {
-  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/SCOUT/SPN01/params_50x_0.3p.yml")
-}
-```
+<!-- ```{r params, include = FALSE} -->
+<!-- # #Load params from YAML if running outside R Markdown -->
+<!-- # if (!exists("params")) { -->
+<!-- #   params <- yaml::read_yaml("../SCOUT/SPN01/params_50x_0.3p.yml") -->
+<!-- # } -->
+<!-- ``` -->
 
 <!-- Load the data  -->
 
@@ -92,16 +86,14 @@ This part of the report shows how the tumour growth in time. Muller plot and tim
 
 `r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which sampling is performed.
 
-```{r grouth_dynamics, out.width = '100%',fig.align='center',fig.height=8}
+```{r grouth_dynamics, out.width = '100%',fig.align='center',fig.height=8,echo=FALSE,include=FALSE}
 snapshot_dir <- params$files$sim
-# knitr::opts_knit$set(root.dir = snapshot_dir)
 snapshot_name <- params$spn
-
-# simulation <- ProCESS::recover_simulation("SPN01")
-plot <- plot_tumour_dynamics(paste0(snapshot_dir),sample_forest)
+basedir <- gsub(pattern = snapshot_name,replacement = "",x = snapshot_dir)
+setwd(basedir)
+plot <- plot_tumour_dynamics(snapshot_name,sample_forest)
 plot$plot_dynamics
 ```
-
 ## Sampling
 
 `r params$spn` is sampled at `r info_spn$N_Timepoints` time-point, where a total of `r info_spn$N_Samples` samples are derived. Sampling dynamics is reported in plot below.
@@ -115,7 +107,7 @@ General information about the samples are reported in the table below.
 ```{r test_table}
 library(reactable)
 library(sparkline)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/tables.R", local = knitr::knit_global())
+source("plotting/tables.R", local = knitr::knit_global())
 table <- samples_table(snapshot=params$files$sim,
                        forest=params$files$sample_forest)
 
@@ -219,7 +211,7 @@ alluvial_plot <- alluvial_plot_karyotypes(files_cna)
 alluvial_plot
 ```
 
-Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/heatmap.pdf).
+<!-- Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/heatmap.pdf). -->
 
 ### Genomic Karyotype Composition Across Samples and Subclones  
 
@@ -269,7 +261,7 @@ print(plot_signatures$sign_muller)
 
 Different combinations of purity and coverage have been simulate with parlleilze approach. You can find the report showing the results of specific purity-coverage combinations in the links listed in thefollowing table:
 
-```{r table_with_seq_report, }
+```{r table_with_seq_report}
 purities <- c("03","06","09")
 coverages <- c(50,100,150,200)
 df <- expand.grid(purity = purities, coverage = coverages, stringsAsFactors = FALSE)
@@ -281,3 +273,4 @@ df$path_to_report <- paste0("[report](","Report_Seq_",df$coverage,"x_",df$purity
 reactable(df,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 12,
           bordered = TRUE, striped = TRUE, fullWidth = TRUE)
 ```
+
