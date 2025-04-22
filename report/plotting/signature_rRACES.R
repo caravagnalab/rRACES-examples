@@ -1,11 +1,9 @@
-#setwd('/orfeo/cephfs/scratch/cdslab/shared/races/data_for_report/SPN03/')
-
 library(ProCESS)
 library(ggalluvial)
 library(dplyr)
 library(ggplot2)
 library(patchwork)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
+source("utils.R")
 
 get_colors_for <- function(values, pal_name = "Set3") {
   colors <- NULL
@@ -84,4 +82,3 @@ plot_exposure_evolution <- function(sample_forest,phylo_forest,snapshot){
     plot_layout(nrow = 1, guides = 'collect')
   return(list("sign_tree"=sign_tree,"sign_muller"=sign_muller))
 }
-

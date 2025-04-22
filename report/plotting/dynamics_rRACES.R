@@ -39,6 +39,3 @@ plot_tumour_dynamics <- function(snapshot,sample_forest){
   plot_dynamics <- time_plot + muller + timeseries + plot_layout(nrow = 3)
   return(list("plot_sampling" = plot_sampling, "plot_dynamics" = plot_dynamics))
 }
-
-# saveRDS(file = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/plot_dynamics.rds",
-#         object = plot)

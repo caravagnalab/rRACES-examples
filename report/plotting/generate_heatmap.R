@@ -5,7 +5,7 @@ library(circlize)
 library(ComplexHeatmap)
 library(ProCESS)
 
-source("plotting/utils.R")
+source("utils.R")
 
 plot_ProCESS_heatmap<-function(sample_forest,phylo_forest){
   samples <- phylo_forest$get_samples_info()$name

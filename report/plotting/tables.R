@@ -35,5 +35,3 @@ samples_table <- function(snapshot, forest) {
 
     return(samples_tb)
 }
-
-
