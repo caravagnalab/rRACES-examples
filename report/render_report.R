@@ -1,27 +1,21 @@
 library(dplyr)
-library(optparse)
-
-option_list <- list( 
-  make_option(c("-w", "--workdir"), type="character", default='/orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/report', help="path to ProCESS-examples/report directory"),
-  make_option(c("-i", "--input"), type="character", default='/orfeo/cephfs/scratch/cdslab/shared/SCOUT', help="path to input directory"),
-  make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name"),
-  make_option(c("-o", "--output"), type="character", default='/orfeo/cephfs/scratch/cdslab/shared/SCOUT', help="path to output directory")
-)
 
 COV = c(50, 100, 150, 200)
 PUR = c(0.3, 0.6, 0.9)
 
-opt <- parse_args(OptionParser(option_list=option_list))
-spn <- opt$SPN
+spn <- "SPN03"
+workdir  <- "/orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/report"
+output <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+input <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 
-dir.create(paste0(opt$output,'/', spn, '/report/'), recursive = T, showWarnings = F)
-setwd(opt$workdir)
+dir.create(paste0(output,'/', spn, '/report/'), recursive = T, showWarnings = F)
+setwd(workdir)
 
-sim <- paste0(opt$input, '/', spn, '/process')
-sample_forest <- paste0(opt$input, '/', spn, '/process/sample_forest.sff')
-phylo_forest <- paste0(opt$input, '/', spn, '/process/phylo_forest.sff')
-cna_dir <- paste0(opt$input, '/', spn, '/process/cna_data')
-seq_res <- paste0(opt$input, '/', spn, '/sequencing')
+sim <- paste0(input, '/', spn, '/process')
+sample_forest <- paste0(input, '/', spn, '/process/sample_forest.sff')
+phylo_forest <- paste0(input, '/', spn, '/process/phylo_forest.sff')
+cna_dir <- paste0(input, '/', spn, '/process/cna_data')
+seq_res <- paste0(input, '/', spn, '/sequencing')
 
 
 print('Rendering SPN report')
@@ -37,7 +31,7 @@ params <- list(
 )
 rmarkdown::render("Report.Rmd", 
                   params = params, 
-                  output_file = paste0(opt$output, '/', spn, '/report/', spn, '.html'))
+                  output_file = paste0(output, '/', spn, '/report/', spn, '.html'))
 
 print('Done')
 
@@ -62,7 +56,7 @@ print('Done')
 #     )
 #     rmarkdown::render("Report_Seq.Rmd", 
 #                       params = config, 
-#                       output_file = paste0(param$output,'/', spn, '/report/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
+#                       output_file = paste0(output,'/', spn, '/report/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
 #     print('Done')
 #   }
 # }
