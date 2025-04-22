@@ -87,7 +87,6 @@ If you are working on SPN01 and are sampling your third sample at the second tim
 For each SPN, the following files must be present:
 - `simulate_tissue.R`
 - `simulate_mutation.R`
-- `params.yml` (this file is described in details in `report/README.md`)
 
 These files must be pushed to the ProCESS-examples GitHub repository in the corresponding folder SCOUT/SPNX.
 
