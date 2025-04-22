@@ -3,7 +3,7 @@ library(CNAqc)
 library(dplyr)
 library(ggplot2)
 library(ggalluvial)
-source("utils.R")
+source("plotting/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'
