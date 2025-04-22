@@ -1,0 +1,375 @@
+---
+set_title: !r test_title
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+    toc_depth: 3
+    number_sections: true
+    self_contained: yes
+    css: corp-styles.css
+    highlight: pygments
+---
+
+```{r, echo=FALSE}
+htmltools::img(src = "logo.png",
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; down:20; padding:5px; width:100px; height:auto;')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- Libraries  -->
+
+```{r libraries, echo=FALSE, warning=FALSE, include=FALSE, message = FALSE}
+
+#load libraries
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(ggplot2)
+library(patchwork)
+library(ProCESS)
+library(dplyr)
+library(tidyverse)
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/plot_genome_wide.R")
+metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
+img_dir <- "SCOUT_images/"
+```
+
+```{r params, include = FALSE}
+#Load params from YAML if running outside R Markdown
+if (!exists("params")) {
+  params <- yaml::read_yaml("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/SCOUT/SPN01/params.yml")
+}
+```
+
+<!-- Read params files -->
+
+```{r assign_variables, include = FALSE, echo =TRUE}
+coverage <- params$sequencing$coverage
+purity <- params$sequencing$purity
+seq_dir <- params$files$seq_res
+seq_res_tumour_rds <- paste0(seq_dir,"purity_",purity,"/seq_results_muts_merged_coverage_",coverage,"x.rds")
+seq_res_normal_rds <- paste0(seq_dir,"seq_results_muts_merged_coverage_30x.rds")
+files_cna <- list.files(params$cna_dir, full.names = T)
+sample_names <- sapply(files_cna, function(path) {
+  base_name <- basename(path)
+  sub("_cna.rds$", "", base_name)
+})
+number_of_samples <- length(sample_names)
+```
+
+<!-- Load data -->
+
+```{r load_data, include = FALSE, echo =TRUE}
+phylo_forest <- load_phylogenetic_forest(params$files$phylo_forest)
+sample_forest <- load_samples_forest(params$files$sample_forest)
+seq_res_tumour <- readRDS(seq_res_tumour_rds)
+seq_res_normal <- readRDS(seq_res_normal_rds)
+cna_data <- lapply(list.files(params$cna_dir,recursive = T,full.names = T),readRDS)
+```
+
+# General sequencing information
+
+Tumor samples have been sequenced with a coverage of `r params$sequencing$coverage`x and a simulated purity of `r params$sequencing$purity`. The normal sample is simulated from a real individual at a sequencing depth of 30x.
+
+```{r germline_subject}
+library(reactable)
+library(sparkline)
+
+germ <- phylo_forest$get_germline_subject()
+reactable(germ,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE)
+```
+
+## Normal sample
+
+Normal sample was sequenced with a coverage of 30X. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+
+```{r filter_muts, include = FALSE}
+normal_mutations_filtered <- seq_res_normal %>%
+  filter(normal_sample.VAF < 0.8 & normal_sample.VAF >0.2)
+```
+
+```{r general_sequencing_normal, echo=FALSE,out.width = '80%',fig.align='center',fig.height=2}
+dp <- seq_res_normal %>%
+  seq_to_long() %>%
+  ggplot(aes(x=DP))+
+  ggplot2::geom_histogram()+
+  geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
+    geom_vline(aes(xintercept = 30, color = "Expected Mean")) +
+    my_ggplot_theme() +
+    scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))
+dp
+```
+
+## Tumour samples
+
+<!-- All of the plots will have a fixed size, and the final dim of the figure is given by -->
+<!-- a parameters. -->
+
+```{r calulculate_fig_dims1, echo=TRUE, include=FALSE}
+width_single_plot <- 3
+height_single_plot <- 2
+number_of_samples
+
+### if the plot extends in width 
+fix_n_samples_per_width <- 3
+fig_width <- 3*3
+fig_height <- ceiling(number_of_samples/3)*2
+```
+
+Tumour sample were sequenced with a coverage of `r params$sequencing$coverage`x. The plot shows the depth of sequencing of simulated mutations in the tumour samples. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+
+```{r general_sequencing_tumour, echo=FALSE,out.width = '80%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+dp <- seq_res_tumour %>%
+  seq_to_long() %>%
+  ggplot(aes(x=DP))+
+  ggplot2::geom_histogram()+
+  geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
+    geom_vline(aes(xintercept = params$sequencing$coverage, color = "Expected Mean")) +
+    my_ggplot_theme() +
+    scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))+
+  facet_wrap(~sample_name)
+dp
+```
+
+# Copy number profile
+
+This section show copy number profiles of the sequenced tumour samples, which results by the rate of passenger CNAs and the driver CNA events added during the setup of the `MutationEngine`.
+
+```{r extract_driver,echo=FALSE}
+library(reactable)
+library(sparkline)
+
+drivers_table <- annotate_drivers(phylo_forest)
+reactable(drivers_table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
+          bordered = TRUE, striped = TRUE)
+
+```
+
+## Genome wide plot of Depth Ratio
+
+In Copy Number Alteration (CNA) analysis, the depth ratio is a crucial metric used to infer copy number variations (CNVs) from sequencing data. It represents the relative read depth of a genomic region compared to a reference, helping to determine duplications, deletions, or normal copy states. Driver SNVs and INDELs are highlighted with a text box showing the driver label. Driver copy number events are highlighted with a blue and red shade for deletion and amplification, respectively. If a Whole Genome Doubling Event is present, all the genome wide plot present a grey shade. 
+
+```{r filter_germline,echo=FALSE, include=FALSE}
+## keep only germline mutations for genome-wide plots
+g_seq <- left_join(normal_mutations_filtered,seq_res_tumour,
+                   by =c("chr","chr_pos", "ref", "alt","causes","classes")) %>%
+      as.data.frame()
+```
+
+
+```{r calulculate_fig_dims2, echo=TRUE, include=FALSE}
+width_single_plot <- 8
+height_single_plot <- 3
+
+### if the plot extends in width 
+fix_n_samples_per_height <- 3
+fig_height <- number_of_samples*height_single_plot
+fig_width <- ceiling(number_of_samples/3)*8
+```
+
+```{r depth_ratio, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+dr_plots <- lapply(sample_names, function(s){
+      dr <- plot_DR_n(seq_res = g_seq,sample = s)
+      annotate_plots(plot = dr,drivers = drivers_table,ref="GRCh38")
+})
+wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & 
+  theme(legend.position = "bottom")
+```
+
+## Genome wide plot of B Allele Frequency
+
+B Allele Frequency (BAF) is a key metric used in Copy Number Alteration (CNA) analysis to assess allelic imbalances. It represents the proportion of sequencing reads supporting the B allele (one of the two inherited alleles) at heterozygous single nucleotide polymorphisms (SNPs). Driver SNVs and INDELs are highlighted with a text box showing the driver label. Driver copy number events are highlighted with a blue and red shade for deletion and amplification, respectively. If a Whole Genome Doubling Event is present, all the genome wide plot present a grey shade.
+
+```{r baf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+
+baf_plots <- lapply(sample_names, function(s){
+      baf <- plot_BAF_n(seq_res = g_seq,sample = s)
+      annotate_plots(plot = baf,drivers = drivers_table,ref="GRCh38")
+})
+wrap_plots(baf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & 
+  theme(legend.position = "bottom")
+```
+
+## Genome wide plot of Variant Allele Frequency
+
+The variant allele frequency (VAF) plot presents genome-wide somatic mutations, illustrating the proportion of sequencing reads supporting the mutant allele at each genomic position. Driver SNVs and INDELs are highlighted with a text box showing the driver label. Driver copy number events are highlighted with a blue and red shade for deletion and amplification, respectively. If a Whole Genome Doubling Event is present, all the genome wide plot present a grey shade.
+
+```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+s_seq <- seq_res_tumour %>%
+  filter(classes!="germinal")
+vaf_plots <- lapply(sample_names, function(s){
+      vaf <- plot_VAF_n(seq_res = s_seq,sample = s)
+      annotate_plots(plot = vaf,drivers = drivers_table,ref="GRCh38")
+      
+})
+wrap_plots(vaf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & 
+  theme(legend.position = "bottom")
+```
+
+
+
+## Segmented Data
+
+The plot is a segmented copy number visualization, displaying chromosomal alterations across multiple samples. Each segment represents a genomic region with a specific copy number state, and the colors encode different karyotypes, indicating whether a segment is normal, amplified, deleted, or exhibiting complex structural variations.
+Additionally, the plot incorporates subclonal copy number information by annotating the fraction of cells belonging to a particular clone for each sample.This fraction is reported on the left of each sample plot.
+
+```{r segmented_data, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+segmented_plot <- plot_clone_segments(files_cna)
+segmented_plot
+```
+
+# Somatic mutations
+
+## Clonal e Subclonal Variant Allele Frequency Spectra
+
+## Multivariate VAF across samples
+
+```{r marginals, echo=FALSE,out.width = '100%',fig.align='center',fig.height=10,fig.width=10}
+driver_chroms <- phylo_forest$get_driver_mutations() %>% 
+  filter(type=="SID") %>% 
+  pull(chr)
+driver_table <-annotate_drivers(phylo_forest) %>% 
+  filter(type=="SID") %>% 
+  rename(from=pos)
+data <- seq_res_tumour %>%
+  filter(classes!="germinal") %>% 
+  filter(chr %in% driver_chroms) %>%
+  filter(!stringr::str_detect(causes, 'errors')) %>%
+  ProCESS::seq_to_long()
+
+
+
+data = data %>%
+  # sample_n(50000) %>% 
+  tidyr::pivot_wider(
+    names_from = sample_name,
+    values_from = c(NV, DP, VAF),
+    names_glue = "{sample_name}.{.value}"
+  )
+
+mutations = data %>% as_tibble()%>%
+  mutate(mutation_id=paste(chr, from, to, ref, alt, sep="_"), chr_pos=from)%>%
+  select(mutation_id, everything())
+
+
+mutations = mutations %>%
+  filter(rowSums(select(., ends_with(".NV")) != 0) > 0)
+
+model_df = mutations %>%
+  filter(!stringr::str_detect(causes, 'errors')) %>%
+  select(mutation_id, contains("VAF"))
+
+
+mutation_ids <- unique(model_df$mutation_id)
+
+labels <- c()
+tot_samples <- 3
+for (mut in mutation_ids){
+  muts_data <- model_df %>% 
+    filter(mutation_id==mut) %>% 
+    select(contains("VAF"))
+  no_zeros <- muts_data[which(muts_data != 0)]
+  if (ncol(no_zeros)>1){
+    samples <- gsub(pattern = ".VAF",replacement = "",x = colnames(no_zeros))
+    label <- paste0(samples, collapse = "_")
+    label <- paste0("SHARED_",label)
+    # label <- "SHARED"
+    labels <- c(labels,label)
+  } else if (ncol(no_zeros)==1){
+    samples <- gsub(pattern = ".VAF",replacement = "",x = colnames(no_zeros))
+    # if (no_zeros<=0.1){
+      label <- paste0(samples, collapse = "_")
+      label <- paste0("PRIVATE_",label)
+      labels <- c(labels,label)
+    # } else if (no_zeros>0.1 & no_zeros<0.5){
+    #   label <- paste0(samples, collapse = "_")
+    #   label <- paste0("SUBCLONAL_PRIVATE_",label)
+    #   labels <- c(labels,label)
+    # } else if (no_zeros>=0.5){
+    #   label <- paste0(samples, collapse = "_")
+    #   label <- paste0("CLONAL_PRIVATE_",label)
+    #   labels <- c(labels,label)
+    #   }
+  }
+}
+model_df$label <- labels
+
+mutations <- as.data.frame(mutations)
+mutations_with_cell = mutations %>%
+  filter(classes!="germinal") %>% 
+  filter(!stringr::str_detect(causes, 'errors')) %>% 
+  rowwise() %>%
+  mutate(cell_id=phylo_forest$get_first_occurrences(Mutation(
+    chr, chr_pos, ref, alt
+  ))[[1]]) %>%
+  ungroup()
+
+cells_labels = mutations_with_cell %>% 
+  select(mutation_id, cell_id) %>%
+  left_join(model_df) %>% 
+  group_by(cell_id) %>% 
+  summarise(label_list=list(label)) %>% 
+  rowwise() %>% 
+  mutate(label=names(sort(table(label_list[[1]]), decreasing=TRUE))[1]) %>% 
+  ungroup() %>% 
+  select(-label_list)
+
+final_labels = sample_forest$get_nodes() %>% as_tibble() %>% 
+  left_join(cells_labels)
+palette_labels <- RColorBrewer::brewer.pal(n = length(unique(labels)),name = "Set2")
+names(palette_labels) <-unique(labels)
+pl_sticks <- plot_sticks(sample_forest, labels=final_labels,cls = palette_labels) %>%
+  annotate_forest(sample_forest, samples=TRUE, drivers=TRUE)
+
+pl = patchwork::wrap_plots(pl_sticks, design="AAA\nAAA")
+model_df <- model_df %>% 
+  tidyr::separate(col = "mutation_id",into = c("chr","from","to","ref","alt"),sep = "_",remove = FALSE) %>%
+  mutate(from=as.numeric(from)) %>% 
+  mutate(chr=paste0("chr",chr)) %>% 
+  left_join(driver_table,by = c("chr","from","ref","alt"))
+
+p1 <-model_df %>% 
+  ggplot(aes(x=SPN01_1.1.VAF,y=SPN01_1.2.VAF,color=(label)))+
+  geom_point()+
+  ggrepel::geom_label_repel(aes(label = driver_label),
+                            color = "black",
+                           na.rm = TRUE, box.padding = 0.5
+                           # nudge_y = c(-0.2)
+                          ) + 
+  scale_color_manual(values = palette_labels)+
+  CNAqc:::my_ggplot_theme()+
+  theme(legend.position = "none")
+p1_marg <- ggExtra::ggMarginal(p1, type = "density", groupColour = TRUE, groupFill = TRUE)
+
+p2 <- model_df %>% 
+  ggplot(aes(x=SPN01_1.2.VAF,y=SPN01_1.3.VAF,color=(label)))+
+  geom_point()+
+  ggrepel::geom_label_repel(aes(label = driver_label),
+                            na.rm = TRUE, box.padding = 0.5
+                            # nudge_y = c(-0.2)
+  ) + 
+  scale_color_manual(values = palette_labels)+
+  CNAqc:::my_ggplot_theme()+
+  theme(legend.position = "none")
+p2_marg <- ggExtra::ggMarginal(p2, type = "density", groupColour = TRUE, groupFill = TRUE)
+
+p3 <- model_df %>% 
+  ggplot(aes(x=SPN01_1.1.VAF,y=SPN01_1.3.VAF,color=(label)))+
+  geom_point()+
+  ggrepel::geom_label_repel(aes(label = driver_label),
+                            color = "black",size=2,
+                            na.rm = TRUE, box.padding = 0.5
+                            # nudge_y = c(-0.2)
+  ) + 
+  scale_color_manual(values = palette_labels)+
+  CNAqc:::my_ggplot_theme() +
+  theme(legend.position = "none")
+p3_marg <- ggExtra::ggMarginal(p3, type = "density", groupColour = TRUE, groupFill = TRUE)
+p_my_lab <- patchwork::wrap_plots(list(pl,p1_marg,p2_marg,p3_marg), design="AAAB\nAAAC\nAAAD", guides = "collect")
+p_my_lab

@@ -404,12 +404,13 @@ plot_circle_segments <- function(files_cna){
   
   cn_color <- get_karyotypes_colors(unique(data$CN))
   cn_color[['others']] <- 'gray60'
+  ccf_alpha <- sort(unique(data$ratio))
   plt <- blank_genome()  +
     geom_rect(data = data, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf, fill = factor(CN),  alpha = as.factor(ratio))) +
     geom_segment(data = data, aes(x = begin, xend = end, y = major+offset, yend = major+offset), col = 'red', size = 1) +
     geom_segment(data = data, aes(x = begin, xend = end, y = minor-offset, yend = minor-offset), col = 'steelblue', size = 1) +
     scale_fill_manual('CN', values = cn_color) + 
-    scale_alpha_manual('CCF', values = c(0.3, 0.5, 0.8 )) + 
+    scale_alpha_manual('CCF', values = ccf_alpha) + 
     ggplot2::coord_polar(
       theta = 'x',
       start = 0,
