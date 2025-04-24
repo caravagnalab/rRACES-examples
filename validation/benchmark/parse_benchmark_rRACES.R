@@ -6,7 +6,7 @@ library(lubridate)
 library(optparse)
 
 option_list <- list(
-  make_option(c("-i", "--inputdir"), type="character", default='',
+  make_option(c("-i", "--inputdir"), type="character", default='/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN03/sequencing/',
               help="Input directory"),
   make_option(c("-o", "--outputdir"), type="character", default='',
               help="Output directory")
@@ -160,7 +160,7 @@ time %>%
   plot_annotation(title = 'samtools')
 
 patchwork::wrap_plots(pl_sequencing, pl_samtools, nrow = 2, design = 'A\nB\nB\nB')
-ggsave(filename = paste0(param$outputdir, '/plot_benchmark.png'), dpi = 300, units = 'in', width = 10, height = 12)
+#ggsave(filename = paste0(param$outputdir, '/plot_benchmark.png'), dpi = 300, units = 'in', width = 10, height = 12)
 
 
 # plot total time

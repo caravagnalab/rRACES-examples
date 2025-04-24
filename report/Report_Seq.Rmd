@@ -126,7 +126,6 @@ dp
 ```{r calulculate_fig_dims1, echo=TRUE, include=FALSE}
 width_single_plot <- 3
 height_single_plot <- 2
-number_of_samples <- 3
 
 ### if the plot extends in width
 fix_n_samples_per_width <- 3
@@ -173,7 +172,7 @@ width_single_plot <- 8
 height_single_plot <- 2
 
 ### if the plot extends in width
-fix_n_samples_per_height <- 3
+fix_n_samples_per_height <- number_of_samples
 fig_height <- number_of_samples*height_single_plot
 fig_width <- ceiling(number_of_samples/3)*8
 ```
@@ -183,7 +182,7 @@ dr_plots <- lapply(sample_names, function(s){
       dr <- plot_DR_n(seq_res = g_seq,sample = s)
       annotate_plots(plot = dr,drivers = drivers_table,ref="GRCh38")
 })
-wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & theme(legend.position = "bottom")
+wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3), nrow = fix_n_samples_per_height, guides="collect") & theme(legend.position = "bottom")
 ```
 
 ## Genome wide plot of B Allele Frequency
@@ -311,17 +310,19 @@ sub_clonal_data <- data %>%
 cat('## Chromosomes {.tabset}   \n')
 lapply(1:22, function(ch) {
     cat(sprintf('### Chr %d {.tabset}\n\n', ch))
-
-   seg_subclonal <- sub_clonal_data %>%
-      filter(chr ==  ch) %>%
-      ggplot() +
-      geom_histogram(aes(x = VAF, fill = CN), binwidth = 0.01, position = 'identity') +
-      scale_fill_manual(values = get_karyotypes_colors(karyotypes)) +
-      xlim(-0.01, 1) +
-      ggh4x::facet_nested(sample_name + ratio ~ chr + seg_id, scales = 'free_y', independent = 'y') +
-      CNAqc:::my_ggplot_theme(cex = cex)
-    print(seg_subclonal)
-    cat('\n\n')
+    dd <- sub_clonal_data %>%
+      filter(chr ==  ch)
+    if (nrow(dd) >= 100){
+      seg_subclonal <- dd %>%
+          ggplot() +
+          geom_histogram(aes(x = VAF, fill = CN), binwidth = 0.01, position = 'identity') +
+          scale_fill_manual(values = get_karyotypes_colors(karyotypes)) +
+          xlim(-0.01, 1) +
+          ggh4x::facet_nested(sample_name + ratio ~ chr + seg_id, scales = 'free_y', independent = 'y') +
+          CNAqc:::my_ggplot_theme(cex = cex)
+      print(seg_subclonal)
+      cat('\n\n')
+    }
 })
 ```
 
@@ -409,8 +410,8 @@ final_labels = sample_forest$get_nodes() %>% as_tibble() %>%
 
 ```{r plot_marginals, echo=FALSE,fig.height=8, fig.width=12, out.width = '100%'}
 fix_n_samples_per_height <- 3
-palette_labels <- RColorBrewer::brewer.pal(n = length(unique(model_df$label)),name = "Set2")
-names(palette_labels) <-unique(model_df$label)
+palette_labels <- RColorBrewer::brewer.pal(n = length(unique(model_df$label)), name = "Set3")
+names(palette_labels) <-unique(model_df$label) 
 pl_sticks <- plot_sticks(sample_forest, labels=final_labels,cls = palette_labels) %>%
   annotate_forest(sample_forest, samples=TRUE, drivers=TRUE)
 

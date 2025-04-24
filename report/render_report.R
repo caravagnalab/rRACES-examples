@@ -62,5 +62,3 @@ for (cov in COV){
     print('Done')
   }
 }
-
-
