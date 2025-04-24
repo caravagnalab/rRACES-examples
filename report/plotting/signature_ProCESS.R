@@ -28,7 +28,9 @@ plot_exposure_evolution <- function(sample_forest,phylo_forest,snapshot){
   signature <- phylo_forest$get_exposures()
   palette_signature <-  get_colors_for(signature %>% pull(signature) %>% unique())
   
-  df_sign <- get_exposure_ends(phylo_forest)
+  df_sign <- get_exposure_ends(phylo_forest) %>% 
+    mutate(time = round(time),
+           end_time = round(end_time)-1)
   start_time <- 0
   end_time <- max(df_sign$end_time)
   
@@ -42,8 +44,7 @@ plot_exposure_evolution <- function(sample_forest,phylo_forest,snapshot){
       }
     }
   }
-  #
-  #
+
   sign_1 <- ggplot(df_final, aes(x = factor(time), stratum = signature, alluvium = signature, y = exposure)) +
     geom_alluvium(aes(fill = signature), width = 0.001, curve_type = 'linear', decreasing = NA, knot.pos = 0, alpha = 1) +
     scale_x_discrete(breaks = seq(0, 300, 20)) +

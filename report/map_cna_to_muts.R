@@ -75,6 +75,7 @@ for (sample in names(cna_seg)){
     tmp_cna <- cna_seg[[sample]]
 
     muts_cn[[sample]] <- long_rds_sample[[sample]] %>%
+      filter(classes != "germinal") %>% 
       inner_join(tmp_cna, by = c("chr"), relationship = "many-to-many") %>%
       filter(from >= begin & to <= end)
 }

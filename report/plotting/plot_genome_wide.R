@@ -254,13 +254,13 @@ plot_clone_segments <- function(files_cna){
   return(plt)
 }
 
-plot_stats_sample <- function(params, sample_forest){
+plot_stats_sample <- function(snapshot, sample_forest){
   color_map_clones <- get_clone_map(sample_forest)
   color_map_clones[['Normal']] = 'gray70'
   
   purity <- params$sequencing$purity
-  table <- samples_table(snapshot=params$files$sim,
-                         forest=params$files$sample_forest) %>% 
+  table <- samples_table(snapshot=snapshot,
+                         sample_forest=sample_forest) %>% 
     select(Sample_ID, contains('proportion')) %>% 
     mutate(Normal = 1-purity) 
   

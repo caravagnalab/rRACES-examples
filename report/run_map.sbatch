@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=GENOA
+#SBATCH --partition=THIN
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --array=0-11

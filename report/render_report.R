@@ -35,30 +35,32 @@ rmarkdown::render("Report.Rmd",
 
 print('Done')
 
-# for (cov in COV){
-#   for (pur in PUR){
-#     file_name <- paste0('purity_', pur,'_coverage_', cov, 'x_', spn, '.yml')
-#     print(paste0('Rendering SPN sequencing report: purity ', pur, ', coverage ', cov))
-#     
-#     config <- list(
-#       spn = spn,
-#       sequencing = list(
-#         coverage = as.integer(cov),
-#         purity = pur
-#       ),
-#       files = list(
-#         sim = sim,
-#         sample_forest = sample_forest,
-#         phylo_forest = phylo_forest,
-#         seq_res = seq_res
-#       ),
-#       cna_dir = cna_dir
-#     )
-#     rmarkdown::render("Report_Seq.Rmd", 
-#                       params = config, 
-#                       output_file = paste0(output,'/', spn, '/report/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
-#     print('Done')
-#   }
-# }
-# 
+cov = 50
+pur = 0.9
+for (cov in COV){
+  for (pur in PUR){
+    file_name <- paste0('purity_', pur,'_coverage_', cov, 'x_', spn, '.yml')
+    print(paste0('Rendering SPN sequencing report: purity ', pur, ', coverage ', cov))
+
+    params <- list(
+      spn = spn,
+      sequencing = list(
+        coverage = as.integer(cov),
+        purity = pur
+      ),
+      files = list(
+        sim = sim,
+        sample_forest = sample_forest,
+        phylo_forest = phylo_forest,
+        seq_res = seq_res
+      ),
+      cna_dir = cna_dir
+    )
+    rmarkdown::render("Report_Seq.Rmd",
+                      params = params,
+                      output_file = paste0(output,'/', spn, '/report/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
+    print('Done')
+  }
+}
+
 

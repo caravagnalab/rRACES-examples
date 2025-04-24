@@ -1,9 +1,9 @@
 library(ProCESS)
 library(tidyverse)
 
-samples_table <- function(snapshot, forest) {
+samples_table <- function(snapshot, sample_forest) {
     sim <- ProCESS::recover_simulation(snapshot)
-    sample_forest <- load_samples_forest(forest)
+    #sample_forest <- load_samples_forest(forest)
     info = sim$get_samples_info() ## requested from either the simulation recovery or as saved table
 
     nodes = sample_forest$get_nodes()
