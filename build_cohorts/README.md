@@ -349,7 +349,8 @@ the `/tmp/${SLURM_JOB_ID}` will be removed, in order not to fill the inodes of e
 As described previously, the `sarek` directory will store both `.csv` and `.sh` files for running Sarek steps.  
 
 > [!IMPORTANT]
-> Before running `nf-core/sarek` install version 3.5.1. 
+> Before running `nf-core/sarek` install version 3.5.1 by running:
+> `nextflow pull nf-core/sarek -r 3.5.1`
 
 The first files generated will be `sarek_normal.csv` and `sarek_mapping_normal.sh`. Once these files are created, you can start the mapping of the normal sample by running:  
 
