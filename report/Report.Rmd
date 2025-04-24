@@ -87,7 +87,7 @@ This part of the report shows how the tumour growth in time. Muller plot and tim
 
 `r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which sampling is performed.
 
-```{r growth_dynamics, out.width = '100%',fig.align='center',fig.height=8,echo=FALSE,include=FALSE}
+```{r growth_dynamics, out.width = '100%',fig.align='center',fig.height=8,echo=FALSE,include=TRUE}
 basedir <- params$files$base_dir ## in questo caso come /orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPNID
 setwd(basedir)
 plot <- plot_tumour_dynamics(params$spn,sample_forest)
@@ -98,7 +98,7 @@ plot$plot_dynamics
 
 `r params$spn` is sampled at `r info_spn$N_Timepoints` time-point, where a total of `r info_spn$N_Samples` samples are derived. Sampling dynamics is reported in plot below.
 
-```{r sampling_dynamics, echo=FALSE, out.width = '100%',fig.align='center',fig.height=4, fid.width=10}
+```{r sampling_dynamics, echo=FALSE, out.width = '100%',fig.align='center',fig.height=3, fid.width=10}
 print(plot$plot_sampling)
 ```
 
@@ -108,7 +108,7 @@ General information about the samples are reported in the table below.
 library(reactable)
 library(sparkline)
 table <- samples_table(snapshot=paste0(params$files$base_dir, '/', spn),
-                       forest=params$files$sample_forest)
+                       sample_forest=sample_forest)
 
 reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 10,
           bordered = TRUE, striped = TRUE)
@@ -273,3 +273,10 @@ reactable(df,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 1
           bordered = TRUE, striped = TRUE, fullWidth = TRUE)
 ```
 
+# Session Information
+
+To ensure reproducibility and transparency of the computational analysis, the session information including the R version, loaded packages, and system details is provided below.
+
+```{r session-info, echo=TRUE, include=TRUE}
+sessionInfo()
+```
