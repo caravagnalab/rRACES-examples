@@ -572,7 +572,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 config={CONFIG}
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
-    --outdir $output_dir_combination -profile singularity -c $config --igenomes_base /orfeo/LTS/CDSLab/LT_storage/ref_genomes
+    --outdir $output_dir_combination -profile singularity -c $config
 """
 
 tumourevo_launcher="""#!/bin/bash
@@ -950,8 +950,8 @@ if (__name__ == '__main__'):
                     with open(f'{sarek_dir}/sarek_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file, open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.csv', 'w') as sarek_file_vc:
                         sarek_file.write('patient,sex,status,sample,lane,fastq_1,fastq_2')
                         sarek_file_vc.write('patient,sex,status,sample,cram,crai')
-                        cram_normal = os.path.join(f'{args.sarek_output_dir}', f'normal_sample/preprocessing/recalibrated/normal_sample.cram')
-                        crai_normal = os.path.join(f'{args.sarek_output_dir}', f'normal_sample/preprocessing/recalibrated/normal_sample.cram.crai')
+                        cram_normal = os.path.join(f'{args.sarek_output_dir}', f'normal/preprocessing/recalibrated/normal_sample/normal_sample.recal.cram')
+                        crai_normal = os.path.join(f'{args.sarek_output_dir}', f'normal/preprocessing/recalibrated/normal_sample/normal_sample.recal.cram.crai')
                         sarek_file_vc.write(f'\n{args.SPN},{subject_gender},0,normal_sample,{cram_normal},{crai_normal}')
                         for sample_name in sample_names:
                             write_sarek_sample_lines(sarek_file, args.SPN, 'tumour', sample_name, num_of_tumour_lots, tumour_fastq_dir, zeros, lines)
@@ -983,7 +983,7 @@ if (__name__ == '__main__'):
                     
                     with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_variant_calling_launcher)
-                    sarek_variant_calling_launcher = sarek_file_launcher_orig
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher_orig
                     
                     #tumourevo sh file and csv file
                     variant_callers = ['freebayes', 'strelka', 'mutect2']

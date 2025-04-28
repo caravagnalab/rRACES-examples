@@ -3,7 +3,7 @@ library(CNAqc)
 library(dplyr)
 library(ggplot2)
 library(ggalluvial)
-source("/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/plotting/utils.R")
+source("plotting/utils.R")
 
 #' Plot Depth Ratio (DR) Genome-wide normalize
 #'
@@ -254,13 +254,13 @@ plot_clone_segments <- function(files_cna){
   return(plt)
 }
 
-plot_stats_sample <- function(params, sample_forest){
+plot_stats_sample <- function(snapshot, sample_forest){
   color_map_clones <- get_clone_map(sample_forest)
   color_map_clones[['Normal']] = 'gray70'
   
   purity <- params$sequencing$purity
-  table <- samples_table(snapshot=params$files$sim,
-                         forest=params$files$sample_forest) %>% 
+  table <- samples_table(snapshot=snapshot,
+                         sample_forest=sample_forest) %>% 
     select(Sample_ID, contains('proportion')) %>% 
     mutate(Normal = 1-purity) 
   
@@ -404,12 +404,13 @@ plot_circle_segments <- function(files_cna){
   
   cn_color <- get_karyotypes_colors(unique(data$CN))
   cn_color[['others']] <- 'gray60'
+  ccf_alpha <- sort(unique(data$ratio))
   plt <- blank_genome()  +
     geom_rect(data = data, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf, fill = factor(CN),  alpha = as.factor(ratio))) +
     geom_segment(data = data, aes(x = begin, xend = end, y = major+offset, yend = major+offset), col = 'red', size = 1) +
     geom_segment(data = data, aes(x = begin, xend = end, y = minor-offset, yend = minor-offset), col = 'steelblue', size = 1) +
     scale_fill_manual('CN', values = cn_color) + 
-    scale_alpha_manual('CCF', values = c(0.3, 0.5, 0.8 )) + 
+    scale_alpha_manual('CCF', values = ccf_alpha) + 
     ggplot2::coord_polar(
       theta = 'x',
       start = 0,
