@@ -20,7 +20,7 @@ mu_CNA = 1e-12
  
 # last clone is hypermutant (only for snvs and ids)
 mu_SNV_clone3 = 1e-7
-mu_ID_clone3 = 7e-9
+mu_ID_clone3 = 1e-8
 
 m_engine <- MutationEngine(setup_code = "GRCh38", 
                 tumour_type = "COAD", 
@@ -64,14 +64,23 @@ phylo_forest <- m_engine$place_mutations(sampled_phylogeny,
 
 print("Mutations placed")
 # save the phylogenetic forest in the file "phylo_forest.sff"
-phylo_forest$save(paste(curr_dir, "phylo_forest.sff", sep = "/"))
+phylo_forest$save(paste(curr_dir, "phylo_forest_no_hypermutant.sff", sep = "/"))
 
 print("Forest saved")
 
+Sys.time()
+
+print('saving cna')
+
 dir.create(paste0(curr_dir,"/cna_data"))
 sample_names <- phylo_forest$get_samples_info()[["name"]]
-lapply(sample_names,function(s){
+lapply(sample_names,function(s) {
+
+ Sys.time()	       
+ print(paste0('saving cnas sample ', s))
+
  cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
+ Sys.time()
  saveRDS(file=paste0(curr_dir,"/cna_data/",s,"_cna.rds"),object=cna)
 })
 
