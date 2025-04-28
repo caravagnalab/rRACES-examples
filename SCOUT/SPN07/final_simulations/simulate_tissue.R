@@ -10,7 +10,7 @@ dir <- getwd()
 outdir <- "/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations"
 setwd(outdir)
 set.seed(12345)
-sim <- SpatialSimulation(name = 'SPN07', seed = 12345, save_snapshot=F, width = 1e3, height = 1e3)
+sim <- SpatialSimulation(name = 'SPN07', seed = 12345, save_snapshot=T, width = 1e3, height = 1e3)
 sim$history_delta <- .1
 sim$death_activation_level <- 50
 sim$border_growth_model <- F
