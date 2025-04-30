@@ -42,13 +42,14 @@ RUN apt-get install -y zlib1g-dev
 RUN apt-get install -y make
 
 ## install samtools
-RUN wget 'https://github.com/samtools/samtools/releases/download/1.20/samtools-1.20.tar.bz2'
-RUN tar -xvjf samtools-1.20.tar.bz2
-WORKDIR samtools-1.20/
-RUN sh ./configure --prefix=/home --disable-bz2 --disable-lzma
-RUN make
-RUN make install
-ENV PATH="/home/bin:$PATH"
+RUN apt-get install -y samtools
+##RUN wget 'https://github.com/samtools/samtools/releases/download/1.20/samtools-1.20.tar.bz2'
+##RUN tar -xvjf samtools-1.20.tar.bz2
+##WORKDIR samtools-1.20/
+##RUN sh ./configure --prefix=/home --disable-bz2 --disable-lzma
+##RUN make
+##RUN make install
+##ENV PATH="/home/bin:$PATH"
 
 RUN apt-get update && apt-get install -y time
 CMD ["time", "--version"]
