@@ -23,4 +23,4 @@ fi
 echo "Processing chromosome ${CHROMOSOME}"
 
 # Run R script with the current chromosome
-Rscript process_data.R chr${CHROMOSOME}
+Rscript preprocess.R chr${CHROMOSOME}

@@ -100,17 +100,17 @@ parse_mutect2 = function(vcf, sample_id, filter_mutations = FALSE, chromosome = 
   calls[[sample_id_vcf]]$mutations[,c(COLS_TO_KEEP)]
 }
 
-process_mutect2_results = function(gt_path, chromosome) {
+process_mutect2_results = function(gt_path, chromosome, outdir, vcf_path_mutect) {
   # Extract purity and coverage values from the file path
   spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
   purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
   coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
-  combination <- paste0("purity_", purity, "_coverage_", coverage, "x")
-  folder_path <- file.path(spn, combination, "races")
+  combination = paste0(coverage, "x_", purity, "p")
+  folder_path <- file.path(outdir, spn, combination, "process")
   
   sample_names = list.files(folder_path, full.names = F)
-  folder_path <- file.path(spn, combination, "mutect2")
-  dir.create(folder_path, recursive = T, showWarnings = F)
+  folder_path <- file.path(outdir, spn, combination, "mutect2")
+  dir.create(folder_path, recursive = T, showWarnings = T)
   
   for (sample in sample_names) {
     message(paste0("Parsing sample ", sample, "..."))
@@ -118,7 +118,7 @@ process_mutect2_results = function(gt_path, chromosome) {
     sample_path <- file.path(folder_path, sample)
     dir.create(sample_path, recursive = TRUE, showWarnings = FALSE)
     
-    vcf_path = paste0("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sarek/",coverage,"x_",purity,"p/variant_calling/mutect2/",spn,"/",spn,".mutect2.filtered.vcf.gz")
+    vcf_path = file.path(mutect_vcfs_dir, paste0(spn, ".mutect2.filtered.vcf.gz"))
     vcf = vcfR::read.vcfR(vcf_path)
     
     message(paste0("Parsing ", chromosome, "..."))

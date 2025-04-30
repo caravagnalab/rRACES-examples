@@ -1,14 +1,16 @@
 
-process_seq_results <- function(gt_path, chromosome) {
+
+process_seq_results <- function(gt_path, chromosome, outdir) {
   # Extract purity and coverage values from the file path
   spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
   purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
   coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
   
   # Construct the output folder path
-  combination <- paste0("purity_", purity, "_coverage_", coverage, "x")
-  folder_path <- file.path(spn, combination, "races")
-  dir.create(folder_path, recursive = TRUE, showWarnings = FALSE)
+  combination = paste0(coverage, "x_", purity, "p")
+  #combination <- paste0("purity_", purity, "_coverage_", coverage, "x")
+  folder_path <- file.path(outdir, spn, combination, "process")
+  dir.create(folder_path, recursive = TRUE, showWarnings = TRUE)
   
   # Load sequencing results
   message("Reading sequencing results...")
@@ -25,24 +27,15 @@ process_seq_results <- function(gt_path, chromosome) {
   for (sample in samples) {
     message(paste0("Parsing sample ", sample, "..."))
     sample_path <- file.path(folder_path, sample)
-    dir.create(sample_path, recursive = TRUE, showWarnings = FALSE)
+    dir.create(sample_path, recursive = TRUE, showWarnings = TRUE)
     
     for (mutation in c("SNV", "INDEL")) {
       message(paste0("Parsing ", mutation, " mutations..."))
       mut_path <- file.path(sample_path, mutation)
-      dir.create(mut_path, recursive = TRUE, showWarnings = FALSE)
+      dir.create(mut_path, recursive = TRUE, showWarnings = TRUE)
       
       message(paste0("Parsing chr", chromosome, "..."))
       process_sample_mutation_chromosome(sample, mutation, chromosome, seq_res, mut_path)
-      
-      # # Get unique chromosome list
-      # chromosomes <- unique(seq_res$chr)
-      # 
-      # # Process each chromosome in parallel
-      # parallel::mclapply(chromosomes, function(chromosome) {
-      #   message(paste0("Parsing chr", chromosome, "..."))
-      #   process_sample_mutation_chromosome(sample, mutation, chromosome, seq_res, mut_path)
-      # }, mc.cores = 8)  # Utilize 4 CPU cores
     }
   }
 }
@@ -64,7 +57,7 @@ process_sample_mutation_chromosome <- function(sample, mutation, chromosome, seq
   if ("sample_name" %in% colnames(sample_data)) {
     seq_res_long <- sample_data
   } else {
-    seq_res_long <- rRACES::seq_to_long(sample_data)
+    seq_res_long <- ProCESS::seq_to_long(sample_data)
   }
   
   # Filter and annotate mutation data

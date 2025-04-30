@@ -15,13 +15,17 @@ if (length(args) < 1) {
 # Get the chromosome from the command line arguments
 chromosome <- args[1]
 
-gt_path <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/purity_0.3/seq_results_muts_merged_coverage_50x.rds"
+path_to_seq = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sequencing/tumour/purity_0.3/data/mutations/seq_results_muts_merged_coverage_50x.rds"
+mutect_vcfs_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sarek/50x_0.3p/variant_calling/mutect2/SPN01/"
+freebayes_vcfs_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sarek/50x_0.3p/variant_calling/freebayes/"
+strelka_vcfs_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sarek/50x_0.3p/variant_calling/strelka/"
+outdir = "/orfeo/cephfs/scratch/cdslab/gsantacatterina/rRACES_test/outdir"
 
 message("PARSING RACES")
-process_seq_results(gt_path, chromosome)
+process_seq_results(path_to_seq, chromosome, outdir)
 message("PARSING MUTECT2")
-process_mutect2_results(gt_path, chromosome)
+process_mutect2_results(path_to_seq, chromosome, outdir, mutect_vcfs_dir)
 message("PARSING FREEBAYES")
-process_freebayes_results(gt_path, chromosome, pass_quality = 20, min_vaf = 0.01, max_normal_vaf = 0.02)
+process_freebayes_results(path_to_seq, chromosome, outdir, freebayes_vcfs_dir, pass_quality = 20, min_vaf = 0.01, max_normal_vaf = 0.02)
 message("PARSING STRELKA")
-process_strelka_results(gt_path, chromosome)
+process_strelka_results(path_to_seq, chromosome, outdir, strelka_vcfs_dir)
