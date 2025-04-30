@@ -1,0 +1,10 @@
+spn: "SPN04"
+sequencing:
+  coverage: 50
+  purity: 0.9
+files:
+  sim: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/process/SPN04/"
+  sample_forest: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/process/sample_forest.sff"
+  phylo_forest: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/process/phylo_forest.sff"
+  seq_res: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/sequencing/tumour/purity_0.9/data/mutations/seq_results_muts_merged_coverage_50x.rds"
+cna_dir: "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN04/process/cna_data/"
