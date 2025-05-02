@@ -1,23 +1,39 @@
-
 rm(list = ls())
+options(bitmapType='cairo')
 require(tidyverse)
+library(optparse)
 source("utils/utils.R")
 source("utils/plot_utils.R")
+
+option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN01'),
+                    make_option(c("--purity"), type = "character", default = '0.6'),
+                    make_option(c("--coverage"), type = "character", default = '100x'),
+                    make_option(c("--chr"), type = "numeric", default = '')
+)
+
+opt_parser <- OptionParser(option_list = option_list)
+opt <- parse_args(opt_parser)
+data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
+spn_id = opt$spn_id
+coverage = opt$coverage
+purity = opt$purity
+
 
 # INPUT PARAMATERS ####
 callers = c("mutect2", "strelka", "freebayes")
 chromosomes = paste0("chr", c(1:22, "X", "Y"))
 min_vaf = .02
-purity = 0.3
-coverage = 100
+#purity = 0.3
+#coverage = 100
 mut_types = c("INDEL", "SNV")
 comb = list(PI = purity, COV = coverage)
-spn = "SPN01"
-samples = c("SPN01_1.1", "SPN01_1.2", "SPN01_1.3")
+path_to_cna <- paste0(data_dir,spn_id,"/process/cna_data/")
+samples = gsub(pattern="_cna.rds",replacement="",x=list.files(path_to_cna,pattern="_cna.rds"))
 
-path_to_seq = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/sequencing/tumour/purity_0.3/data/mutations/seq_results_muts_merged_coverage_50x.rds"
-input_dir = "/orfeo/cephfs/scratch/cdslab/gsantacatterina/rRACES_test/outdir"
-outdir = "/orfeo/cephfs/scratch/cdslab/gsantacatterina/rRACES_test/report_dir"
+
+path_to_seq <- paste0(data_dir,spn_id,"/sequencing/tumour/purity_",purity,"/data/mutations/seq_results_muts_merged_coverage_",coverage,"x.rds")
+input_dir <-  paste0(data_dir,spn_id,"/validation/somatic/")
+outdir <- paste0(data_dir,spn_id,"/validation/somatic/report")
 dir.create(outdir, recursive = T)
 
 # Preparing report
@@ -37,11 +53,12 @@ for (caller in callers) {
       combination = paste0(coverage, "x_", purity, "p")
       process_folder_path <- file.path(input_dir, spn, combination, "process", sample_id, mut_type)
       caller_folder_path = file.path(input_dir, spn, combination, caller, sample_id, mut_type)
-      
+       
       # Get ground truth
       gt_res = lapply(chromosomes, function(chromosome){
         #print(chromosome)
         gt_path = file.path(process_folder_path, paste0(chromosome,".rds"))
+	print(gt_path)
         readRDS(gt_path)
       }) %>% do.call("bind_rows", .)
       
@@ -49,6 +66,7 @@ for (caller in callers) {
       caller_res = lapply(chromosomes, function(chromosome) {
         #print(chromosome)
         caller_path = file.path(caller_folder_path, paste0(chromosome,".rds"))
+	print(caller_path)
         readRDS(caller_path)  
       }) %>% do.call("bind_rows", .) %>% 
         dplyr::filter(!is.na(VAF))

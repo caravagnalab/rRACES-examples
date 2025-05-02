@@ -18,7 +18,7 @@ process_seq_results <- function(gt_path, chromosome, outdir) {
   
   # Filter out germinal mutations
   message("Filtering out germinal mutations...")
-  seq_res <- seq_res %>% dplyr::filter(classes != "germinal")
+  seq_res <- seq_res %>% dplyr::filter(!(classes %in% c("pre-neoplastic","germinal")))
   
   # Extract sample names from column headers
   samples <- str_replace(colnames(seq_res)[grepl(".VAF", colnames(seq_res))], ".VAF", "")
@@ -71,33 +71,34 @@ process_sample_mutation_chromosome <- function(sample, mutation, chromosome, seq
   saveRDS(seq_res_long, file_name)
 }
 
-get_seq_res = function(gt_path, sample_id, chromosome, mut_type) {
-  # Read ground truth
-  message("reading seq res")
-  seq_res = readRDS(gt_path)
-  
-  message("keeping desired chromosome")
-  seq_res = seq_res %>% 
-    dplyr::filter(classes!="germinal") %>%
-    dplyr::filter(chr == str_replace(chromosome, "chr", ""))
-  
-  if (mut_type == "SNV") {
-    seq_res = seq_res %>% dplyr::filter(alt %in% c("A", "C", "T", "G"))
-  } else if (mut_type == "INDEL") {
-    seq_res = seq_res %>% dplyr::filter(!(alt %in% c("A", "C", "T", "G")))
-  } else {
-    stop("mut_type parameter not recognized")
-  }
-  
-  if ("sample_name" %in% colnames(seq_res)){
-    seq_res_long <- seq_res
-  } else {
-    seq_res_long <- seq_to_long(seq_res)
-  }
-  
-  message("keeping SNVs and desired sample")
-  seq_res_long %>%
-    dplyr::filter(sample_name==sample_id) %>%
-    dplyr::filter(NV!=0) %>% 
-    dplyr::mutate(mutationID=paste0("chr",chr,":",from,":",ref,":",alt))
-}
+# 
+# get_seq_res = function(gt_path, sample_id, chromosome, mut_type) {
+#   # Read ground truth
+#   message("reading seq res")
+#   seq_res = readRDS(gt_path)
+#   
+#   message("keeping desired chromosome")
+#   seq_res = seq_res %>% 
+#     dplyr::filter(!(classes %in% c("pre-neoplastic","germinal"))) %>% 
+#     dplyr::filter(chr == str_replace(chromosome, "chr", ""))
+#   
+#   if (mut_type == "SNV") {
+#     seq_res = seq_res %>% dplyr::filter(alt %in% c("A", "C", "T", "G"))
+#   } else if (mut_type == "INDEL") {
+#     seq_res = seq_res %>% dplyr::filter(!(alt %in% c("A", "C", "T", "G")))
+#   } else {
+#     stop("mut_type parameter not recognized")
+#   }
+#   
+#   if ("sample_name" %in% colnames(seq_res)){
+#     seq_res_long <- seq_res
+#   } else {
+#     seq_res_long <- seq_to_long(seq_res)
+#   }
+#   
+#   message("keeping SNVs and desired sample")
+#   seq_res_long %>%
+#     dplyr::filter(sample_name==sample_id) %>%
+#     dplyr::filter(NV!=0) %>% 
+#     dplyr::mutate(mutationID=paste0("chr",chr,":",from,":",ref,":",alt))
+# }
