@@ -78,9 +78,6 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   # Create merged dataset for all mutations
   merged_df <- merge_datasets(caller_res, seq_res_long, min_vaf)
   
-  # Plot filter distribution
-  p_filter_dist <- plot_filter_distribution(merged_df)
-  
   # Keep only PASS mutations
   caller_res_pass <- caller_res %>% 
     dplyr::filter(FILTER == "PASS" & !is.na(FILTER))
@@ -103,6 +100,9 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Get color palette for FILTER categories
   colors <- get_colors(merged_df)
+  
+  # Plot filter distribution
+  p_filter_dist <- plot_filter_distribution(merged_df, colors)
   
   # --- All mutations ---
   # Plot scatter plots for all mutations

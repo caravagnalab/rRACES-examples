@@ -9,7 +9,11 @@
 #SBATCH --array=1-24
 
 # Load R module
-module load R
+module load R/4.4.1
+
+SPN='SPN03'
+COV='100'
+PUR='0.6'
 
 # Map SLURM_ARRAY_TASK_ID to chromosome names
 if [[ ${SLURM_ARRAY_TASK_ID} -le 22 ]]; then
@@ -23,4 +27,4 @@ fi
 echo "Processing chromosome ${CHROMOSOME}"
 
 # Run R script with the current chromosome
-Rscript preprocess.R chr${CHROMOSOME}
+Rscript preprocess.R --spn_id $SPN --chr ${CHROMOSOME} --purity $PUR --coverage $COV

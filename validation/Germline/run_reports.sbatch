@@ -11,7 +11,6 @@
 module load R/4.4.1
 
 SPN='SPN03'
-COV='100'
-PUR='0.9'
 
-Rscript prepare_report.R --spn_id $SPN --purity $PUR --coverage $COV
+Rscript compare.R -s $SPN -t 'freebayes' 
+Rscript compare.R -s $SPN -t 'haplotypecaller'

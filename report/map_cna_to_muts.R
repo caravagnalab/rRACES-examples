@@ -6,16 +6,14 @@ option_list <- list(
   make_option(c("-i", "--input"), type="character", default='/orfeo/cephfs/scratch/cdslab/shared/SCOUT', help="path to input data"),
   make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name"),
   make_option(c("-c", "--coverage"), type="character", default='50', help="coverage"),
-  make_option(c("-p", "--purity"), type="character", default='0.6', help="purity"),
-  make_option(c("-o", "--output"), type="character", default='/orfeo/cephfs/scratch/cdslab/shared/SCOUT', help="path to output directory")
-)
+  make_option(c("-p", "--purity"), type="character", default='0.6', help="purity")
+  )
 
 param <- parse_args(OptionParser(option_list=option_list))
 dir <- param$input
 spn <- param$SPN
 coverage <- param$coverage
 purity <- param$purity
-output <- param$output
 out <- paste0(dir, '/', spn, '/process/cna_data') 
 
 
@@ -76,6 +74,7 @@ for (sample in names(cna_seg)){
 
     muts_cn[[sample]] <- long_rds_sample[[sample]] %>%
       filter(classes != "germinal") %>% 
+      filter(classes != "pre-neoplastic") %>% 
       inner_join(tmp_cna, by = c("chr"), relationship = "many-to-many") %>%
       filter(from >= begin & to <= end)
 }

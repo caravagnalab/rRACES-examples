@@ -282,7 +282,7 @@ plot_stats_sample <- function(snapshot, sample_forest){
     theme(axis.ticks = element_blank(), 
           axis.text = element_blank()) + 
     scale_fill_manual('Populations', values = color_map_clones) +
-    facet_wrap(~ Sample_ID)
+    facet_wrap(~ Sample_ID, ncol=3)
   
   return(plt)
 }
@@ -316,7 +316,8 @@ plot_stats_mut <- function(seq_res_tumour, phylo_forest){
     ggplot2::labs(y = "", x = "") +
     scale_fill_manual('Mutations', values = palette) + 
     coord_polar("y", start=0) + 
-    ggh4x::facet_nested(.~sample_name)
+    facet_wrap(.~sample_name, ncol=3)
+    #facet_nested(.~sample_name)
   plt
   
   return(plt)
@@ -406,11 +407,11 @@ plot_circle_segments <- function(files_cna){
   cn_color[['others']] <- 'gray60'
   ccf_alpha <- sort(unique(data$ratio))
   plt <- blank_genome()  +
-    geom_rect(data = data, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf, fill = factor(CN),  alpha = as.factor(ratio))) +
+    geom_rect(data = data, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf, fill = factor(CN))) +  #alpha = as.factor(ratio))) +
     geom_segment(data = data, aes(x = begin, xend = end, y = major+offset, yend = major+offset), col = 'red', size = 1) +
     geom_segment(data = data, aes(x = begin, xend = end, y = minor-offset, yend = minor-offset), col = 'steelblue', size = 1) +
     scale_fill_manual('CN', values = cn_color) + 
-    scale_alpha_manual('CCF', values = ccf_alpha) + 
+    #scale_alpha_manual('CCF', values = ccf_alpha) + 
     ggplot2::coord_polar(
       theta = 'x',
       start = 0,
@@ -424,7 +425,7 @@ plot_circle_segments <- function(files_cna){
       panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank(),
       panel.border = ggplot2::element_rect(size = .3)
-    ) + ggh4x::facet_nested(.~sample + ratio)
+    ) + ggh4x::facet_nested(sample~ratio)
   return(plt)
 }
 

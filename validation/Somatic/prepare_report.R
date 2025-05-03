@@ -5,11 +5,9 @@ library(optparse)
 source("utils/utils.R")
 source("utils/plot_utils.R")
 
-option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN01'),
+option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN03'),
                     make_option(c("--purity"), type = "character", default = '0.6'),
-                    make_option(c("--coverage"), type = "character", default = '100x'),
-                    make_option(c("--chr"), type = "numeric", default = '')
-)
+                    make_option(c("--coverage"), type = "character", default = '100'))
 
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
@@ -58,7 +56,7 @@ for (caller in callers) {
       gt_res = lapply(chromosomes, function(chromosome){
         #print(chromosome)
         gt_path = file.path(process_folder_path, paste0(chromosome,".rds"))
-	print(gt_path)
+	      #print(gt_path)
         readRDS(gt_path)
       }) %>% do.call("bind_rows", .)
       
@@ -66,7 +64,7 @@ for (caller in callers) {
       caller_res = lapply(chromosomes, function(chromosome) {
         #print(chromosome)
         caller_path = file.path(caller_folder_path, paste0(chromosome,".rds"))
-	print(caller_path)
+	      #print(caller_path)
         readRDS(caller_path)  
       }) %>% do.call("bind_rows", .) %>% 
         dplyr::filter(!is.na(VAF))
