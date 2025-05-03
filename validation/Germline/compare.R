@@ -11,7 +11,7 @@ source('utils.R')
 
 option_list <- list( 
   make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name"),
-  make_option(c("-t", "--tool"), type="character", default='freebayes', help="variant calling tool")
+  make_option(c("-t", "--tool"), type="character", default='haplotypecaller', help="variant calling tool")
 )
 
 
@@ -25,7 +25,6 @@ report <- paste0(dir, spn, "/validation/germline/report")
 dir.create(output, recursive = T, showWarnings = F)
 dir.create(report, recursive = T, showWarnings = F)
 
-to_parse = param$parse
 
 vcf_list = lapply(1:22, FUN = function(chr){
   vcf_file = paste0(vcf, '/chr', chr, '_normal_sample.', tool, '.vcf.gz')
@@ -69,7 +68,7 @@ p_baf_races <- process_normal %>%
   labs(x="BAF", 
        y="Count",
        title = "ProCESS BAF",
-       subtitle = paste0(format(nrow(BAF), scientific = T), " mutations"),
+       subtitle = paste0(format(nrow(process_normal), scientific = T), " mutations"),
        caption = paste0('sample ', format(sample_N, scientific = T), ' mutations'),
        color = "") 
 
@@ -83,7 +82,7 @@ p_dp_races <- process_normal %>%
   labs(x="DP", 
        y="Count",
        title = "ProCESS coverage",
-       subtitle = paste0(format(nrow(DP), scientific = T), " mutations; Median coverage = ",median(process_normal$DP)),
+       subtitle = paste0(format(nrow(process_normal), scientific = T), " mutations; Median coverage = ",median(process_normal$DP)),
        caption = paste0('sample ', format(sample_N, scientific = T), ' mutations'),
        color = "") 
 

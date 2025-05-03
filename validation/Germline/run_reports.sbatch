@@ -4,7 +4,7 @@
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
-#SBATCH --output=out/report_prep.log
+#SBATCH --output=report.log
 #SBATCH --job-name=report
 
 # Load R module

@@ -12,6 +12,6 @@ module load R/4.4.1
 
 SPN='SPN03'
 COV='100'
-PUR='0.9'
+PUR='0.6'
 
 Rscript prepare_report.R --spn_id $SPN --purity $PUR --coverage $COV
