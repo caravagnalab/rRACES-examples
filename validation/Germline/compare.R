@@ -5,6 +5,7 @@ library(vcfR)
 library(optparse)
 library(caret)
 library(dplyr)
+library(patchwork)
 
 source('vcf_parser.R')
 source('utils.R')
