@@ -9,11 +9,14 @@
 
 module load R/4.4.1
 
-SPN='SPN03'
+# to modify
+SPN="SPN03"
 COV="100"
 PUR="0.9"
 DIR="/orfeo/cephfs/scratch/area/lvaleriani/ProCESS-examples"
-QUEUE="GENOA"
-ACCOUT="lade"
+
+# to keep as it is
+QUEUE="EPYC"
+ACCOUT="cdlab"
 
 $DIR/validation/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT
