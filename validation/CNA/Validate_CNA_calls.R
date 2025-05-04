@@ -1,5 +1,6 @@
+options(bitmapType='cairo')
 library(dplyr)
-library(rRACES)
+library(ProCESS)
 library(optparse)
 library(tidyr)
 library(ggplot2)
@@ -7,60 +8,64 @@ library(ggplot2)
 
 ############ Parse command-line arguments
 option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN01_1.1'),
-                    make_option(c("--purity"), type = "character", default = '0.6p'),
-                    make_option(c("--coverage"), type = "character", default = '100x'),
+		                make_option(c("--spn_id"), type = "character", default = 'SPN01'),
+                    make_option(c("--purity"), type = "character", default = '0.6'),
+                    make_option(c("--coverage"), type = "character", default = '100'),
                     make_option(c("--purity_th"), type = "character", default = '.1'),
                     make_option(c("--correct_th"), type = "character", default = '.6'))
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
-data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/' # '/Users/aliceantonello/dati_Orfeo/shared/SCOUT/'
+data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
+
 sample_id = opt$sample_id
-patient_id = strsplit(sample_id, '_')[[1]][1]
-coverage = opt$coverage
-purity = opt$purity
+spn_id = opt$spn_id
+coverage = paste0(opt$coverage,"x")
+purity = paste0(opt$purity,"p")
 purity_th = opt$purity_th
 correct_th = opt$correct_th
-
+caller = "ascat"
 ############ Load data
-#### rRACES data
+#### ProCESS data
 # CNA calls
-CNA_races = readRDS(paste0(data_dir,patient_id,'/races/cna_data/',sample_id,'_cna.rds')) %>%
+CNA_races = readRDS(paste0(data_dir,spn_id,'/process/cna_data/',sample_id,'_cna.rds')) %>%
   mutate(chr = paste0('chr',chr)) %>% rename(from=begin,to=end) %>% as_tibble()
 # SNP data from which compute BAF and DR
-mutations = readRDS(paste0(data_dir, '/',patient_id,'/races/purity_',strsplit(purity,'p')[[1]],
-                           '/seq_results_muts_merged_coverage_',coverage,'.rds'))
-normal = readRDS(paste0(data_dir,patient_id,'/races/seq_results_muts_merged_coverage_30x.rds'))
+mutations = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/tumour/purity_',strsplit(purity,'p')[[1]],
+                           '/data/mutations/seq_results_muts_merged_coverage_',coverage,'.rds'))
+normal = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/normal/purity_1',
+                        '/data/mutations/seq_results_muts_merged_coverage_30x.rds'))
 
+message("Reading ProCESS data")
 #### ascat data
 # CNA calls
-CNA_ascat = read.csv(paste0(data_dir, patient_id, '/sarek/', coverage, '_', purity, 
+CNA_ascat = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
                       '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                       sample_id,'_vs_normal_sample.cnvs.txt'), sep='\t') %>%
   mutate(chr = paste0('chr',chr)) %>% rename(from=startpos,to=endpos,major=nMajor,minor=nMinor) %>% as_tibble()
 # BAF and DR ascat
-BAF_file = data.table::fread(paste0(data_dir, patient_id, '/sarek/', coverage, '_', purity, 
+BAF_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
                       '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                       sample_id,'_vs_normal_sample.tumour_tumourBAF.txt'), sep='\t')
 colnames(BAF_file) = c('id', 'Chromosome', 'Position', 'BAF')
-DR_file = data.table::fread(paste0(data_dir, patient_id, '/sarek/', coverage, '_', purity, 
+DR_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
                   '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                   sample_id,'_vs_normal_sample.tumour_tumourLogR.txt'), sep='\t')
 colnames(DR_file) = c('id', 'Chromosome', 'Position', 'LogR')
-purity_ploidy = read.csv(paste0(data_dir, patient_id, '/sarek/', coverage, '_', purity, 
+purity_ploidy = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
                                 '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                                 sample_id,'_vs_normal_sample.purityploidy.txt'), sep='\t')
-
+message("Reading ASCAT data")
 #### CNVkit data
 
 ############ Process data
 chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
 
-### Create joint rRACES SNPs table 
+message("Create joint ProCESS SNPs table")
 snps = mutations %>% filter(classes == "germinal", causes=="")
 random_indeces = sample(snps$chr_pos, as.integer(length(snps$chr_pos)/100), replace = FALSE)
-snps = snps %>% filter(chr_pos %in% random_indeces)
-normal = normal %>% 
-  filter(chr_pos %in% random_indeces)
+snps = snps[which(snps$chr_pos%in% random_indeces),]
+normal = normal[which(snps$chr_pos%in% random_indeces),]
+
 snps = snps %>% mutate(chr=paste0('chr', chr)) %>% 
   ungroup()%>%
   rename(pos=chr_pos) %>% select(c("chr", "pos", 
@@ -85,7 +90,7 @@ joint_table_snps_shifted=lapply(chromosomes, function(c){
 joint_table_snps_shifted = Reduce(rbind,joint_table_snps_shifted)
 
 
-### Create joint table rRACES and ascat calls 
+message("Create joint table ProCESS and ascat calls") 
 joint_segmentation = lapply(chromosomes, function(c){
   print(c)
   CNA_races_chr = CNA_races %>% filter(chr==c)
@@ -164,6 +169,7 @@ joint_segmentation_shifted_longer = joint_segmentation_shifted %>%
 # Compute CNA correctness - percentage of the genome correctly called by ascat 
 # (call is considered correct if the major and minor allele match, event if the match 
 # is reffered only to the most prevalent subclone)
+message("Compute metrics")
 ascat_correctness =  1-( (joint_segmentation_shifted_longer %>% filter(is_match == 'no match') %>% mutate(len=to-from) %>%
   pull(len) %>% unique() %>% sum()) / (joint_segmentation_shifted_longer %>% mutate(len=to-from) %>%
                                          pull(len) %>% unique() %>% sum()))
@@ -274,6 +280,7 @@ inferred_baf_dr = lapply(1:nrow(CNA_ascat), function(r){
 inferred_baf_dr = Reduce(rbind,inferred_baf_dr)
 
 ########### Plots
+message("Generate plots")
 color_by_state = c("TRUE_Major1"=alpha('firebrick', 1),
                    "TRUE_minor1"=alpha('#000080ff',1), 
                    "TRUE_Major2"=alpha('#ff00abb3'),
@@ -311,21 +318,21 @@ baf_races = CNAqc:::blank_genome() +
              aes(x=pos, y=BAF), size = .1, alpha=.5)+
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf), color='red', size=1)+
   #geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf), color='steelblue', size=1)+
-  ylim(0,.5)+ylab('BAF rRACES')
+  ylim(0,.5)+ylab('BAF ProCESS')
 dr_races = CNAqc:::blank_genome() + 
   geom_point(data = joint_table_snps_shifted, 
              aes(x=pos, y=DR), size = .1, alpha=.5)+
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr), color='red', size=1)+
-  ylab('DR rRACES')+ylim(0,4)
+  ylab('DR ProCESS')+ylim(0,4)
 
 baf_comparison=CNAqc:::blank_genome() + 
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf+.005), color ='goldenrod', size=1)+
   geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_baf-.005), color ='slateblue', size=1)+
-  ggtitle('Expected BAF: inferred (ascat) vs simulated (rRACES)')
+  ggtitle('Expected BAF: inferred (ascat) vs simulated (ProCESS)')
 dr_comparison=CNAqc:::blank_genome() + 
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr+.005), color ='goldenrod', size=1)+
   geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_dr-.005), color ='slateblue', size=1)+
-  ggtitle('Expected DR: inferred (ascat) vs simulated (rRACES)')
+  ggtitle('Expected DR: inferred (ascat) vs simulated (ProCESS)')
 
 cna_calls_comparison = CNAqc:::blank_genome() + 
   geom_rect(data = joint_segmentation_shifted_longer,
@@ -365,14 +372,16 @@ report = patchwork::wrap_plots(
       filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow())
 )) 
 
-saving_dir = paste0('/orfeo/scratch/cdslab/antonelloa/rRACES-examples/validation/CNA/', sample_id, '_',coverage,'_',purity,'/')
-dir.create(saving_dir)
-ggsave(report, file = paste0(saving_dir, sample_id,'.png'), height = 15, width = 15)
+#saving_dir = paste0('/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/validation/CNA/', sample_id, '_',coverage,'_',purity,'/')
+outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/',caller,"/", sample_id,"/")
+dir.create(outdir, recursive = T)
+
+ggsave(report, file = paste0(outdir,'report.png'), height = 15, width = 15)
 
 CNA_validation_summmary = list(
   'data' = joint_segmentation,
   'caller results' = CNA_ascat,
-  'rRACES results' = CNA_races,
+  'ProCESS results' = CNA_races,
   'SNPs subset' = joint_table_snps_shifted,
   'proportion of correctly inferred genome'= ascat_correctness,
   'true purity' = purity_number,
@@ -383,14 +392,8 @@ CNA_validation_summmary = list(
   'state' = state
 )
 
-saveRDS(CNA_validation_summmary, file = paste0(saving_dir, sample_id,'.rds'))
-
-
-  
-
-
-
-
+saveRDS(CNA_validation_summmary, file = paste0(outdir, 'metrics.rds'))
+message("Report saved for combination: purity=", purity, ", cov=", coverage)
 
 
 
