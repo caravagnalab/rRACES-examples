@@ -15,26 +15,21 @@ somatic_processing_shell_script="""#!/bin/bash
 #SBATCH --cpus-per-task=1
 #SBATCH --time=4:00:00
 #SBATCH --mem=50GB
-# Load R module
+
 module load R/4.4.1 
-
-
 echo "Processing chromosome ${CHROMOSOME}"
-
-# Run R script with the current chromosome
 
 cd ${DIRECTORY}/validation/Somatic/
 Rscript ${DIRECTORY}/validation/Somatic/preprocess.R --spn_id ${SPN} --purity ${PURITY} --coverage ${COVERAGE} --chr ${CHROMOSOME}
 """
 
-
 somatic_prepare_report_shell_script="""#!/bin/bash
-#SBATCH --mem=20GB
-#SBATCH --time=4:00:00
 #SBATCH --nodes=1
+#SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
+#SBATCH --mem 50g
+#SBATCH --time=4:00:00
 
-# Load R module
 module load R/4.4.1
 
 cd ${DIRECTORY}/validation/Somatic/
@@ -42,13 +37,13 @@ Rscript ${DIRECTORY}/validation/Somatic/prepare_report.R --spn_id ${SPN} --purit
 """
 
 cna_report_shell_script="""#!/bin/bash
-#SBATCH --time=4:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
-#SBATCH --mem-per-cpu=20GB
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem 50g
+#SBATCH --time=4:00:00
 
 module load R/4.4.1
-
 
 Rscript ${DIRECTORY}/validation/CNA/Validate_CNA_calls.R --spn_id ${SPN} --sample_id ${SAMPLE} --purity ${PURITY} --coverage ${COVERAGE}
 """
@@ -60,9 +55,6 @@ germline_processing_shell_script="""#!/bin/bash
 #SBATCH --mem 50g
 #SBATCH --time=4:00:00
 
-# define as your
-
-# keep as it is
 outdir="/orfeo/scratch/cdslab/shared/SCOUT/${SPN}/validation/germline/vcf"
 mkdir -p $outdir
 
@@ -80,14 +72,13 @@ bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_no
 """
 
 germline_report_shell_script="""#!/bin/bash
-#SBATCH --mem=24GB
-#SBATCH --time=4:00:00
 #SBATCH --nodes=1
+#SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
+#SBATCH --mem 50g
+#SBATCH --time=4:00:00
 
-# Load R module
 module load R/4.4.1
-
 
 cd ${DIRECTORY}/validation/Germline/
 Rscript ${DIRECTORY}/validation/Germline/compare.R -s ${SPN} -t 'freebayes' 
