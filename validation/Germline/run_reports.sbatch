@@ -14,3 +14,4 @@ SPN='SPN03'
 
 Rscript compare.R -s $SPN -t 'freebayes' 
 Rscript compare.R -s $SPN -t 'haplotypecaller'
+Rscript compare.R -s $SPN -t 'strelka'

@@ -26,4 +26,8 @@ do
 	tool="freebayes"
 	vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/${cov}x_${purity}p/variant_calling/${tool}/normal_sample/normal_sample.${tool}.vcf.gz"
 	bcftools view ${vcf} --regions chr${i} -o ${outdir}/chr${i}_normal_sample.${tool}.vcf.gz -Oz
+	
+	tool="strelka"
+	vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/${cov}x_${purity}p/variant_calling/${tool}/normal_sample/normal_sample.${tool}.variants.vcf.gz"
+	bcftools view ${vcf} --regions chr${i} -o ${outdir}/chr${i}_normal_sample.${tool}.vcf.gz -Oz
 done

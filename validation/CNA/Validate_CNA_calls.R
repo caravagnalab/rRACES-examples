@@ -7,9 +7,9 @@ library(ggplot2)
 # guardare anche 50x .3
 
 ############ Parse command-line arguments
-option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN01_1.1'),
-		                make_option(c("--spn_id"), type = "character", default = 'SPN01'),
-                    make_option(c("--purity"), type = "character", default = '0.6'),
+option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN03_1.1'),
+		                make_option(c("--spn_id"), type = "character", default = 'SPN03'),
+                    make_option(c("--purity"), type = "character", default = '0.9'),
                     make_option(c("--coverage"), type = "character", default = '100'),
                     make_option(c("--purity_th"), type = "character", default = '.1'),
                     make_option(c("--correct_th"), type = "character", default = '.6'))
@@ -29,11 +29,16 @@ caller = "ascat"
 # CNA calls
 CNA_races = readRDS(paste0(data_dir,spn_id,'/process/cna_data/',sample_id,'_cna.rds')) %>%
   mutate(chr = paste0('chr',chr)) %>% rename(from=begin,to=end) %>% as_tibble()
+
 # SNP data from which compute BAF and DR
 mutations = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/tumour/purity_',strsplit(purity,'p')[[1]],
                            '/data/mutations/seq_results_muts_merged_coverage_',coverage,'.rds'))
-normal = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/normal/purity_1',
-                        '/data/mutations/seq_results_muts_merged_coverage_30x.rds'))
+
+normal = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/normal/purity_1', 
+                        '/data/mutations/seq_results_muts_merged_coverage_30x.rds')) %>% 
+  mutate(chr = paste0('chr', chr)) %>% 
+  mutate(mut_id = paste(chr, chr_pos, ':')) %>% 
+  filter(causes != 'pre-neoplastic')
 
 message("Reading ProCESS data")
 #### ascat data
@@ -61,27 +66,34 @@ message("Reading ASCAT data")
 chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
 
 message("Create joint ProCESS SNPs table")
-snps = mutations %>% filter(classes == "germinal", causes=="")
-random_indeces = sample(snps$chr_pos, as.integer(length(snps$chr_pos)/100), replace = FALSE)
-snps = snps[which(snps$chr_pos%in% random_indeces),]
-normal = normal[which(snps$chr_pos%in% random_indeces),]
+snps = mutations %>% 
+  filter(classes == "germinal", causes=="") %>% 
+  mutate(chr = paste0('chr', chr)) %>% 
+  mutate(mut_id = paste(chr, chr_pos, ':'))
 
-snps = snps %>% mutate(chr=paste0('chr', chr)) %>% 
-  ungroup()%>%
+snps = snps %>% ungroup() %>% sample_n(size = nrow(snps)/100)
+normal = normal %>% ungroup() %>% filter(mut_id %in% snps$mut_id)
+
+snps = snps %>%
   rename(pos=chr_pos) %>% select(c("chr", "pos", 
                                    paste0(sample_id,".occurrences"), 
                                    paste0(sample_id,".coverage"), 
-                                   paste0(sample_id,".VAF")))
-colnames(snps)=c("chr", "pos", "NV", "DP", "VAF")
-normal = normal  %>% mutate(chr=paste0('chr', chr)) %>%
-  ungroup()%>%
-  rename(pos=chr_pos) %>% select(c("chr", "pos","normal_sample.occurrences","normal_sample.coverage", "normal_sample.VAF"))
-colnames(normal)=c("chr", "pos", "NV_normal", "DP_normal", "VAF_normal")
-joint_table_snps = left_join(snps %>% mutate(mut_id = paste0(chr, ':', pos)), normal %>% mutate(mut_id = paste0(chr, ':', pos)), by=c('mut_id', 'chr', 'pos'))
+                                   paste0(sample_id,".VAF")),
+                                  "mut_id")
+colnames(snps)=c("chr", "pos", "NV", "DP", "VAF", "mut_id")
+
+normal = normal  %>% 
+  rename(pos=chr_pos) %>% 
+  select(c("chr", "pos","normal_sample.occurrences","normal_sample.coverage", "normal_sample.VAF", "mut_id"))
+colnames(normal)=c("chr", "pos", "NV_normal", "DP_normal", "VAF_normal", "mut_id")
+
+
+joint_table_snps = left_join(snps, normal, by=c('chr', 'pos'))
 coverage_normal = 30
 coverage_tumor = as.integer(strsplit(coverage, 'x')[[1]])
 norm_const = coverage_normal/coverage_tumor
-joint_table_snps = joint_table_snps %>% rename(BAF = VAF) %>% 
+joint_table_snps = joint_table_snps %>% 
+  rename(BAF = VAF) %>% 
   mutate(DR = (DP/DP_normal)*norm_const)
 joint_table_snps_shifted=lapply(chromosomes, function(c){
   from_c = CNAqc:::get_reference('hg38') %>% filter(chr == c) %>% pull(from)
@@ -193,11 +205,19 @@ BAF_DR_shifted = Reduce(rbind, BAF_DR_shifted)
 
 ## Expected BAF and DR functions
 expected_BAF = function(nA1, nB1, nA2, nB2, purity, ccf){
+  if (is.na(nA2) & is.na(nB2)){
+    nA2 = 0
+    nB2 = 0
+  }
   nom = min(nA1*ccf + nA2*(1-ccf), nB1*ccf + nB2*(1-ccf))*purity + (1-purity)
   den = ((nA1+nB1)*ccf + (nA2+nB2)*(1-ccf))*purity + 2*(1-purity)
   nom/den
 }
 expected_DR = function(nA1, nB1, nA2, nB2, purity, ccf, ploidy){
+  if (is.na(nA2) & is.na(nB2)){
+    nA2 = 0
+    nB2 = 0
+  }
   nom = ((nA1+nB1)*ccf + (nA2+nB2)*(1-ccf))*purity + 2*(1-purity)
   nom/ploidy
 }
@@ -271,7 +291,9 @@ simulated_baf_dr = lapply(1:nrow(transposed_CNAraces), function(r){
   simulated_dr=expected_DR(transposed_CNAraces[r,]$Major1, transposed_CNAraces[r,]$minor1,transposed_CNAraces[r,]$Major2, transposed_CNAraces[r,]$minor2, purity_number, transposed_CNAraces[r,]$ratio, ploidy)
   cbind(transposed_CNAraces[r,], data.frame('simulated_baf'=c(simulated_baf), 'simulated_dr'=c(simulated_dr)))
 })
+
 simulated_baf_dr = Reduce(rbind, simulated_baf_dr)
+
 inferred_baf_dr = lapply(1:nrow(CNA_ascat), function(r){
   inferred_baf=expected_BAF(CNA_ascat[r,]$major, CNA_ascat[r,]$minor, 0, 0, purity_ploidy$AberrantCellFraction, 1)
   inferred_dr=expected_DR(CNA_ascat[r,]$major, CNA_ascat[r,]$minor, 0, 0, purity_ploidy$AberrantCellFraction, 1, purity_ploidy$Ploidy)
@@ -288,70 +310,81 @@ color_by_state = c("TRUE_Major1"=alpha('firebrick', 1),
                    "INFERRED_Major1"=alpha('firebrick', .5),
                    "INFERRED_minor1"=alpha('#000080ff',.5))
 
-fill_by_match = c('complete match'= alpha('forestgreen', .08),
-                  'undetected subclone'= alpha('#bcff5cb3', .08),
+fill_by_match = c('complete match'= alpha('gainsboro', .03),
+                  'undetected subclone'= alpha('goldenrod', .08),
                   'no match' = alpha('indianred', .08)
 )
-fill_by_match_2 = c('complete match'= alpha('forestgreen', .5),
-                    'undetected subclone'= alpha('#bcff5cb3', .5),
-                    'no match' = alpha('indianred', .5)
-)
-guides_colors = fill_by_match_2[joint_segmentation_shifted_longer$is_match %>% unique()]
+# fill_by_match_2 = c('complete match'= alpha('forestgreen', .5),
+#                     'undetected subclone'= alpha('#bcff5cb3', .5),
+#                     'no match' = alpha('indianred', .5)
+# )
+# guides_colors = fill_by_match_2[joint_segmentation_shifted_longer$is_match %>% unique()]
 
 
 #CNAqc:::blank_genome() + geom_point(data=snps, aes(x=chr_pos, y =SPN01_1.1.VAF))
 
 baf_ascat = CNAqc:::blank_genome() + 
-  geom_point(data = BAF_DR_shifted %>% mutate(BAF = ifelse(BAF>.5, 1-BAF,BAF)), 
-             aes(x=Position, y=BAF), size = .2, alpha=1)+
+  geom_point(data = BAF_DR_shifted %>% sample_n(size = n()/2), #%>% mutate(BAF = ifelse(BAF>.5, 1-BAF,BAF))
+             aes(x=Position, y=BAF), size = .1, alpha=1)+
   geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_baf), color='red', size=1)+
   #geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf), color='steelblue', size=1)+
-  ylim(0,.5)+ylab('BAF ascat')
+  #ylim(0,.5)+
+  ylab('BAF ascat')
+
 dr_ascat = CNAqc:::blank_genome() + 
-  geom_point(data = BAF_DR_shifted, 
-             aes(x=Position, y=DR), size = .2, alpha=1)+
+  geom_point(data = BAF_DR_shifted %>% sample_n(size = n()/2), 
+             aes(x=Position, y=DR), size = .1, alpha=1)+
   geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_dr), color='red', size=1)+
-  ylab('DR ascat')+ylim(0,4)
+  ylab('DR ascat')+
+  ylim(0,4)
 
 baf_races = CNAqc:::blank_genome() + 
-  geom_point(data = joint_table_snps_shifted %>% mutate(BAF = ifelse(BAF>.5, 1-BAF,BAF)), 
+  geom_point(data = joint_table_snps_shifted %>% sample_n(size = n()/5), #%>% mutate(BAF = ifelse(BAF>.5, 1-BAF,BAF)) 
              aes(x=pos, y=BAF), size = .1, alpha=.5)+
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf), color='red', size=1)+
   #geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf), color='steelblue', size=1)+
-  ylim(0,.5)+ylab('BAF ProCESS')
+  #ylim(0,.5)+
+  ylab('BAF ProCESS')
+
 dr_races = CNAqc:::blank_genome() + 
-  geom_point(data = joint_table_snps_shifted, 
+  geom_point(data = joint_table_snps_shifted %>% sample_n(size = n()/5), 
              aes(x=pos, y=DR), size = .1, alpha=.5)+
   geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr), color='red', size=1)+
-  ylab('DR ProCESS')+ylim(0,4)
+  ylab('DR ProCESS')+
+  ylim(0,4)
 
 baf_comparison=CNAqc:::blank_genome() + 
-  geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf+.005), color ='goldenrod', size=1)+
-  geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_baf-.005), color ='slateblue', size=1)+
-  ggtitle('Expected BAF: inferred (ascat) vs simulated (ProCESS)')
+  geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_baf+.02), color ='goldenrod', size=1)+
+  geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_baf-.02), color ='steelblue', size=1)+
+  ylab('BAF') + 
+  ggtitle('BAF: inferred (ascat, blue) vs simulated (ProCESS, yellow)')
+
 dr_comparison=CNAqc:::blank_genome() + 
-  geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr+.005), color ='goldenrod', size=1)+
-  geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_dr-.005), color ='slateblue', size=1)+
-  ggtitle('Expected DR: inferred (ascat) vs simulated (ProCESS)')
+  geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr+.07), color ='goldenrod', size=1)+
+  geom_segment(data = inferred_baf_dr, aes(x=from, xend=to, y=inferred_dr-.07), color ='steelblue', size=1)+
+  ylab('DR') + 
+  ylim(0,4) + 
+  ggtitle('DR: inferred (ascat, blue) vs simulated (ProCESS, yellow)')
 
 cna_calls_comparison = CNAqc:::blank_genome() + 
   geom_rect(data = joint_segmentation_shifted_longer,
             aes(xmin=from, xmax=to, ymin=-Inf, ymax=Inf, fill=is_match)) +
   geom_segment(data=joint_segmentation_shifted_longer %>% 
                  mutate(Value = case_when(
-                   Type == 'TRUE_Major1' ~ Value + .1,
-                   Type == 'TRUE_minor1' ~ Value - .1,
-                   Type == 'INFERRED_Major1' ~ Value + .05,
-                   Type == 'INFERRED_minor1' ~ Value - .05,
-                   Type == 'TRUE_Major2' ~ Value + .1,
-                   Type == 'TRUE_minor2' ~ Value - .1
+                   Type == 'TRUE_Major1' ~ Value + .09,
+                   Type == 'TRUE_minor1' ~ Value - .09,
+                   Type == 'INFERRED_Major1' ~ Value + .04,
+                   Type == 'INFERRED_minor1' ~ Value - .04,
+                   Type == 'TRUE_Major2' ~ Value + .09,
+                   Type == 'TRUE_minor2' ~ Value - .09
                    )), 
                aes(x=from, xend=to, y=Value, color=Type), size=1)+
   scale_color_manual(values=color_by_state)+
   scale_fill_manual(values=fill_by_match)+
-  #theme(legend.title=element_blank())+
   labs(fill = "", color = "")+
-  guides(fill = guide_legend(override.aes = list(fill = guides_colors)))
+  guides(fill = guide_legend(override.aes = list(alpha = 1))) +
+  theme(legend.text=element_text(size=12))
+
 
 st = 
   'AAACCC
@@ -374,9 +407,8 @@ report = patchwork::wrap_plots(
 
 #saving_dir = paste0('/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/validation/CNA/', sample_id, '_',coverage,'_',purity,'/')
 outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/',caller,"/", sample_id,"/")
-dir.create(outdir, recursive = T)
-
-ggsave(report, file = paste0(outdir,'report.png'), height = 15, width = 15)
+dir.create(outdir, recursive = T, showWarnings = F)
+ggsave(report, file = paste0(outdir,'report.png'), height = 12, width = 12)
 
 CNA_validation_summmary = list(
   'data' = joint_segmentation,

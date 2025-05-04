@@ -13,8 +13,8 @@ somatic_processing_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --time=1:00:00
-#SBATCH --mem=20GB
+#SBATCH --time=4:00:00
+#SBATCH --mem=50GB
 # Load R module
 module load R/4.4.1 
 
@@ -29,8 +29,8 @@ Rscript ${DIRECTORY}/validation/Somatic/preprocess.R --spn_id ${SPN} --purity ${
 
 
 somatic_prepare_report_shell_script="""#!/bin/bash
-#SBATCH --mem=8GB
-#SBATCH --time=1:00:00
+#SBATCH --mem=20GB
+#SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 
@@ -42,10 +42,10 @@ Rscript ${DIRECTORY}/validation/Somatic/prepare_report.R --spn_id ${SPN} --purit
 """
 
 cna_report_shell_script="""#!/bin/bash
-#SBATCH --time=3:00:00
+#SBATCH --time=4:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
-#SBATCH --mem-per-cpu=1024M
+#SBATCH --mem-per-cpu=20GB
 
 module load R/4.4.1
 
@@ -58,11 +58,9 @@ germline_processing_shell_script="""#!/bin/bash
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem 50g
-#SBATCH --time=2:00:00
+#SBATCH --time=4:00:00
 
 # define as your
-
-
 
 # keep as it is
 outdir="/orfeo/scratch/cdslab/shared/SCOUT/${SPN}/validation/germline/vcf"
@@ -74,6 +72,10 @@ bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_no
         
 tool="freebayes"
 vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/${COVERAGE}x_${PURITY}p/variant_calling/${tool}/normal_sample/normal_sample.${tool}.vcf.gz"
+bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_normal_sample.${tool}.vcf.gz -Oz
+
+tool="strelka"
+vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/${COVERAGE}x_${PURITY}p/variant_calling/${tool}/normal_sample/normal_sample.${tool}.variants.vcf.gz"
 bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_normal_sample.${tool}.vcf.gz -Oz
 """
 
@@ -90,6 +92,7 @@ module load R/4.4.1
 cd ${DIRECTORY}/validation/Germline/
 Rscript ${DIRECTORY}/validation/Germline/compare.R -s ${SPN} -t 'freebayes' 
 Rscript ${DIRECTORY}/validation/Germline/compare.R -s ${SPN} -t 'haplotypecaller'
+Rscript ${DIRECTORY}/validation/Germline/compare.R -s ${SPN} -t 'strelka'
 """
 
 if (__name__ == '__main__'):

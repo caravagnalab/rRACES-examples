@@ -12,7 +12,7 @@ source('utils.R')
 
 option_list <- list( 
   make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name"),
-  make_option(c("-t", "--tool"), type="character", default='haplotypecaller', help="variant calling tool")
+  make_option(c("-t", "--tool"), type="character", default='strelka', help="variant calling tool")
 )
 
 
@@ -36,6 +36,8 @@ vcf_list = lapply(1:22, FUN = function(chr){
       rds_vcf = parse_HaplotypeCaller(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
     } else if (tool == 'freebayes') {
       rds_vcf = parse_freebayes(file = vcf_file, out_file = rds_file, save = T, cutoff = 0.3)[[paste0(spn, '_normal_sample')]]$mutations
+    } else if (tool == 'strelka'){
+      rds_vcf = parse_strelka(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
     }
   } else  {
     rds_vcf = readRDS(rds_file)[[paste0(spn, '_normal_sample')]]$mutations    
@@ -114,12 +116,12 @@ p_dp_caller <- rds_vcf_pass %>%
        color = "") 
 
 merged_df <- merge_datasets(rds_vcf, process_normal)
-p_filter_dist <- plot_filter_distribution(merged_df)
 
 baf_differences <- plot_baf_difference(merged_df)
 cov_differences <- plot_cov_difference(merged_df)
 
 colors <- get_colors(merged_df)
+p_filter_dist <- plot_filter_distribution(merged_df, colors)
 
 #sample_N <- 1e5
 merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
@@ -135,10 +137,10 @@ p_scatter_BAF_all = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.c
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
-p_scatter_BAF_all = ggExtra::ggMarginal(p_scatter_BAF_all, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
-p_scatter_BAF_all = ggplotify::as.ggplot(p_scatter_BAF_all)
+p_scatter_BAF_all = ggExtra::ggMarginal(p_scatter_BAF_all, type = "boxplot", groupFill = TRUE, groupColour = TRUE) 
+p_scatter_BAF_all = ggplotify::as.ggplot(p_scatter_BAF_all) 
 
 p_scatter_DP_all = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.caller") +
   ggtitle("DP correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
@@ -149,7 +151,7 @@ p_scatter_DP_all = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.call
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_DP_all = ggExtra::ggMarginal(
   p_scatter_DP_all,
@@ -180,7 +182,7 @@ p_scatter_BAF_pass = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_BAF_pass = ggExtra::ggMarginal(p_scatter_BAF_pass, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
 p_scatter_BAF_pass = ggplotify::as.ggplot(p_scatter_BAF_pass)
@@ -194,7 +196,7 @@ p_scatter_DP_pass = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.cal
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_DP_pass = ggExtra::ggMarginal(
   p_scatter_DP_pass,
@@ -221,25 +223,15 @@ p_metrics = metrics %>%
   theme_bw() +
   ylim(c(0,1))
 
-design = "
-AABBC
-AABBC
-DDEEF
-DDEEF
-GGHHI
-GGHHI
-LLMMN
-LLMMN
-OOOPP
-"
+design = "AABBEE\nCCDDEE\nFFGGHH\nFFGGHH\nIILLMM\nIILLMM"
 
 title = paste0(spn, ", calls by ", tool)
-report_plot = free(p_dp_races) + free(p_dp_caller) + free(cov_differences) +
-  free(p_baf_races) + free(p_baf_caller) + free(baf_differences) +
+report_plot = free(p_dp_races) + free(p_dp_caller)+
+  free(p_baf_races) + free(p_baf_caller) +
+  free(p_filter_dist) +
   free(p_scatter_DP_all) + free(p_scatter_BAF_all) + free(p_venn_all) +
   free(p_scatter_DP_pass) + free(p_scatter_BAF_pass) + free(p_venn_pass) +
-  free(p_metrics) + free(p_filter_dist) +
   plot_layout(design = design) +
   plot_annotation(title)
 
-ggsave(plot = report_plot, filename = paste0(report,'/', tool, '_normal.png'), dpi = 400, width = 13, height = 20, units = 'in')
+ggsave(plot = report_plot, filename = paste0(report,'/', tool, '_normal.png'), dpi = 100, width = 13, height = 15, units = 'in')

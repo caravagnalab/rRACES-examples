@@ -115,7 +115,8 @@ plot_filter_distribution = function(merged_df, colors, log_scale = TRUE) {
     geom_col() +
     theme_bw() +
     coord_flip() +
-    labs(x = "FILTER", y="count")  
+    labs(x = "FILTER", y="count") + 
+    theme(legend.position='None')
   
   if (log_scale) {
     p <- p +
