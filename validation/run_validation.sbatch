@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=GENOA
+#SBATCH --partition=EPYC
 #SBATCH --mem=24GB
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
