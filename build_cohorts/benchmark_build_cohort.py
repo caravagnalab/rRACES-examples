@@ -209,10 +209,10 @@ if (type == "tumour") {
     seq_tumour <- TRUE
 } else if (type == "normal") {
     seq_tumour <- FALSE
-    with_preneoplastic <- FALSE
-} else if (type == "normal_with_preneoplastic") {
-    seq_tumour <- FALSE
     with_preneoplastic <- TRUE
+} else if (type == "normal_without_preneoplastic") {
+    seq_tumour <- FALSE
+    with_preneoplastic <- FALSE
 } else {
     stop(paste("The paramter <type> must be among",
                "\\"tumour\\", \\"normal\\", and
