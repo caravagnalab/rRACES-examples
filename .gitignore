@@ -23,3 +23,6 @@
 **Report_files**
 **.pdf**
 ._*
+*wget-log
+*ProCESS_merge_rds.R
+*ProCESS_seq.R
