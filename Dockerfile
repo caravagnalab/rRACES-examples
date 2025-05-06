@@ -1,8 +1,8 @@
-FROM ubuntu:noble
+FROM --platform=$BUILDPLATFORM ubuntu:noble
 
 RUN apt-get update && apt-get -y upgrade
 
-RUN apt-get install -y build-essential cmake git \
+RUN apt-get install -y build-essential cmake git time \
        ssh g++ r-cran-devtools samtools neofetch locales
 
 RUN apt --purge autoremove && apt-get clean
@@ -27,3 +27,4 @@ WORKDIR /home/$USER_ID
 ENV HOME=/home/$USER_ID
 
 CMD ["neofetch"]
+CMD ["time", "--version"]
