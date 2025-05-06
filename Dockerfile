@@ -17,7 +17,7 @@ RUN R -e 'install.packages("optparse")'
 RUN R -e 'install.packages("ggrepel")'
 RUN R -e 'install.packages("ggpubr")'
 RUN R -e 'install.packages("bench")'
-RUN R -e 'devtools::install_github("caravagnalab/ProCESS@1.0.1")'
+RUN R -e 'devtools::install_github("caravagnalab/ProCESS")'
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG USER_ID=ProCESS
