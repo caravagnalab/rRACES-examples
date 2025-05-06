@@ -426,8 +426,7 @@ if (!file.exists(BAM_done_filename) || !file.exists(BAM_file)) {
     
     # Simulate sequencing ####
     basic_seq <- BasicIlluminaSequencer(1e-3) ## only for testing purpose
-    #chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
-    chromosomes <- c("22")
+    chromosomes <- phylo_forest$get_absolute_chromosome_positions()$chr
     cat("parallel::mclapply(",chromosomes,",simulate_seq_resources,mc.cores = 4,tumour = ",
     seq_tumour,",ref_path=",ref_path,",coverage = ",coverage,",purity=",purity,")")
     
