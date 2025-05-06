@@ -4,7 +4,7 @@ library(dplyr)
 set.seed(06117)
 
 
-outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/races/"
+outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN01/process/"
 forest <- load_samples_forest(paste0(outdir,"sample_forest.sff"))
 
 
@@ -15,19 +15,20 @@ m_engine <- MutationEngine(setup_code = "GRCh38",tumour_type = "COAD",
 
 mu_SNV = 1e-8
 mu_CNA = 1e-10
+mu_INDELs = 1e-9
 ##112707518-112846239 
 CNA_Clone2 = ProCESS::CNA(type = "D", "5",
                          chr_pos = 107707518, len = 2e7,allele = 0)
 
 ## Drivers for the tumors
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = mu_SNV, CNA = 0),drivers = list(list("APC R1450*", allele = 1)))
-m_engine$add_mutant(mutant_name = "Clone 2",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list(CNA_Clone2))
+                    passenger_rates = c(SNV = mu_SNV, CNA = 0,indel=mu_INDELs),drivers = list(list("APC R1450*", allele = 1)))
+m_engine$add_mutant(mutant_name = "Clone 2",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA,indel=mu_INDELs),drivers = list(CNA_Clone2))
 mu_SNV = 1e-8
 mu_CNA = 1e-13
-m_engine$add_mutant(mutant_name = "Clone 3",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list("TP53 R175H"))
+m_engine$add_mutant(mutant_name = "Clone 3",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA,indel=mu_INDELs),drivers = list("TP53 R175H"))
 
-m_engine$add_mutant(mutant_name = "Clone 4",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA),drivers = list(WGD))
+m_engine$add_mutant(mutant_name = "Clone 4",passenger_rates = c(SNV = mu_SNV, CNA = mu_CNA,indel=mu_INDELs),drivers = list(WGD))
 
 
 # Mutational signatures
@@ -36,9 +37,9 @@ m_engine$add_exposure(time = 0,coefficients = c(SBS1 = 0.20,SBS5 = 0.35,
 print("Mutation engine created")
 phylo_forest <- m_engine$place_mutations(forest, num_of_preneoplatic_SNVs=800, num_of_preneoplatic_indels=200)
 phylo_forest$save(paste0(outdir,"phylo_forest.sff"))
-dir.create(paste0(outdir,"cna_data_v4"))
+dir.create(paste0(outdir,"cna_data"))
 sample_names <- phylo_forest$get_samples_info()[["name"]]
 lapply(sample_names,function(s){
     cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
-    saveRDS(file=paste0(outdir,"cna_data_v4/",s,"_cna.rds"),object=cna)
+    saveRDS(file=paste0(outdir,"cna_data/",s,"_cna.rds"),object=cna)
 })

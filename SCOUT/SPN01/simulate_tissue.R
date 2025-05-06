@@ -4,7 +4,7 @@ library(dplyr)
 
 
 dir <- getwd()
-outdir <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/races/"
+outdir <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN01/process/"
 setwd(outdir)
 set.seed(06117)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
