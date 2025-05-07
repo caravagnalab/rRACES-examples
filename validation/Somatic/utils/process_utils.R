@@ -18,7 +18,7 @@ process_seq_results <- function(gt_path, chromosome, outdir) {
   
   # Filter out germinal mutations
   message("Filtering out germinal mutations...")
-  seq_res <- seq_res %>% dplyr::filter(!(classes %in% c("pre-neoplastic","germinal")))
+  seq_res <- seq_res %>% dplyr::filter(classes!="germinal")
   
   # Extract sample names from column headers
   samples <- str_replace(colnames(seq_res)[grepl(".VAF", colnames(seq_res))], ".VAF", "")
@@ -79,7 +79,7 @@ process_sample_mutation_chromosome <- function(sample, mutation, chromosome, seq
 #   
 #   message("keeping desired chromosome")
 #   seq_res = seq_res %>% 
-#     dplyr::filter(!(classes %in% c("pre-neoplastic","germinal"))) %>% 
+#     dplyr::filter(classes!="germinal") %>% 
 #     dplyr::filter(chr == str_replace(chromosome, "chr", ""))
 #   
 #   if (mut_type == "SNV") {
