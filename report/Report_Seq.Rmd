@@ -45,10 +45,11 @@ img_dir <- "SCOUT_images/"
 
 ```{r assign_variables, include = FALSE, echo =TRUE}
 coverage <- params$sequencing$coverage
+normal_coverage <- params$sequencing$normal_coverage
 purity <- params$sequencing$purity
 seq_dir <- params$files$seq_res
 seq_res_tumour_rds <- paste0(seq_dir,"/tumour/purity_",purity,"/data/mutations/seq_results_muts_merged_coverage_",coverage,"x.rds")
-seq_res_normal_rds <- paste0(seq_dir,"/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_30x.rds")
+seq_res_normal_rds <- paste0(seq_dir,"/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_",normal_coverage,"x.rds")
 files_cna <- list.files(params$cna_dir, full.names = T, pattern = '_cna.rds')
 sample_names <- sapply(files_cna, function(path) {
   base_name <- basename(path)
@@ -95,7 +96,7 @@ plot_stats_sample(paste0(params$files$sim, '/', spn), sample_forest)
 
 ### Normal sample
 
-Normal sample was sequenced with a coverage of 30X. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+Normal sample was sequenced with a coverage of `r params$sequencing$normal_coverage`x. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
 
 ```{r filter_muts, include = FALSE}
 normal_mutations_filtered <- seq_res_normal %>%
@@ -108,7 +109,7 @@ dp <- seq_res_normal %>%
   ggplot(aes(x=DP))+
   ggplot2::geom_histogram()+
   geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
-    geom_vline(aes(xintercept = 30, color = "Expected Mean")) +
+    geom_vline(aes(xintercept = normal_coverage, color = "Expected Mean")) +
     my_ggplot_theme() +
     scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))
 dp

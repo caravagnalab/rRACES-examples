@@ -2,7 +2,7 @@ library(dplyr)
 
 COV = c(50, 100, 150, 200)
 PUR = c(0.3, 0.6, 0.9)
-
+NORMAL_COV = 30
 ########################
 # change with SPN name
 spn <- "SPN03"
@@ -40,7 +40,8 @@ for (cov in COV){
       spn = paste0(input, '/', spn, '/process'),
       sequencing = list(
         coverage = as.integer(cov),
-        purity = pur
+        purity = pur,
+        normal_coverage = as_integer(NORMAL_COV)
       ),
       files = list(
         sim =  paste0(input, '/', spn, '/process'),
