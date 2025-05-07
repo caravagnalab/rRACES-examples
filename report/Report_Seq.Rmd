@@ -192,8 +192,7 @@ wrap_plots(baf_plots,ncol=1, guides="collect") & theme(legend.position = "bottom
 
 ```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=8}
 s_seq <- seq_res_tumour %>%
-  filter(classes!="germinal") %>%
-  filter(classes != 'pre-neoplastic')
+  filter(classes!="germinal")
 
 vaf_plots <- lapply(sample_names, function(s){
       vaf <- plot_VAF_n(seq_res = s_seq,sample = s)
@@ -273,8 +272,7 @@ In the following plot, we show the VAF per chromosome where only clonal segment 
 ```{r clonal_cn_vaf, echo=FALSE,out.width = '100%',fig.align='center', fig.height=20}
 clonal <- data %>%
   filter(VAF > 0.1) %>%
-  filter(CN_type == 'clonal') %>%
-  filter(classes!= 'pre-neoplastic')
+  filter(CN_type == 'clonal')
 
 chromosomes <- seq_along(1:22)
 split_list <- split(chromosomes, ceiling(seq_along(chromosomes) / 4))
@@ -383,7 +381,6 @@ mutations <- as.data.frame(mutations)
 
 mutations_with_cell = mutations %>%
   filter(classes!="germinal") %>%
-  filter(classes!="pre-neoplastic") %>%
   filter(!stringr::str_detect(causes, 'errors')) %>%
   rowwise() %>%
   mutate(cell_id=phylo_forest$get_first_occurrences(Mutation(
