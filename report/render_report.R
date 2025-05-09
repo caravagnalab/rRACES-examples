@@ -41,7 +41,7 @@ for (cov in COV){
       sequencing = list(
         coverage = as.integer(cov),
         purity = pur,
-        normal_coverage = as_integer(NORMAL_COV)
+        normal_coverage = as.integer(NORMAL_COV)
       ),
       files = list(
         sim =  paste0(input, '/', spn, '/process'),
