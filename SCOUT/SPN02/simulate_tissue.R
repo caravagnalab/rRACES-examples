@@ -76,11 +76,19 @@ tissue_clone3 = plot_tissue(sim)
 # SAMPLING
 # two samples, at the same time and in two different places
 
-bboxA_lower_corner <- c(460, 290)
-bboxA_upper_corner <- c(500, 330)
+bboxA_lower_corner <- c(460, 310)
+bboxA_upper_corner <- c(505, 355)
 
 bboxB_lower_corner <- c(390, 520)
-bboxB_upper_corner <- c(430, 560)
+bboxB_upper_corner <- c(435, 565)
+
+# plot_tissue(sim) +
+#   geom_rect(xmin = bboxA_lower_corner[1], xmax = bboxA_upper_corner[1],
+#             ymin = bboxA_lower_corner[2], ymax = bboxA_upper_corner[2],
+#             fill = NA, color = "#333A73") + 
+#   geom_rect(xmin = bboxB_lower_corner[1], xmax = bboxB_upper_corner[1],
+#             ymin = bboxB_lower_corner[2], ymax = bboxB_upper_corner[2],
+#             fill = NA, color = "#333A73")
 
 # sample 1
 sim$sample_cells("SPN02_1.1", bboxA_lower_corner, bboxA_upper_corner)

@@ -76,12 +76,13 @@ dir.create(paste0(curr_dir,"/cna_data"))
 sample_names <- phylo_forest$get_samples_info()[["name"]]
 lapply(sample_names,function(s) {
 
- Sys.time()	       
+ print(Sys.time())	       
  print(paste0('saving cnas sample ', s))
 
  cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
- Sys.time()
+ print(Sys.time())
  saveRDS(file=paste0(curr_dir,"/cna_data/",s,"_cna.rds"),object=cna)
+ print(paste0('cnas saved sample', s))
 })
 
 # # plotting
