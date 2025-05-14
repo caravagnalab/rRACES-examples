@@ -1,36 +1,43 @@
+rm(list = ls())
+options(bitmapType='cairo')
 library(tidyverse)
 library(vcfR)
 library(optparse)
 library(caret)
 library(dplyr)
+library(patchwork)
 
-setwd('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/validation/Germline/')
 source('vcf_parser.R')
 source('utils.R')
 
 option_list <- list( 
-  make_option(c("-i", "--input"), type="character", default='/orfeo/LTS/LADE/LT_storage/lvaleriani/races/validation_data', help="path to input data"),
-  make_option(c("-s", "--SPN"), type="character", default='SPN01', help="SPN name"),
-  make_option(c("-t", "--tool"), type="character", default='freebayes', help="variant calling tool"),
-  make_option(c("-o", "--output"), type="character", default='/orfeo/LTS/LADE/LT_storage/lvaleriani/races/validation_data', help="path to output directory")
+  make_option(c("-s", "--SPN"), type="character", default='SPN03', help="SPN name"),
+  make_option(c("-t", "--tool"), type="character", default='strelka', help="variant calling tool")
 )
-to_parse = TRUE
+
 
 param <- parse_args(OptionParser(option_list=option_list))
-dir <- param$input
+dir <- '/orfeo/scratch/cdslab/shared/SCOUT/'
 spn <- param$SPN
 tool <- param$tool
-output <- param$output
+vcf <- paste0(dir, spn, "/validation/germline/vcf")
+output <- paste0(dir, spn, "/validation/germline/rds")
+report <- paste0(dir, spn, "/validation/germline/report")
+dir.create(output, recursive = T, showWarnings = F)
+dir.create(report, recursive = T, showWarnings = F)
+
 
 vcf_list = lapply(1:22, FUN = function(chr){
-  vcf_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/vcf/chr', chr, '_normal_sample.', tool, '.vcf.gz')
-  rds_file = paste0(dir,'/', spn, '/normal_sample/', tool, '/rds/chr', chr, '_normal_sample.', tool, '.rds')
+  vcf_file = paste0(vcf, '/chr', chr, '_normal_sample.', tool, '.vcf.gz')
+  rds_file = paste0(output, '/chr', chr, '_normal_sample.', tool, '.rds')
   
-  if (to_parse == TRUE){
+  if (!file.exists(rds_file)){
     if (tool == 'haplotypecaller'){
       rds_vcf = parse_HaplotypeCaller(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
     } else if (tool == 'freebayes') {
       rds_vcf = parse_freebayes(file = vcf_file, out_file = rds_file, save = T, cutoff = 0.3)[[paste0(spn, '_normal_sample')]]$mutations
+    } else if (tool == 'strelka'){
+      rds_vcf = parse_strelka(file = vcf_file, out_file = rds_file, save = T)[[paste0(spn, '_normal_sample')]]$mutations
     }
   } else  {
     rds_vcf = readRDS(rds_file)[[paste0(spn, '_normal_sample')]]$mutations    
@@ -45,20 +52,16 @@ vcf_list = lapply(1:22, FUN = function(chr){
 rds_vcf <- bind_rows(vcf_list)
 rds_vcf_pass <- bind_rows(vcf_list) %>% dplyr::filter(FILTER == "PASS" & !is.na(FILTER))
 
-# rds_ProCESS <- readRDS(paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/races/seq_results_muts_merged_coverage_30x.rds'))  %>% 
-#   dplyr::filter(classes == 'germinal') %>%
-#   dplyr::mutate(chr = paste0('chr', chr)) %>% 
-#   dplyr::filter(chr != 'chrX') %>% 
-#   dplyr::filter(chr != 'chrY')  
-# 
-# ProCESS <- seq_to_long(rds_ProCESS) %>% 
-#   dplyr::rename(BAF = VAF) %>% 
-#   mutate(mutationID = paste(chr, from, sep = ':'))
+process_normal <- readRDS(paste0(dir,'/', spn, '/sequencing/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_30x.rds')) %>% 
+  filter(classes =='germinal') %>% 
+  dplyr::mutate(chr = paste0('chr', chr)) %>% 
+  dplyr::mutate(mutationID = paste(chr,chr_pos, sep = ':')) %>% 
+  rename(BAF = normal_sample.VAF,
+         DP = normal_sample.coverage,
+         NV = normal_sample.occurrences)
 
-ProCESS <- readRDS('/orfeo/LTS/LADE/LT_storage/lvaleriani/races/ProCESS-examples/validation/Germline/ProCESS_germ.RDS')
-
-sample_N <- 500000
-p_baf_races <- ProCESS %>% 
+sample_N <- 5e5
+p_baf_races <- process_normal %>% 
   ungroup() %>% 
   sample_n(sample_N) %>% 
   ggplot(aes(x=BAF)) + 
@@ -68,11 +71,11 @@ p_baf_races <- ProCESS %>%
   labs(x="BAF", 
        y="Count",
        title = "ProCESS BAF",
-       subtitle = paste0(nrow(ProCESS), " mutations"),
-       caption = paste0('sample ', sample_N, ' mutations'),
+       subtitle = paste0(format(nrow(process_normal), scientific = T), " mutations"),
+       caption = paste0('sample ', format(sample_N, scientific = T), ' mutations'),
        color = "") 
 
-p_dp_races <- ProCESS %>% 
+p_dp_races <- process_normal %>% 
   ungroup() %>% 
   sample_n(sample_N) %>% 
   ggplot(aes(x=DP)) + 
@@ -82,8 +85,8 @@ p_dp_races <- ProCESS %>%
   labs(x="DP", 
        y="Count",
        title = "ProCESS coverage",
-       subtitle = paste0(nrow(ProCESS), " mutations; Median coverage = ",median(ProCESS$DP)),
-       caption = paste0('sample ', sample_N, ' mutations'),
+       subtitle = paste0(format(nrow(process_normal), scientific = T), " mutations; Median coverage = ",median(process_normal$DP)),
+       caption = paste0('sample ', format(sample_N, scientific = T), ' mutations'),
        color = "") 
 
 p_baf_caller <-  rds_vcf_pass %>% 
@@ -112,13 +115,13 @@ p_dp_caller <- rds_vcf_pass %>%
        caption = paste0('sample ', sample_N, ' mutations'),
        color = "") 
 
-merged_df <- merge_datasets(rds_vcf, ProCESS)
-p_filter_dist = plot_filter_distribution(merged_df)
+merged_df <- merge_datasets(rds_vcf, process_normal)
 
-baf_differences = plot_baf_difference(merged_df)
-cov_differences = plot_cov_difference(merged_df)
+baf_differences <- plot_baf_difference(merged_df)
+cov_differences <- plot_cov_difference(merged_df)
 
 colors <- get_colors(merged_df)
+p_filter_dist <- plot_filter_distribution(merged_df, colors)
 
 #sample_N <- 1e5
 merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
@@ -134,10 +137,10 @@ p_scatter_BAF_all = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.c
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
-p_scatter_BAF_all = ggExtra::ggMarginal(p_scatter_BAF_all, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
-p_scatter_BAF_all = ggplotify::as.ggplot(p_scatter_BAF_all)
+p_scatter_BAF_all = ggExtra::ggMarginal(p_scatter_BAF_all, type = "boxplot", groupFill = TRUE, groupColour = TRUE) 
+p_scatter_BAF_all = ggplotify::as.ggplot(p_scatter_BAF_all) 
 
 p_scatter_DP_all = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.caller") +
   ggtitle("DP correlation", subtitle = paste0(nrow(merged_df), " total mutations")) +
@@ -148,7 +151,7 @@ p_scatter_DP_all = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.call
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_DP_all = ggExtra::ggMarginal(
   p_scatter_DP_all,
@@ -165,7 +168,7 @@ p_venn_all = plot_venn_diagram(merged_df, tool) +
 metrics_all = compute_metrics(y_true, y_pred)
 
 # PASS mutations
-merged_df = merge_datasets(rds_vcf_pass, ProCESS)
+merged_df = merge_datasets(rds_vcf_pass, process_normal)
 merged_df_filter <- merged_df %>% ungroup() %>% sample_n(sample_N)
 
 p_scatter_BAF_pass = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.caller") +
@@ -179,7 +182,7 @@ p_scatter_BAF_pass = plot_scatter_with_corr(merged_df_filter, "BAF.races", "BAF.
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_BAF_pass = ggExtra::ggMarginal(p_scatter_BAF_pass, type = "boxplot", groupFill = TRUE, groupColour = TRUE)
 p_scatter_BAF_pass = ggplotify::as.ggplot(p_scatter_BAF_pass)
@@ -193,7 +196,7 @@ p_scatter_DP_pass = plot_scatter_with_corr(merged_df_filter, "DP.races", "DP.cal
     caption = paste0('sample ', sample_N, ' mutations')
   ) +
   scale_color_manual(values = colors) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + theme(legend.position = 'None')
 
 p_scatter_DP_pass = ggExtra::ggMarginal(
   p_scatter_DP_pass,
@@ -220,25 +223,15 @@ p_metrics = metrics %>%
   theme_bw() +
   ylim(c(0,1))
 
-design = "
-AABBC
-AABBC
-DDEEF
-DDEEF
-GGHHI
-GGHHI
-LLMMN
-LLMMN
-OOOPP
-"
+design = "AABBEE\nCCDDEE\nFFGGHH\nFFGGHH\nIILLMM\nIILLMM"
 
 title = paste0(spn, ", calls by ", tool)
-report_plot = free(p_dp_races) + free(p_dp_caller) + free(cov_differences) +
-  free(p_baf_races) + free(p_baf_caller) + free(baf_differences) +
+report_plot = free(p_dp_races) + free(p_dp_caller)+
+  free(p_baf_races) + free(p_baf_caller) +
+  free(p_filter_dist) +
   free(p_scatter_DP_all) + free(p_scatter_BAF_all) + free(p_venn_all) +
   free(p_scatter_DP_pass) + free(p_scatter_BAF_pass) + free(p_venn_pass) +
-  free(p_metrics) + free(p_filter_dist) +
   plot_layout(design = design) +
   plot_annotation(title)
 
-ggsave(plot = report_plot, filename = paste0(dir,'/', spn, '/normal_sample/', tool, '/plot/', tool, '_normal.png'), dpi = 400, width = 15, height = 20, units = 'in')
+ggsave(plot = report_plot, filename = paste0(report,'/', tool, '_normal.png'), dpi = 100, width = 13, height = 15, units = 'in')

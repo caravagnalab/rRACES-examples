@@ -25,11 +25,11 @@ samples_table <- function(snapshot, sample_forest) {
       dplyr::mutate(across(all_of(clones), ~ round(.x/Total_Cells,2), .names = "{.col} proportion"))
     
     samples_tb = dplyr::full_join(info, clones_of_origin, by = join_by("name" == "sample")) %>% 
-      select(!c("xmin","xmax","ymin","ymax","id","tumour_cells","tumour_cells_in_bbox")) %>% 
-      rename(Sample_ID=name) %>% 
-      rename(Samping_Time=time) %>% 
-      mutate(Samping_Time=round(Samping_Time,2)) %>% 
-      arrange(Sample_ID)
+      dplyr::select(!c("xmin","xmax","ymin","ymax","id","tumour_cells","tumour_cells_in_bbox")) %>% 
+      dplyr::rename(Sample_ID=name) %>% 
+      dplyr::rename(Samping_Time=time) %>% 
+      dplyr::mutate(Samping_Time=round(Samping_Time,2)) %>% 
+      dplyr::arrange(Sample_ID)
       
 
 

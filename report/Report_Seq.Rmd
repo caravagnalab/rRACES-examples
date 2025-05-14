@@ -45,10 +45,11 @@ img_dir <- "SCOUT_images/"
 
 ```{r assign_variables, include = FALSE, echo =TRUE}
 coverage <- params$sequencing$coverage
+normal_coverage <- params$sequencing$normal_coverage
 purity <- params$sequencing$purity
 seq_dir <- params$files$seq_res
 seq_res_tumour_rds <- paste0(seq_dir,"/tumour/purity_",purity,"/data/mutations/seq_results_muts_merged_coverage_",coverage,"x.rds")
-seq_res_normal_rds <- paste0(seq_dir,"/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_30x.rds")
+seq_res_normal_rds <- paste0(seq_dir,"/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_",normal_coverage,"x.rds")
 files_cna <- list.files(params$cna_dir, full.names = T, pattern = '_cna.rds')
 sample_names <- sapply(files_cna, function(path) {
   base_name <- basename(path)
@@ -75,22 +76,19 @@ title: "`r params$spn`: simulated coverage `r params$sequencing$coverage`x and p
 
 Tumor samples have been sequenced with a coverage of `r params$sequencing$coverage`x and a simulated purity of `r params$sequencing$purity`. The normal sample is simulated from a real individual at a sequencing depth of 30x. The table below reports information about the subject whose germline SNPs are used to simulate the normal sample. The table reports the germline subject name, population , super-population, and gender.
 
-```{r germline_subject, eval=FALSE}
+```{r dim, eval=TRUE}
 library(reactable)
 library(sparkline)
 
-germ <- phylo_forest$get_germline_subject() %>% 
-  dplyr::rename(population=pop) %>% 
-  dplyr::rename("super-population"=super_pop)
-reactable(germ,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 5,
-          bordered = TRUE, striped = TRUE)
+nrow = ceiling(number_of_samples/3)
+height = nrow * 2
 ```
 
 ## Sample composition
 
 These pie charts illustrate the tumor heterogeneity of each sample by depicting the composition of normal cells and multiple clones. Each chart represents the proportion of normal cells (reflecting tumor purity) alongside distinct clonal populations, showcasing the complexity and diversity within the tumor. This visualization helps in understanding the clonal architecture and variability across different samples.
 
-```{r sample_composition, echo=FALSE, out.width = '100%',fig.align='center'}
+```{r sample_composition, echo=FALSE, out.width = '100%',fig.align='center',fig.height=height}
 plot_stats_sample(paste0(params$files$sim, '/', spn), sample_forest)
 ```
 
@@ -98,20 +96,20 @@ plot_stats_sample(paste0(params$files$sim, '/', spn), sample_forest)
 
 ### Normal sample
 
-Normal sample was sequenced with a coverage of 30X. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
+Normal sample was sequenced with a coverage of `r params$sequencing$normal_coverage`x. The plot shows the depth of sequencing of simulated mutations in the normal sample. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
 
 ```{r filter_muts, include = FALSE}
 normal_mutations_filtered <- seq_res_normal %>%
   filter(normal_sample.VAF < 0.8 & normal_sample.VAF >0.2)
 ```
 
-```{r general_sequencing_normal, echo=FALSE,out.width = '80%',fig.align='center',fig.height=2}
+```{r general_sequencing_normal, echo=FALSE,out.width = '80%', fig.align='center', fig.height=3}
 dp <- seq_res_normal %>%
   seq_to_long() %>%
   ggplot(aes(x=DP))+
   ggplot2::geom_histogram()+
   geom_vline(aes(xintercept = mean(DP), color = "Real Mean")) +
-    geom_vline(aes(xintercept = 30, color = "Expected Mean")) +
+    geom_vline(aes(xintercept = normal_coverage, color = "Expected Mean")) +
     my_ggplot_theme() +
     scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))
 dp
@@ -119,23 +117,17 @@ dp
 
 ### Tumour samples
 
-<!-- All of the plots will have a fixed size, and the final dim of the figure is given by -->
-
-<!-- a parameters. -->
-
-```{r calulculate_fig_dims1, echo=TRUE, include=FALSE}
+```{r calulculate_fig_dims1, include=FALSE}
 width_single_plot <- 3
 height_single_plot <- 2
 
-### if the plot extends in width
-fix_n_samples_per_width <- 3
-fig_width <- 3*number_of_samples
-fig_height <- ceiling(number_of_samples/3)*2
+fig_width <- 4*number_of_samples
+fig_height <- ceiling(number_of_samples/3)*4
 ```
 
 Tumour sample were sequenced with a coverage of `r params$sequencing$coverage`x. The plot shows the depth of sequencing of simulated mutations in the tumour samples. The \textcolor{red}{red} line highlight the expected coverage while the \textcolor{green}{green} line the real coverage.
 
-```{r general_sequencing_tumour, echo=FALSE,out.width ='80%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+```{r general_sequencing_tumour, echo=FALSE,out.width ='100%', fig.align='center', fig.height=fig_height, fig.width=fig_width}
 dp <- seq_res_tumour %>%
   seq_to_long() %>%
   ggplot(aes(x=DP))+
@@ -144,7 +136,7 @@ dp <- seq_res_tumour %>%
     geom_vline(aes(xintercept = params$sequencing$coverage, color = "Expected Mean")) +
     my_ggplot_theme() +
     scale_color_manual(name = "Statistics", values = c("Real Mean" = "forestgreen", "Expected Mean" = "red"))+
-  facet_wrap(~sample_name)
+  facet_wrap(~sample_name, ncol = 3)
 dp
 ```
 
@@ -161,8 +153,7 @@ drivers_table <- annotate_drivers(phylo_forest)
 In Copy Number Alteration (CNA) analysis, the depth ratio is a crucial metric used to infer copy number variations (CNVs) from sequencing data. It represents the relative read depth of a genomic region compared to a reference, helping to determine duplications, deletions, or normal copy states. Driver events are highlighted.
 
 ```{r filter_germline,echo=FALSE, include=FALSE}
-## keep only germline mutations for genome-wide plots
-g_seq <- left_join(normal_mutations_filtered,seq_res_tumour,
+g_seq <- left_join(normal_mutations_filtered, seq_res_tumour,
                    by =c("chr","chr_pos", "ref", "alt","causes","classes")) %>%
       as.data.frame()
 ```
@@ -174,47 +165,45 @@ height_single_plot <- 2
 ### if the plot extends in width
 fix_n_samples_per_height <- number_of_samples
 fig_height <- number_of_samples*height_single_plot
-fig_width <- ceiling(number_of_samples/3)*8
 ```
 
-```{r depth_ratio, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+```{r depth_ratio, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=8}
 dr_plots <- lapply(sample_names, function(s){
       dr <- plot_DR_n(seq_res = g_seq,sample = s)
       annotate_plots(plot = dr,drivers = drivers_table,ref="GRCh38")
 })
-wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3), nrow = fix_n_samples_per_height, guides="collect") & theme(legend.position = "bottom")
+# wrap_plots(dr_plots,ncol=ceiling(number_of_samples/3), nrow = fix_n_samples_per_height, guides="collect") & theme(legend.position = "bottom")
+wrap_plots(dr_plots,ncol=1, guides="collect") & theme(legend.position = "bottom")
 ```
 
 ## Genome wide plot of B Allele Frequency
 
 B Allele Frequency (BAF) is a key metric used in Copy Number Alteration (CNA) analysis to assess allelic imbalances. It represents the proportion of sequencing reads supporting the B allele (one of the two inherited alleles) at heterozygous single nucleotide polymorphisms (SNPs).
 
-```{r baf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+```{r baf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=8}
 baf_plots <- lapply(sample_names, function(s){
       baf <- plot_BAF_n(seq_res = g_seq,sample = s)
       annotate_plots(plot = baf,drivers = drivers_table,ref="GRCh38")
 })
-wrap_plots(baf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & theme(legend.position = "bottom")
+wrap_plots(baf_plots,ncol=1, guides="collect") & theme(legend.position = "bottom")
 ```
 
 ## Genome wide plot of Variant Allele Frequency
 
-```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+```{r vaf, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=8}
 s_seq <- seq_res_tumour %>%
   filter(classes!="germinal")
 
 vaf_plots <- lapply(sample_names, function(s){
       vaf <- plot_VAF_n(seq_res = s_seq,sample = s)
       annotate_plots(plot = vaf,drivers = drivers_table,ref="GRCh38")
-      
 })
-wrap_plots(vaf_plots,ncol=ceiling(number_of_samples/3),nrow = fix_n_samples_per_height, guides="collect") & 
-  theme(legend.position = "bottom")
+wrap_plots(vaf_plots,ncol=1, guides="collect") & theme(legend.position = "bottom")
 ```
 
 ## Segmented Data
 
-```{r segmented_data, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height,fig.width=fig_width}
+```{r segmented_data, echo=FALSE,out.width = '100%',fig.align='center',fig.height=fig_height}
 segmented_plot <- plot_clone_segments(files_cna)
 segmented_plot
 ```
@@ -225,7 +214,12 @@ segmented_plot
 
 Understanding the composition of mutations within each sample is crucial for distinguishing biological signals from technical artifacts and inherited variations. These pie charts provide a visual summary of the different types of mutations simulated in each sample. The mutations are categorized based on their origin, including those driven by mutational signatures, sequencing errors, and germline variations. By illustrating these proportions, the charts highlight the contribution of distinct mutational processes, offering insights into the heterogeneity of mutations across samples.
 
-```{r muts_stats, echo=FALSE,out.width = '100%',fig.align='center'}
+```{r dimension, eval=TRUE}
+nrow = ceiling(number_of_samples/3)
+height = nrow * 2
+```
+
+```{r muts_stats, echo=FALSE, out.width = '100%',fig.align='center', fig.height=height}
 plot_stats_mut(seq_res_tumour, phylo_forest)
 ```
 
@@ -235,12 +229,12 @@ plot_stats_mut(seq_res_tumour, phylo_forest)
 The following plot shows the difference in VAF for a known driver mutations across samples. These are either SNVs or INDELs. The color code referes to the clone of origin of the driver mutation.
 
 ```{r driver_vaf, echo=FALSE,fig.height=3, out.width = '100%'}
-drivers_long <- s_seq %>% 
-  filter(classes=="driver") %>% 
-  seq_to_long() %>% 
-  mutate(chr=paste0("chr",chr)) %>% 
+drivers_long <- s_seq %>%
+  filter(classes=="driver") %>%
+  seq_to_long() %>%
+  mutate(chr=paste0("chr",chr)) %>%
   mutate(mutation_id=paste(chr,from,ref,alt,sep=":"))
-drivers_table <- annotate_drivers(phylo_forest) %>% 
+drivers_table <- annotate_drivers(phylo_forest) %>%
   mutate(mutation_id=paste(chr,pos,ref,alt,sep=":"))
 
 
@@ -257,7 +251,7 @@ drivers_long %>% inner_join(drivers_table,by="mutation_id",relationship = "many-
 ## Clonal e Subclonal Variant Allele Frequency Spectra
 
 ```{r read_cn_data, echo=FALSE, include=FALSE}
-som <- readRDS(paste0(params$cna_dir, '/cna_muts_purity_',params$sequencing$purity, '_coverage_',params$sequencing$coverage, 'x.rds')) 
+som <- readRDS(paste0(params$cna_dir, '/cna_muts_purity_',params$sequencing$purity, '_coverage_',params$sequencing$coverage, 'x.rds'))
 upper <- 0.89
 lower <- 0.11
 
@@ -277,7 +271,7 @@ In the following plot, we show the VAF per chromosome where only clonal segment 
 
 ```{r clonal_cn_vaf, echo=FALSE,out.width = '100%',fig.align='center', fig.height=20}
 clonal <- data %>%
-  filter(VAF > 0.02) %>%
+  filter(VAF > 0.1) %>%
   filter(CN_type == 'clonal')
 
 chromosomes <- seq_along(1:22)
@@ -288,7 +282,7 @@ clonal_plots <- lapply(split_list,function(list){
     ggplot() +
     geom_histogram(aes(x = VAF, fill = CN), binwidth = 0.01, position = 'identity') +
     scale_fill_manual(values = get_karyotypes_colors(karyotypes)) +
-    xlim(-0.01, 1) +
+    xlim(-0.01, 1.01) +
     ggh4x::facet_nested(sample_name + ratio ~ chr, scales = 'free_y', independent = 'y') +
     CNAqc:::my_ggplot_theme(cex = cex)
 })
@@ -301,7 +295,7 @@ In detailed way we show for each sub-clonal segment the VAF, that is a mixture o
 
 ```{r subclonal_data, echo=FALSE, include=FALSE}
 sub_clonal_data <- data %>%
-  filter(VAF > 0.02) %>%
+  filter(VAF > 0.05) %>%
   filter(CN_type == 'sub-clonal') %>%
   ungroup()
 ```
@@ -317,7 +311,7 @@ lapply(1:22, function(ch) {
           ggplot() +
           geom_histogram(aes(x = VAF, fill = CN), binwidth = 0.01, position = 'identity') +
           scale_fill_manual(values = get_karyotypes_colors(karyotypes)) +
-          xlim(-0.01, 1) +
+          xlim(-0.01, 1.01) +
           ggh4x::facet_nested(sample_name + ratio ~ chr + seg_id, scales = 'free_y', independent = 'y') +
           CNAqc:::my_ggplot_theme(cex = cex)
       print(seg_subclonal)
@@ -328,7 +322,7 @@ lapply(1:22, function(ch) {
 
 ## Multivariate VAF across samples
 
-This section presents multivariate plots comparing the variant allele frequency (VAF) of mutations across all pairs of samples. Mutations are categorized based on their occurrence, distinguishing between private mutations (unique to a single sample) and shared mutations (present in multiple samples). These classifications help in understanding the evolutionary relationships between mutations and their distribution across samples.  
+This section presents multivariate plots comparing the variant allele frequency (VAF) of mutations across all pairs of samples. Mutations are categorized based on their occurrence, distinguishing between private mutations (unique to a single sample) and shared mutations (present in multiple samples). These classifications help in understanding the evolutionary relationships between mutations and their distribution across samples.
 
 Additionally, the mutations are highlighted in the phylogenetic tree, providing a comprehensive view of how they are inherited and distributed across different branches. This integrated visualization helps to infer clonal evolution and the progression of mutations within the tumor.
 
@@ -345,7 +339,7 @@ fraction_to_sample <- 0.6  # 30%
 
 # Compute number of samples per chromosome while keeping proportions
 sample_sizes <- s_seq_long %>%
-  ungroup() %>% 
+  ungroup() %>%
   count(chr) %>%
   mutate(sample_size = round(n * fraction_to_sample))
 
@@ -365,7 +359,7 @@ df_sampled = df_sampled %>%
   )
 
 
-mutations = df_sampled %>% 
+mutations = df_sampled %>%
   as_tibble() %>%
   mutate(mutation_id=paste(chr, from, to, ref, alt, sep="_"), chr_pos=from)%>%
   select(mutation_id, everything())
@@ -386,32 +380,32 @@ model_df <- label_mutations(model_df)
 mutations <- as.data.frame(mutations)
 
 mutations_with_cell = mutations %>%
-  filter(classes!="germinal") %>% 
-  filter(!stringr::str_detect(causes, 'errors')) %>% 
+  filter(classes!="germinal") %>%
+  filter(!stringr::str_detect(causes, 'errors')) %>%
   rowwise() %>%
   mutate(cell_id=phylo_forest$get_first_occurrences(Mutation(
     chr, chr_pos, ref, alt
   ))[[1]]) %>%
   ungroup()
 
-cells_labels = mutations_with_cell %>% 
+cells_labels = mutations_with_cell %>%
   select(mutation_id, cell_id) %>%
-  left_join(model_df) %>% 
-  group_by(cell_id) %>% 
-  summarise(label_list=list(label)) %>% 
-  rowwise() %>% 
-  mutate(label=names(sort(table(label_list[[1]]), decreasing=TRUE))[1]) %>% 
-  ungroup() %>% 
+  left_join(model_df) %>%
+  group_by(cell_id) %>%
+  summarise(label_list=list(label)) %>%
+  rowwise() %>%
+  mutate(label=names(sort(table(label_list[[1]]), decreasing=TRUE))[1]) %>%
+  ungroup() %>%
   select(-label_list)
 
-final_labels = sample_forest$get_nodes() %>% as_tibble() %>% 
+final_labels = sample_forest$get_nodes() %>% as_tibble() %>%
   left_join(cells_labels)
 ```
 
-```{r plot_marginals, echo=FALSE,fig.height=8, fig.width=12, out.width = '100%'}
+```{r plot_marginals, echo=FALSE, fig.height=15, fig.width=15, out.width = '100%'}
 fix_n_samples_per_height <- 3
 palette_labels <- RColorBrewer::brewer.pal(n = length(unique(model_df$label)), name = "Set3")
-names(palette_labels) <-unique(model_df$label) 
+names(palette_labels) <-unique(model_df$label)
 pl_sticks <- plot_sticks(sample_forest, labels=final_labels,cls = palette_labels) %>%
   annotate_forest(sample_forest, samples=TRUE, drivers=TRUE)
 
@@ -420,34 +414,34 @@ pairwise_comb <- get_pairwise_combinations(phylo_forest)
 plot_vaf_marginal <- lapply(pairwise_comb,function(x){
   s1 <- paste0(x[1],".VAF")
   s2 <- paste0(x[2],".VAF")
-  p = model_df %>% 
+  p = model_df %>%
     ggplot(aes(x =.data[[s1]], y = .data[[s2]],color=label,alpha=0.2))+
     geom_point()+
     # ggrepel::geom_label_repel(aes(label = driver_label),
     #                           na.rm = TRUE, box.padding = 0.5,
     #                           color = "black",size=2
-    # ) + 
+    # ) +
     xlab(s1) +
     ylab(s2)+
     scale_color_manual(values = palette_labels)+
     CNAqc:::my_ggplot_theme()+
     theme(legend.position = "none")
-  
+
   return(p)
 })
 pl_mrg <- wrap_plots(plot_vaf_marginal,nrow=fix_n_samples_per_height)
 plot_vaf_histogram <- lapply(phylo_forest$get_samples_info()$name %>% sort(),function(x){
   col_vaf <- paste0(x,".VAF")
-  p <- model_df %>% 
+  p <- model_df %>%
     ggplot(aes(x=.data[[col_vaf]],fill=(label)))+
     geom_histogram(binwidth = 0.01)+
     scale_fill_manual(values = palette_labels)+
     CNAqc:::my_ggplot_theme()+
-    xlim(0.01,1)+
+    xlim(0.01,1.01)+
     theme(legend.position = "none")
   return(p)
 })
 pl_hist <- wrap_plots(plot_vaf_histogram,ncol=fix_n_samples_per_height)
-patchwork::wrap_plots(list(pl,pl_mrg,pl_hist), design="AAAB\nAAAB\nAAAB\nCCCC")
+patchwork::wrap_plots(list(pl,pl_mrg,pl_hist), design="AABB\nAABB\nAABB\nAABB\nCCCC\nCCCC")
 ```
 

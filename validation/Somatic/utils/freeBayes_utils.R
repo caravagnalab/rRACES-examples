@@ -273,17 +273,17 @@ get_freeBayes_res = function(vcf, sample_id, filter_mutations = FALSE, chromosom
   muts[[tum_name]]$mutations[,c(COLS_TO_KEEP)]
 }
 
-process_freebayes_results = function(gt_path, chromosome, pass_quality, min_vaf, max_normal_vaf) {
+process_freebayes_results = function(gt_path, chromosome, outdir, freebayes_vcfs_dir, pass_quality, min_vaf, max_normal_vaf) {
   # Extract purity and coverage values from the file path
   spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
   purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
   coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
-  combination <- paste0("purity_", purity, "_coverage_", coverage, "x")
-  folder_path <- file.path(spn, combination, "races")
+  combination = paste0(coverage, "x_", purity, "p")
+  folder_path <- file.path(outdir, spn, combination, "process")
   
   sample_names = list.files(folder_path, full.names = F)
-  folder_path <- file.path(spn, combination, "freebayes")
-  dir.create(folder_path, recursive = T, showWarnings = F)
+  folder_path <- file.path(outdir, spn, combination, "freebayes")
+  dir.create(folder_path, recursive = T, showWarnings = T)
   
   for (sample in sample_names) {
     message(paste0("Parsing sample ", sample, "..."))
@@ -291,7 +291,8 @@ process_freebayes_results = function(gt_path, chromosome, pass_quality, min_vaf,
     sample_path <- file.path(folder_path, sample)
     dir.create(sample_path, recursive = TRUE, showWarnings = FALSE)
     
-    vcf_folder = paste0("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/",spn,"/sarek/",coverage,"x_",purity,"p/variant_calling/freebayes/", sample, "_vs_normal_sample/")
+    vcf_folder = file.path(freebayes_vcfs_dir, paste0(sample, "_vs_normal_sample"))
+    #vcf_folder = paste0("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/",spn,"/sarek/",coverage,"x_",purity,"p/variant_calling/freebayes/", ")
     vcf_files = list.files(vcf_folder, full.names = T)
     vcf_path = vcf_files[!grepl(".tbi", vcf_files)]
     vcf = vcfR::read.vcfR(vcf_path)

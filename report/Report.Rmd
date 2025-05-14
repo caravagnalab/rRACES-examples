@@ -39,13 +39,6 @@ source("plotting/tables.R", local = knitr::knit_global())
 metadata <- read.table(file = "SCOUT_metadata.csv",header = T,sep = "\t")
 ```
 
-<!-- ```{r params, include = FALSE} -->
-<!-- # #Load params from YAML if running outside R Markdown -->
-<!-- # if (!exists("params")) { -->
-<!-- #   params <- yaml::read_yaml("../SCOUT/SPN01/params_50x_0.3p.yml") -->
-<!-- # } -->
-<!-- ``` -->
-
 <!-- Load the data  -->
 
 ```{r load_data, echo=FALSE, include=FALSE}
@@ -71,13 +64,12 @@ info_spn <- metadata %>% filter(SPN_ID==params$spn)
 
 This report shows the results for patient **`r params$spn`** of SCOUT cohort. `r info_spn$Description` **`r params$spn`** is profiled by `r info_spn$N_Samples` samples collected at `r info_spn$N_Timepoints` time-point.
 
-<!-- ```{r pressure, echo=FALSE, out.width = '100%'} -->
+<!--```{r pressure, echo=FALSE, out.width ='100%'}
+spn_image <- paste0(img_dir,params$spn,".png")
 
-<!-- spn_image <- paste0(img_dir,params$spn,".png") -->
-
-<!-- knitr::include_graphics(spn_image) -->
-
-<!-- ``` -->
+knitr::include_graphics(spn_image)
+```
+-->
 
 # Tissue Simulation and Sampling
 
@@ -87,10 +79,13 @@ This part of the report shows how the tumour growth in time. Muller plot and tim
 
 `r params$spn` growth dynamics is summarized by the muller plot toghter with a temporal line showing the time in which sampling is performed.
 
-```{r growth_dynamics, out.width = '100%',fig.align='center',fig.height=8,echo=FALSE,include=TRUE}
-basedir <- params$files$base_dir ## in questo caso come /orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPNID
+```{r growth_dynamics, out.width = '100%',fig.align='center',fig.height=9,echo=FALSE,include=TRUE}
+nrow = ceiling(number_of_samples/3)
+height = nrow * 3
+
+basedir <- params$files$base_dir
 setwd(basedir)
-plot <- plot_tumour_dynamics(params$spn,sample_forest)
+plot <- plot_tumour_dynamics(params$spn, sample_forest)
 plot$plot_dynamics
 ```
 
@@ -98,7 +93,7 @@ plot$plot_dynamics
 
 `r params$spn` is sampled at `r info_spn$N_Timepoints` time-point, where a total of `r info_spn$N_Samples` samples are derived. Sampling dynamics is reported in plot below.
 
-```{r sampling_dynamics, echo=FALSE, out.width = '100%',fig.align='center',fig.height=3, fid.width=10}
+```{r sampling_dynamics, echo=FALSE, out.width ='100%',fig.align='center',fig.height=height, fid.width=10}
 print(plot$plot_sampling)
 ```
 
@@ -111,7 +106,7 @@ table <- samples_table(snapshot=paste0(params$files$base_dir, '/', spn),
                        sample_forest=sample_forest)
 
 reactable(table,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 10,
-          bordered = TRUE, striped = TRUE)
+           bordered = TRUE, striped = TRUE)
 ```
 
 ## Phylogenetic forest
@@ -210,7 +205,7 @@ alluvial_plot <- alluvial_plot_karyotypes(files_cna)
 alluvial_plot
 ```
 
-<!-- Th single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/heatmap.pdf). -->
+The single cell heatmap of copy number profiles across different clones and samples can be downloaded from this link: [single_cell_heatmap](/orfeo/cephfs/scratch/cdslab/ggandolfi/prj_races/REPO_UPDATED/ProCESS-examples/report/heatmap.pdf).
 
 ### Genomic Karyotype Composition Across Samples and Subclones
 
@@ -222,7 +217,7 @@ plot_stats_cn(files_cna)
 
 This circos plot provides a comprehensive overview of the segmented genomic data across all samples and their respective subclonal compositions. Each segment is color-coded based on its karyotype, allowing for a clear visualization of structural variations across the genome. Additionally, the transparency of the colors represents the cancer cell fraction (CCF), highlighting the prevalence of each segment within the tumor population. This integrated visualization captures the complexity of genomic alterations, enabling the exploration of karyotypic diversity and clonal architecture within and across samples.
 
-```{r seg_cna, echo=FALSE,fig.height=3,out.width = '100%'}
+```{r seg_cna, echo=FALSE,fig.height=7,out.width = '100%'}
 plot_circle_segments(files_cna)
 ```
 
@@ -244,7 +239,7 @@ reactable(exposure_table,filterable = FALSE, resizable = T,highlight = T,default
 
 Mutational signature exposures are mapped onto the phylogenetic tree, illustrating how their contributions change along the evolutionary trajectory of the tumor. This representation helps identify when specific mutational processes emerge, expand, or decline over time.
 
-```{r forest_exposure, echo=FALSE, fig.width=9, out.width = '100%'}
+```{r forest_exposure, echo=FALSE, out.width = '100%', fig.height=5, fig.width=9}
 plot_signatures <- plot_exposure_evolution(sample_forest, phylo_forest, paste0(params$files$base_dir, '/', spn))
 print(plot_signatures$sign_tree)
 ```
@@ -252,7 +247,7 @@ print(plot_signatures$sign_tree)
 ### Muller Plot Representation
 The muller plot depicts the changing proportions of mutational signatures over time, capturing shifts in dominant mutational processes across different clonal and subclonal populations. This visualization highlights how signature exposures evolve dynamically during tumor development.
 
-```{r muller_exposure, echo=FALSE, out.width = '100%',fig.align='center'}
+```{r muller_exposure, echo=FALSE, out.width = '100%', fig.height=7, fig.width=9}
 print(plot_signatures$sign_muller)
 ```
 

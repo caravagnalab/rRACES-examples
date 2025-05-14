@@ -58,23 +58,40 @@ plot_scatter_with_corr <- function(data, x_var, y_var, col_var = "FILTER", title
   # Perform correlation test to get r and p-value
   data[[x_var]][is.na(data[[x_var]])] = 0
   data[[y_var]][is.na(data[[y_var]])] = 0
-  
+  #print(data[[x_var]])
+  #print(data[[y_var]])
+  #print(x_var)
+  #print(y_var)
+  if (nrow(data)<3){
+    p <- ggplot(data, aes_string(x = x_var, y = y_var, col = col_var)) +
+      geom_point(alpha = 0.5) +
+      geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") +
+      theme_bw() +
+      labs(x = x_var, y = y_var)
+    return(p)
+  }
   corr_test <- cor.test(data[[x_var]], data[[y_var]], use = "complete.obs")
   corr_coef <- corr_test$estimate
   p_val <- corr_test$p.value
-  
+  #print(corr_test)
   # Format p-value appropriately
-  if (p_val < 0.001) {
-    p_text <- "p < 0.001"
-  } else if (p_val < 0.01) {
-    p_text <- paste0("p = ", format(round(p_val, 3), nsmall = 3))
-  } else if (p_val < 0.05) {
-    p_text <- paste0("p = ", format(round(p_val, 2), nsmall = 2))
-  } else {
-    p_text <- paste0("p = ", format(round(p_val, 2), nsmall = 2))
-  }
-  
+  # if (p_val < 0.001) {
+  #  p_text <- "p < 0.001"
+  # } else if (p_val < 0.01) {
+  #  p_text <- paste0("p = ", format(round(p_val, 3), nsmall = 3))
+  # } else if (p_val < 0.05) {
+  #  p_text <- paste0("p = ", format(round(p_val, 2), nsmall = 2))
+  # } else {
+  #  p_text <- paste0("p = ", format(round(p_val, 2), nsmall = 2))
+  # }
+
   # Format correlation coefficient (rounded to 2 decimal places)
+  if (is.na(p_val)) {
+    p_text = "NA"
+    corr_coef <- NA
+  } else {
+    p_text = format.pval(p_val,digits = 1)
+  }
   corr_text <- paste0("r = ", round(corr_coef, 2), ", ", p_text)
   
   # Create plot
@@ -88,16 +105,18 @@ plot_scatter_with_corr <- function(data, x_var, y_var, col_var = "FILTER", title
   p
 }
 
-plot_filter_distribution = function(merged_df, log_scale = TRUE) {
+plot_filter_distribution = function(merged_df, colors, log_scale = TRUE) {
   p = merged_df %>% 
     dplyr::group_by(FILTER) %>% 
     dplyr::summarise(n=n()) %>% 
     na.omit() %>% 
-    ggplot(mapping = aes(x=reorder(FILTER, +n), y=n)) +
+    ggplot(mapping = aes(x=reorder(FILTER, +n), y=n, fill = FILTER)) +
+    scale_fill_manual(values = colors) + 
     geom_col() +
     theme_bw() +
     coord_flip() +
-    labs(x = "FILTER", y="count")  
+    labs(x = "FILTER", y="count") + 
+    theme(legend.position='None')
   
   if (log_scale) {
     p <- p +

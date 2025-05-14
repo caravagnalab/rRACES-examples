@@ -3,17 +3,17 @@ library(vcfR)
 
 COLS_TO_KEEP <- c("chr", "from", "to", "ref","alt","mutationID","NV","DP","VAF","FILTER")
 
-process_strelka_results = function(gt_path, chromosome) {
-  # Extract purity and coverage values from the file pathx
+process_strelka_results = function(gt_path, chromosome, outdir, strelka_vcfs_dir) {
+  # Extract purity and coverage values from the file path
   spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
   purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
   coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
-  combination <- paste0("purity_", purity, "_coverage_", coverage, "x")
-  folder_path <- file.path(spn, combination, "races")
+  combination = paste0(coverage, "x_", purity, "p")
+  folder_path <- file.path(outdir, spn, combination, "process")
   
   sample_names = list.files(folder_path, full.names = F)
-  folder_path <- file.path(spn, combination, "strelka")
-  dir.create(folder_path, recursive = T, showWarnings = F)
+  folder_path <- file.path(outdir, spn, combination, "strelka")
+  dir.create(folder_path, recursive = T, showWarnings = T)
   
   for (sample in sample_names) {
     message(paste0("Parsing sample ", sample, "..."))
@@ -21,7 +21,8 @@ process_strelka_results = function(gt_path, chromosome) {
     sample_path <- file.path(folder_path, sample)
     dir.create(sample_path, recursive = TRUE, showWarnings = FALSE)
     
-    vcf_folder = paste0("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/",spn,"/sarek/",coverage,"x_",purity,"p/variant_calling/strelka/", sample, "_vs_normal_sample/")
+    vcf_folder = file.path(strelka_vcfs_dir, paste0(sample, "_vs_normal_sample"))
+    #vcf_folder = paste0("/orfeo/cephfs/scratch/cdslab/shared/SCOUT/",spn,"/sarek/",coverage,"x_",purity,"p/variant_calling/strelka/", sample, "_vs_normal_sample/")
     vcf_files = list.files(vcf_folder, full.names = T)
     vcf_files = vcf_files[!grepl(".tbi", vcf_files)]
     

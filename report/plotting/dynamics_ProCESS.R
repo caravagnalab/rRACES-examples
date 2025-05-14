@@ -33,7 +33,7 @@ plot_tumour_dynamics <- function(snapshot,sample_forest){
   })
   fixed_n_samples_per_row<-3
   n_row <- ceiling(length(samples_name)/fixed_n_samples_per_row)
-  plot_sampling <- patchwork::wrap_plots(plot_sample, nrow = n_row, guides = 'collect') & theme(legend.position = 'bottom')
+  plot_sampling <- patchwork::wrap_plots(plot_sample, nrow = n_row, ncol = 3, guides = 'collect') & theme(legend.position = 'bottom')
 
 
   plot_dynamics <- time_plot + muller + timeseries + plot_layout(nrow = 3)

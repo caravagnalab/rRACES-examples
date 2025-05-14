@@ -9,10 +9,11 @@
 #SBATCH --error=map_muts_%A_%a.err
 
 # to change
-# path to tmp_dir
+# path to a temporary directory 
 dir="/orfeo/fast/area/lvaleriani/tmp_nf"
 # path to ProCESS-examples repo
 base="/orfeo/scratch/area/lvaleriani/races/ProCESS-examples/report"
+# spn name
 spn=SPN03
 
 cov_values=(50 100 150 200)
@@ -25,7 +26,6 @@ export TMP=$dir
 image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.0.sif"
 
 input="/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
-output="/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 
 cov_idx=$(( SLURM_ARRAY_TASK_ID / 3 ))
 pur_idx=$(( SLURM_ARRAY_TASK_ID % 3 ))
@@ -35,4 +35,4 @@ pur=${pur_values[$pur_idx]}
 
 echo "Running job with COV=$cov and PUR=$pur"
 
-singularity exec --bind /orfeo:/orfeo --no-home $image Rscript $base/map_cna_to_muts.R -i $input -o $output -s $spn -c $cov -p $pur 
+singularity exec --bind /orfeo:/orfeo --no-home $image Rscript $base/map_cna_to_muts.R -i $input -s $spn -c $cov -p $pur 

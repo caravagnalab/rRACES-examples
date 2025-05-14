@@ -1,32 +1,14 @@
-FROM --platform=$BUILDPLATFORM ubuntu:latest
+FROM --platform=$BUILDPLATFORM ubuntu:noble
 
-ENV DEBIAN_FRONTEND=noninteractive
-ARG USER_ID=root
-ENV USER_ID $USER_ID
+RUN apt-get update && apt-get -y upgrade
 
-RUN  apt-get update \
-  && apt-get install -y wget \
-  && rm -rf /var/lib/apt/lists/*
+RUN apt-get install -y build-essential cmake git time \
+       ssh g++ r-cran-devtools samtools neofetch locales
 
-USER $USER_ID
-WORKDIR /home/$USER_ID
-ENV HOME /home/$USER_ID
+RUN apt --purge autoremove && apt-get clean
 
-## Git install
-RUN apt-get -y update
-RUN apt-get -y install git
-
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential r-base
-## enable R package install
-RUN chmod a+w /usr/local/lib/R/site-library
-
-RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y build-essential cmake git \
-       ssh g++ r-cran-dplyr r-cran-crayon r-cran-rcpp \
-       r-cran-devtools r-cran-ggplot2 r-cran-ggraph \
-       r-cran-knitr r-cran-r.utils r-cran-tidygraph \
-       r-cran-hexbin r-cran-rcolorbrewer r-cran-cli \
-    && apt-get clean
+RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG=en_US.utf8
 
 RUN R -e 'install.packages("ggmuller")'
 RUN R -e 'install.packages("tidyverse")'
@@ -37,18 +19,12 @@ RUN R -e 'install.packages("ggpubr")'
 RUN R -e 'install.packages("bench")'
 RUN R -e 'devtools::install_github("caravagnalab/ProCESS")'
 
-RUN apt-get install -y libncurses-dev
-RUN apt-get install -y zlib1g-dev
-RUN apt-get install -y make
+ENV DEBIAN_FRONTEND=noninteractive
+ARG USER_ID=ProCESS
+RUN useradd -m $USER_ID
+USER $USER_ID
+WORKDIR /home/$USER_ID
+ENV HOME=/home/$USER_ID
 
-## install samtools
-RUN wget 'https://github.com/samtools/samtools/releases/download/1.20/samtools-1.20.tar.bz2'
-RUN tar -xvjf samtools-1.20.tar.bz2
-WORKDIR samtools-1.20/
-RUN sh ./configure --prefix=/home --disable-bz2 --disable-lzma
-RUN make
-RUN make install
-ENV PATH="/home/bin:$PATH"
-
-RUN apt-get update && apt-get install -y time
+CMD ["neofetch"]
 CMD ["time", "--version"]

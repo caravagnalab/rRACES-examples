@@ -70,7 +70,12 @@ set.seed(12345)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
 ```
 
-## Sample naming requirments
+## Naming requirments
+
+### Clone nomenclature
+The standardize clone names should be `Clone N` (e.g.  `Clone 1`) for all SPNs.
+
+### Sample nomenclature
 To standardize sample names, the following naming convention must be used:
 ```
 SPN{X}_{T}.{N}
@@ -81,7 +86,6 @@ where:
 - `N` is the sample number for a given time point T (1 = first sample at T time point, 2 = second sample at T time point)
 
 If you are working on SPN01 and are sampling your third sample at the second time point, you must name it: `SPN01_2.3`
-
 
 ## Required script and files
 For each SPN, the following files must be present:
@@ -127,7 +131,7 @@ To run the R scripts, a Singularity image with the latest version of ProCESS mus
 #SBATCH --error=ProCESS.err
 
 module load singularity
-image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.1.0.sif"
+image="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/process_1.0.2.sif"
 # change with your path to the simulate_tissue.R and simulate_mutation.R scripts
 base="/orfeo/scratch/area/lvaleriani/races/ProCESS-examples/SCOUT/SPN01"
 

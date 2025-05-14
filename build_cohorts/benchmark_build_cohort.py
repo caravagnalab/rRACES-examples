@@ -8,6 +8,7 @@ import time
 import subprocess
 import argparse
 
+## This part is currently run sequentially
 
 merging_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
@@ -15,22 +16,26 @@ merging_shell_script="""#!/bin/bash
 #SBATCH --cpus-per-task=5
 #SBATCH --time=2:00:00
 #SBATCH --mem=80GB
-#SBATCH --output=merge_%j
 
 module load singularity
+lots_list=${LOTS_LIST}
 
-printf "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}""\n"
+lots_list=($(echo $lots_list))
 
-singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${N_LOT} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE}
+for i in ${lots_list[@]}
+do
+  echo "singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${i} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE} ${MAX_COVERAGE} ${TOT_LOTS}"
+  singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_merge_rds.R ${i} ${SPN} ${INPUT_DIR} ${PURITY} ${TYPE} ${MAX_COVERAGE} ${TOT_LOTS}
+done
 """
 
 merging_R_script="""rm(list = ls())
 library(dplyr)
 args <- commandArgs(trailingOnly = TRUE)
 
-if (length(args) != 5) {
+if (length(args) != 7) {
   stop(paste("Syntax error: ProCESS_merge_rds.R",
-             "<num_of_lots> <SPN> <input_dir> <purity> <type>"),
+             "<num_of_lots> <SPN> <input_dir> <purity> <type> <max_coverage> <tot_num_of_lots>"),
        call. = FALSE)
 }
 
@@ -39,16 +44,18 @@ spn <- args[2]
 input_dir <- args[3]
 purity <- args[4]
 type <- args[5]
-
+p_info <- ps::ps_handle()
+start_time <- Sys.time()
+initial_cpu <- ps::ps_cpu_times(p_info)
+initial_mem <- ps::ps_memory_info(p_info)["rss"] / 1024^3
 if (type=="tumour"){
   muts_dir <- paste0(input_dir,"/tumour/purity_",purity,"/data/mutations/")
-  print(muts_dir)
-  max_coverage <- 200 ## this is hard-coded now
-  num_of_lots <- 40 ## this is hard-coded now
+  max_coverage <- as.double(args[6]) #200 ## this is hard-coded now
+  num_of_lots <- as.double(args[7]) #40 ## this is hard-coded now
   coverage<-(max_coverage*lot_end)/num_of_lots
   data <- list()
-  
-  if (lot_end==10){
+ 
+  if (lot_end<=10){
     rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[1:lot_end]
     data <- lapply(rds_files,function(x){
       readRDS(x)  %>%
@@ -58,10 +65,12 @@ if (type=="tumour"){
     lot_start<-lot_end-10+1
     previous_lot <- lot_end-10
     previous_coverage <- (max_coverage*previous_lot)/num_of_lots
+    print(previous_coverage)
     previous_lots <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_merged_coverage_",previous_coverage),full.names = T)
     rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[lot_start:lot_end]
     
     rds_files_all <- c(rds_files,previous_lots)
+    message(paste0("Merging the following rds: ",rds_files_all))
     data <- lapply(rds_files_all,function(x){
       readRDS(x)  %>%
         dplyr::select(-ends_with(".VAF"))
@@ -96,6 +105,9 @@ if (type=="tumour"){
   saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))
   print("Done merging!")
 } else if (type=="normal"){
+  max_coverage <- as.double(args[6])
+  num_of_lots <- as.double(args[7]) #40 ## this is hard-coded now
+  coverage<-(max_coverage*lot_end)/num_of_lots
   muts_dir <- paste0(input_dir,"/normal/purity_1/data/mutations/")
   rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)
   data <- lapply(rds_files,function(x){
@@ -119,7 +131,32 @@ if (type=="tumour"){
   col_name_VAF <- paste0(s,".VAF")
   result <- result %>% 
     mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
-  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",30,"x", ".rds"))
+  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",max_coverage,"x", ".rds"))
+}
+
+end_time <- Sys.time()
+final_cpu <- ps::ps_cpu_times(p_info)
+final_mem <- ps::ps_memory_info(p_info)["rss"] / 1024^3
+elapsed_time <- end_time - start_time
+elapsed_time <- as.numeric(elapsed_time, units = "mins")
+cpu_used <- (final_cpu["user"] + final_cpu["system"]) - (initial_cpu["user"]+ initial_cpu["system"])
+mem_used <- final_mem - initial_mem
+resource_usage <- data.frame(
+  elapsed_time_mins =  elapsed_time,
+  cpu_time_secs = cpu_used,
+  memory_used_MB = mem_used,
+  coverage = coverage,
+  purity = purity,
+  type = type
+)
+rownames(resource_usage) <- NULL
+
+if (type=="tumour"){
+  data_dir_resources <- paste0(input_dir,"/tumour/purity_",purity,"/data/resources/")
+  saveRDS(resource_usage, file = paste0(data_dir_resources,"seq_results_merging_coverage_",coverage,"x", ".rds"))
+} else if (type=="normal"){
+  data_dir_resources <- paste0(input_dir,"/normal/purity_1/data/resources/")
+  saveRDS(resource_usage, file = paste0(data_dir_resources,"seq_results_merging_coverage_",max_coverage,"x", ".rds"))
 }
 """
 
@@ -548,6 +585,33 @@ config={CONFIG}
     --outdir $output_dir_combination -profile singularity -c $config
 """
 
+sarek_file_normal_launcher="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=sarek_mapping_vc_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=96:00:00
+#SBATCH --output=sarek_mapping_vc_{JOB_NAME}_%J.out 
+#SBATCH --error=sarek_mapping_vc_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/sarek_{JOB_NAME}.csv"
+
+output_base_dir={SAREK_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
+    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity -c $config
+"""
+
+
 sarek_variant_calling_launcher="""#!/bin/bash
 #SBATCH --partition=EPYC
 #SBATCH --job-name=sarek_VC_{JOB_NAME}
@@ -898,7 +962,7 @@ if (__name__ == '__main__'):
             while (len(completed_ids) != len(submitted)):
                 time.sleep(60)
                 completed_ids = get_completed_jobs(output_dir, lot_prefix)
-        
+            print(seq_type) 
             if seq_type == 'normal':
                 with open(gender_filename, "r") as gender_file:
                     subject_gender = gender_file.read().strip('\n')
@@ -910,28 +974,33 @@ if (__name__ == '__main__'):
                     write_sarek_sample_lines(sarek_file, args.SPN, 'normal', 'normal_sample', num_of_lots, normal_fastq_dir, zeros, lines)
                 
                 job_id=seq_type
-                sarek_file_launcher_orig = sarek_file_launcher
-                sarek_file_launcher = sarek_file_launcher.replace('{ACCOUNT}', str(account))
-                sarek_file_launcher = sarek_file_launcher.replace('{JOB_NAME}', str(job_id))
-                sarek_file_launcher = sarek_file_launcher.replace('{INPUT_DIR}', str(sarek_dir))
-                sarek_file_launcher = sarek_file_launcher.replace('{CONFIG}', str(config_file))
-                sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+                sarek_file_launcher_orig = sarek_file_normal_launcher
+                sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{ACCOUNT}', str(account))
+                sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{JOB_NAME}', str(job_id))
+                sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{CONFIG}', str(config_file))
+                sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
 
-                with open(f'{sarek_dir}/sarek_mapping_normal.sh', 'w') as outstream:
-                    outstream.write(sarek_file_launcher)
-                sarek_file_launcher = sarek_file_launcher_orig
+                with open(f'{sarek_dir}/sarek_mapping_vc_normal.sh', 'w') as outstream:
+                    outstream.write(sarek_file_normal_launcher)
+                sarek_file_normal_launcher = sarek_file_launcher_orig
                 with open('ProCESS_merge_rds.R', 'w') as outstream:
                     outstream.write(merging_R_script)
 
                 with open('ProCESS_merge_rds.sh', 'w') as outstream:
                     outstream.write(merging_shell_script)
+                num_of_normal_lots_list = [cohorts['normal']['max_coverage']]
 
+                lots=''
+                for l in num_of_normal_lots_list:
+                  lots = lots+' '+str(l)
                 cmd = ['sbatch', '--account={}'.format(account),
                     '--partition={}'.format(args.partition),
-                    '--job-name={}_{}_{}'.format(args.SPN, 1,30),
-                    ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_lots,args.SPN,
+                    '--output={}/merge_normal_{}_{}_{}.log'.format(log_dir,args.SPN, 1,cohorts['normal']['max_coverage']),
+                    '--job-name=merge_normal_{}_{}_{}'.format(args.SPN, 1,cohorts['normal']['max_coverage']),
+                    ('--export=LOTS_LIST={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={},MAX_COVERAGE={},TOT_LOTS={}').format(lots,args.SPN,
                                                         args.output_dir,purity,seq_type,
-                                                        args.image_path, curr_dir),
+                                                        args.image_path, curr_dir,cohorts['normal']['max_coverage'],num_of_lots_N),
                     './ProCESS_merge_rds.sh']
 
                 subprocess.run(cmd)
@@ -1013,18 +1082,24 @@ if (__name__ == '__main__'):
                             outstream.write(tumourevo_launcher)
                         tumourevo_launcher = tumourevo_launcher_orig
                     
-                    with open('ProCESS_merge_rds.R', 'w') as outstream:
-                        outstream.write(merging_R_script)
+                with open('ProCESS_merge_rds.R', 'w') as outstream:
+                  outstream.write(merging_R_script)
 
-                    with open('ProCESS_merge_rds.sh', 'w') as outstream:
-                        outstream.write(merging_shell_script)
-
-                    cmd = ['sbatch', '--account={}'.format(account),
-                        '--partition={}'.format(args.partition),
-                        '--job-name={}_{}_{}'.format(args.SPN, purity,cohort_cov),
-                        ('--export=N_LOT={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={}').format(num_of_tumour_lots,args.SPN,
-                                                            args.output_dir,purity,seq_type,
-                                                            args.image_path, curr_dir),
-                        './ProCESS_merge_rds.sh']
-
-                    subprocess.run(cmd)
+                with open('ProCESS_merge_rds.sh', 'w') as outstream:
+                  outstream.write(merging_shell_script)
+                
+                num_of_tumour_lots_list = [math.ceil((cohort_cov*num_of_lots)/cohorts['tumour']['max_coverage']) for cohort_cov in cohort_coverages]
+               
+                lots=''
+                for l in num_of_tumour_lots_list:
+                  lots = lots+' '+str(l)
+                
+                cmd = ['sbatch', '--account={}'.format(account),
+                    '--partition={}'.format(args.partition),
+                    '--output={}/merge_tumour_{}_{}_{}.log'.format(log_dir,args.SPN, purity,cohorts['tumour']['max_coverage']),
+                    '--job-name=merge_tumour_{}_{}_{}'.format(args.SPN, purity,cohorts['tumour']['max_coverage']),
+                    ('--export=LOTS_LIST={},SPN={},INPUT_DIR={},PURITY={},TYPE={},IMAGE={},DIR={},MAX_COVERAGE={},TOT_LOTS={}').format(lots,args.SPN,
+                                                        args.output_dir,purity,seq_type,
+                                                        args.image_path, curr_dir,cohorts['tumour']['max_coverage'],num_of_lots_T),
+                    './ProCESS_merge_rds.sh']
+                subprocess.run(cmd)

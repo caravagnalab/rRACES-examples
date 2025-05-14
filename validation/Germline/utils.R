@@ -137,23 +137,25 @@ compute_metrics <- function(actual, predicted) {
   return(metrics)
 }
 
-plot_filter_distribution = function(merged_df, log_scale = TRUE) {
+plot_filter_distribution = function(merged_df, colors, log_scale = TRUE) {
   p = merged_df %>% 
     dplyr::group_by(FILTER) %>% 
     dplyr::summarise(n=n()) %>% 
     na.omit() %>% 
-    ggplot(mapping = aes(x=reorder(FILTER, +n), y=n)) +
+    ggplot(mapping = aes(x=reorder(FILTER, +n), y=n, fill = FILTER)) +
     geom_col() +
     theme_bw() +
+    scale_fill_manual(values = colors) +
     coord_flip() +
-    labs(x = "FILTER", y="count")  
+    labs(x = "FILTER", y="count") + 
+    theme(legend.position = 'None')
   
   if (log_scale) {
     p <- p +
       scale_y_continuous(trans = "log10")
   }
   
-  p
+  p 
 }
 
 
