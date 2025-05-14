@@ -70,7 +70,12 @@ set.seed(12345)
 sim <- SpatialSimulation(name = 'SPN01', seed = 12345, save_snapshot=TRUE)
 ```
 
-## Sample naming requirments
+## Naming requirments
+
+### Clone nomenclature
+The standardize clone names should be `Clone N` (e.g.  `Clone 1`) for all SPNs.
+
+### Sample nomenclature
 To standardize sample names, the following naming convention must be used:
 ```
 SPN{X}_{T}.{N}
@@ -81,7 +86,6 @@ where:
 - `N` is the sample number for a given time point T (1 = first sample at T time point, 2 = second sample at T time point)
 
 If you are working on SPN01 and are sampling your third sample at the second time point, you must name it: `SPN01_2.3`
-
 
 ## Required script and files
 For each SPN, the following files must be present:
