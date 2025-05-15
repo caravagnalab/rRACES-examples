@@ -92,7 +92,7 @@ t4 <- plot_tissue(sim) + geom_rect(xmin = bbox_lower_corner[1], xmax = bbox_uppe
                                    fill = NA, color = "black")
 
 forest <- sim$get_samples_forest()
-# plt_forest <- plot_forest(forest) %>% 
+# plt_forest <- plot_forest(forest) %>%
 #   annotate_forest(forest, MRCAs = T, samples = T)
 
 forest$save("sample_forest.sff")

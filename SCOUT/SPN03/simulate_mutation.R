@@ -15,12 +15,13 @@ indel_rate = 1e-9
 CNA_rate = 1e-12
 
 # Clone 1 
-# NOTCH1p2514*fs*4 
+# NOTCH1p2514*fs*4  
+# NOTCH1 FY357Y
 m_engine$add_mutant(mutant_name = "Clone 1",
                     passenger_rates = c(SNV = SNV_rate,
                                         CNA = CNA_rate,
                                         indel = indel_rate),
-                    drivers = list("NOTCH1 FY357Y", 
+                    drivers = list("NOTCH1 E943K", 
                                    CNA(chr = "13", 
                                        chr_pos = 39500001, 
                                        len = 1.5e6,  
