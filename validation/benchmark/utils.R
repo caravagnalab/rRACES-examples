@@ -1,6 +1,5 @@
-parse_rds <- function(dir, type){
+parse_rds <- function(dir, type, merging){
   df <- tibble()
-  
   if (type == 'normal'){
     path <-  list(paste(dir, type, 'purity_1/data/resources/', sep = '/'))
   } else if (type == 'tumour'){
@@ -11,16 +10,26 @@ parse_rds <- function(dir, type){
   for (p in path){
     purity <- strsplit(p, split = '/') %>% unlist()
     purity <- purity[[11]]
-    
-    files <- list.files(p)
-    for (f in files){
-      chunk <- strsplit(gsub(pattern = '_', replacement = '.', x = f), '\\.')  %>% unlist()
-      chunk <- chunk[length(chunk)-1]
-      
-      data <- readRDS(paste0(p, f)) %>% tibble()
-      data <- data %>% mutate(chunk = chunk) %>% mutate(purity = purity)
-      df <- bind_rows(df, data)
-    }
+    if (merging){
+      files <- list.files(p,pattern = "seq_results_merging")
+      for (f in files){
+        coverage <- strsplit(gsub(pattern = '_', replacement = '.', x = f), '\\.')  %>% unlist()
+        coverage <- coverage[length(coverage)-1]
+        data <- readRDS(paste0(p, f)) %>% tibble()
+        data <- data %>% mutate(coverage = coverage) %>% mutate(purity = purity)
+        df <- bind_rows(df, data)
+      }
+    } else{
+      files <- list.files(p,pattern = "seq_results_resources")
+      for (f in files){
+        chunk <- strsplit(gsub(pattern = '_', replacement = '.', x = f), '\\.')  %>% unlist()
+        chunk <- chunk[length(chunk)-1]
+        
+        data <- readRDS(paste0(p, f)) %>% tibble()
+        data <- data %>% mutate(chunk = chunk) %>% mutate(purity = purity)
+        df <- bind_rows(df, data)
+      }
+    }     
   }
   df <- df %>% mutate(type = type)
   return(df)
