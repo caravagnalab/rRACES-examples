@@ -1,15 +1,19 @@
 library(dplyr)
 
-COV = c(50, 100, 150, 200)
-PUR = c(0.3, 0.6, 0.9)
-NORMAL_COV = 30
+# TO CHANGE #
 ########################
 # change with SPN name
 spn <- "SPN03"
-########################
+# change with current workdir
 workdir  <- "/orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/report"
+########################
+
 output <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 input <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+
+COV = c(50, 100, 150, 200)
+PUR = c(0.3, 0.6, 0.9)
+NORMAL_COV = 30
 
 dir.create(paste0(output,'/', spn, '/report/'), recursive = T, showWarnings = F)
 setwd(workdir)
