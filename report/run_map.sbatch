@@ -11,6 +11,7 @@
 # to change
 # path to a temporary directory 
 dir="/orfeo/fast/area/lvaleriani/tmp_nf"
+mkdir -p $dir
 # path to ProCESS-examples repo
 base="/orfeo/scratch/area/lvaleriani/races/ProCESS-examples/report"
 # spn name
