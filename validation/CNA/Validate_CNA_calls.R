@@ -4,7 +4,6 @@ library(ProCESS)
 library(optparse)
 library(tidyr)
 library(ggplot2)
-# guardare anche 50x .3
 
 ############ Parse command-line arguments
 option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN03_1.1'),
@@ -392,6 +391,7 @@ st =
    EEEFFF
    GGGGGG
    GGGGGG'
+
 report = patchwork::wrap_plots(
   baf_ascat, dr_ascat, baf_races, dr_races, baf_comparison, dr_comparison, cna_calls_comparison,
   design = st
@@ -405,10 +405,15 @@ report = patchwork::wrap_plots(
       filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow())
 )) 
 
-#saving_dir = paste0('/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/validation/CNA/', sample_id, '_',coverage,'_',purity,'/')
 outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/',caller,"/", sample_id,"/")
 dir.create(outdir, recursive = T, showWarnings = F)
 ggsave(report, file = paste0(outdir,'report.png'), height = 12, width = 12)
+
+reportdir <- paste0(data_dir,spn_id,"/validation/cna/report/")
+dir.create(reportdir, recursive = T, showWarnings = F)
+filename <- paste(spn_id,coverage,purity, caller, sample_id, sep='_')
+file_path <- file.path(reportdir, filename)
+ggsave(report, file = paste0(file_path,'.png'), height = 12, width = 12)
 
 CNA_validation_summmary = list(
   'data' = joint_segmentation,

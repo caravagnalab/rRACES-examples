@@ -21,8 +21,6 @@ purity = opt$purity
 callers = c("mutect2", "strelka", "freebayes")
 chromosomes = paste0("chr", c(1:22, "X", "Y"))
 min_vaf = .02
-#purity = 0.3
-#coverage = 100
 mut_types = c("INDEL", "SNV")
 comb = list(PI = purity, COV = coverage)
 path_to_cna <- paste0(data_dir,spn_id,"/process/cna_data/")
@@ -32,7 +30,7 @@ samples = gsub(pattern="_cna.rds",replacement="",x=list.files(path_to_cna,patter
 path_to_seq <- paste0(data_dir,spn_id,"/sequencing/tumour/purity_",purity,"/data/mutations/seq_results_muts_merged_coverage_",coverage,"x.rds")
 input_dir <-  paste0(data_dir,spn_id,"/validation/somatic/")
 outdir <- paste0(data_dir,spn_id,"/validation/somatic/report")
-dir.create(outdir, recursive = T)
+dir.create(outdir, recursive = T, showWarnings = F)
 
 # Preparing report
 message("Parsing combination: purity=", purity, ", cov=", coverage)
@@ -51,20 +49,16 @@ for (caller in callers) {
       combination = paste0(coverage, "x_", purity, "p")
       process_folder_path <- file.path(input_dir, spn, combination, "process", sample_id, mut_type)
       caller_folder_path = file.path(input_dir, spn, combination, caller, sample_id, mut_type)
-       
+      
       # Get ground truth
       gt_res = lapply(chromosomes, function(chromosome){
-        #print(chromosome)
         gt_path = file.path(process_folder_path, paste0(chromosome,".rds"))
-	      #print(gt_path)
         readRDS(gt_path)
       }) %>% do.call("bind_rows", .)
       
       # Get caller res
       caller_res = lapply(chromosomes, function(chromosome) {
-        #print(chromosome)
         caller_path = file.path(caller_folder_path, paste0(chromosome,".rds"))
-	      #print(caller_path)
         readRDS(caller_path)  
       }) %>% do.call("bind_rows", .) %>% 
         dplyr::filter(!is.na(VAF))
@@ -74,11 +68,12 @@ for (caller in callers) {
       
       report_path = file.path(caller_folder_path, "report.png")
       metrics_path = file.path(caller_folder_path, "metrics.rds")
-      #report_path = paste0(spn,"/purity_",purity,"_coverage_",coverage,"x/",caller,"/",sample_id,"/",mut_type,"/report.png")
-      #metrics_path = paste0(spn,"/purity_",purity,"_coverage_",coverage,"x/",caller,"/",sample_id,"/",mut_type,"/metrics.rds")
-      
       ggsave(report_path, plot = report$report_plot, width = 15, height = 20, units = "in", dpi = 400)
       saveRDS(list(report_metrics=report$report_metrics, vaf_comparison=report$vaf_comparison), metrics_path)
+      
+      filename = paste(spn, combination, caller, sample_id, mut_type, sep = '_')
+      file_path = file.path(outdir, filename)
+      ggsave(paste0(file_path, '.png'), plot = report$report_plot, width = 15, height = 20, units = "in", dpi = 400)
       
       message("        Report done!")
     }
