@@ -1,4 +1,3 @@
-# runned in Orfeo, on Epyc node on 5th November 2024 
 rm(list=ls())
 library(ProCESS)
 library(dplyr)
@@ -38,8 +37,6 @@ sim$update_rates("Clone 1", rates = c(growth = 0, death = 0.1))
 sim$run_up_to_size("Clone 2", 5000)
 
 # most of cells from clone 1 are now dead
-muller_clone2 = plot_muller(sim)
-t2 = plot_tissue(sim)
 
 # adding third clone
 clone3_born = sim$get_clock()
@@ -51,7 +48,6 @@ sim$add_mutant(name = "Clone 3",
 sim$update_rates("Clone 2", rates = c(growth = .1))
 sim$mutate_progeny(sim$choose_cell_in("Clone 2"), "Clone 3")
 sim$run_up_to_size("Clone 3", 5000)
-plot_muller(sim)
 
 # now let's slowly kill clone 2
 sim$update_rates("Clone 2", rates = c(growth = 0, death = 0.025))
@@ -70,8 +66,6 @@ sim$update_rates("Clone 2", rates = c(growth = 0, death = 0.45))
 sim$run_up_to_size("Clone 3", 70000)
 
 # only clone 3 remains 
-muller_clone3 = plot_muller(sim)
-tissue_clone3 = plot_tissue(sim)
 
 # SAMPLING
 # two samples, at the same time and in two different places
@@ -101,14 +95,14 @@ ggsave("tissue_sampled.png", bg = "white")
 
 # Get forest ####
 sampled_phylogeny <- sim$get_samples_forest()
-sampled_phylogeny$save("samples_forest.sff")
+sampled_phylogeny$save("sample_forest.sff")
 
-plot_phylogeny <- plot_forest(sampled_phylogeny) %>%
-  annotate_forest(sampled_phylogeny,
-                  samples = TRUE,
-                  MRCAs = TRUE,
-                  exposures = FALSE,
-                  facet_signatures = FALSE,
-                  drivers = FALSE,
-                  add_driver_label = FALSE)
-ggsave('phylogeny.png', plot_phylogeny, bg = 'white')
+# plot_phylogeny <- plot_forest(sampled_phylogeny) %>%
+#   annotate_forest(sampled_phylogeny,
+#                   samples = TRUE,
+#                   MRCAs = TRUE,
+#                   exposures = FALSE,
+#                   facet_signatures = FALSE,
+#                   drivers = FALSE,
+#                   add_driver_label = FALSE)
+# ggsave('phylogeny.png', plot_phylogeny, bg = 'white')

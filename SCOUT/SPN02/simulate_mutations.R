@@ -16,11 +16,12 @@ setwd("/orfeo/cephfs/scratch/cdslab/shared/ProCESS/GRCh38")
 # setting the germline subject as columbian woman and tumor type to colonrectal cancer
 mu_SNV = 1e-8
 mu_ID = 1e-9
-mu_CNA = 1e-12
+mu_CNA = 1e-11
  
-# last clone is hypermutant (only for snvs and ids)
+# last clone is hypermutant (only for snvs and ids, lower CNAs)
 mu_SNV_clone3 = 1e-7
 mu_ID_clone3 = 7e-9
+mu_CNA_clone3 = 1e-13
 
 m_engine <- MutationEngine(setup_code = "GRCh38", 
                 tumour_type = "COAD", 
@@ -36,7 +37,7 @@ m_engine$add_mutant(mutant_name = "Clone 2",
                     drivers = list("PIK3CA E545K"))
 
 m_engine$add_mutant(mutant_name = "Clone 3", 
-                    passenger_rates = c(SNV = mu_SNV_clone3, indel = mu_ID_clone3, CNA = mu_CNA), # modelled as an hypermutant, so with higher passenger_rates
+                    passenger_rates = c(SNV = mu_SNV_clone3, indel = mu_ID_clone3, CNA = mu_CNA_clone3), # modelled as an hypermutant, so with higher passenger_rates
                     drivers = list(SNV("2", 47799065, "A")))
 
 # indels and sbs have different coefficients summing (up to 1 for IDs and up to 1 for SBSs)
