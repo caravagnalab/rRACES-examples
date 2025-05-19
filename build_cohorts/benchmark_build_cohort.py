@@ -165,7 +165,7 @@ gender_shell_script="""#!/bin/bash
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=1:00:00
-#SBATCH --mem=20GB
+#SBATCH --mem=40GB
 
 module load singularity
 singularity exec --bind /orfeo:/orfeo --no-home ${IMAGE} Rscript ${DIR}/ProCESS_subject_gender.R ${PHYLO_FOREST}
@@ -190,7 +190,7 @@ gender <- forest$get_germline_subject()$gender
 if (gender == "male") {
     gender <- "XY"
 } else if (gender == "female") { 
-    gender <- "XY"
+    gender <- "XX"
 } else {
     stop(paste0("Unsupported germline subject gender ",
                 "\\"",gender,"\\"."),
