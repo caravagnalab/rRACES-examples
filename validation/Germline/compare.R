@@ -225,6 +225,12 @@ p_metrics = metrics %>%
 
 design = "AABBEE\nCCDDEE\nFFGGHH\nFFGGHH\nIILLMM\nIILLMM"
 
+baf_comparison <- merged_df_filter %>%
+  dplyr::ungroup() %>%
+  dplyr::filter(true_positive) %>%
+  dplyr::mutate(VAF_difference = BAF.caller - BAF.races) %>%
+  dplyr::select(VAF_difference, BAF.races)
+
 title = paste0(spn, ", calls by ", tool)
 report_plot = free(p_dp_races) + free(p_dp_caller)+
   free(p_baf_races) + free(p_baf_caller) +
@@ -235,3 +241,4 @@ report_plot = free(p_dp_races) + free(p_dp_caller)+
   plot_annotation(title)
 
 ggsave(plot = report_plot, filename = paste0(report,'/', tool, '_normal.png'), dpi = 100, width = 13, height = 15, units = 'in')
+saveRDS(object = list(report_metrics=metrics, baf_comparison=baf_comparison), file = paste0(report,'/', tool, '_normal_metrics.rds'))
