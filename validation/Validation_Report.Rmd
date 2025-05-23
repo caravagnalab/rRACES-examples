@@ -1,0 +1,234 @@
+---
+set_title: !r test_title
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: true
+    toc_depth: 3
+    number_sections: false
+    self_contained: yes
+    css: corp-styles.css
+    highlight: pygments
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!-- Libraries  -->
+
+```{r libraries, echo=FALSE, warning=FALSE, include=FALSE, message = FALSE}
+
+#load libraries
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(ggplot2)
+library(patchwork)
+library(ProCESS)
+library(dplyr)
+library(tidyverse)
+library(reactable)
+library(sparkline)
+library(htmltools)
+source("getter_validation_report.R")
+```
+
+<!-- Read params files -->
+
+```{r assign_variables, include = FALSE, echo =TRUE}
+spn <- params$spn
+comb <- params$comb
+```
+
+<!-- Load data -->
+
+```{r load_data, include = FALSE, echo =TRUE}
+scout_dir <-"/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"
+validation_dir_somatic <- paste0(scout_dir,spn,"/validation/somatic/",spn)
+#phylo_forest <- load_phylogenetic_forest(filename = paste0(scout_dir,spn,"/process/phylo_forest.sff"))
+samples <- c("SPN01_1.1","SPN01_1.2","SPN01_1.3") #phylo_forest$get_samples_info()$name
+```
+
+---
+title: "Validation report for `r params$spn` for `r params$comb` combination"
+---
+
+This report presents the validation results of the nf-core/sarek pipeline run, evaluating its performance in detecting somatic, germline, and copy number mutations. For each mutation category, we benchmarked known variants and assessed inferred variants across a range of commonly used variant calling tools. The analysis aims to compare tool-specific performance, including accuracy, precision, recall, and F1 scores, providing a comprehensive overview of the pipeline’s reliability across different variant types and mutation detection strategies.
+
+# Somatic mutations
+
+The somatic validation section evaluates the performance of multiple variant calling tools in detecting somatic mutations, focusing on both SNVs and INDELs. A summary table presents key performance metrics—accuracy, precision, recall, F1 score, and false positive rate—for each sample, stratified by mutation type and variant caller. This detailed comparison highlights tool-specific strengths and limitations across diverse tumor samples. To support and visualize these findings, a corresponding plot illustrates the performance metrics, enabling clearer comparisons across tools and mutation types.
+
+```{r somatic_metrics}
+s <- get_mutations_metrics(spn = spn,comb = comb, samples = samples, type="somatic") %>% 
+  dplyr::mutate(value=as.numeric(value))
+#value_normalized <- (s$value - min(s$value)) / (max(s$value) - min(s$value))
+
+# reactable(s,filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 10,
+#            bordered = TRUE, striped = TRUE, rownames=FALSE)
+
+reactable(
+  s,
+  filterable = TRUE, rownames=FALSE,
+  columns = list(
+    value = colDef(
+      style = function(value) {
+        n_colors <- 100
+        color_palette <- rev(heat.colors(n_colors))
+        index <- round(value * (n_colors - 1)) + 1
+        list(background = color_palette[index], color = "black")
+      }
+    )
+  )
+)
+
+```
+
+## Unfiltered mutations
+
+This plots show the metrics for all mutations:
+
+```{r plot_somatic, echo=FALSE,out.width = '100%',fig.align='center',fig.height=5,fig.width=8}
+p <- s %>%  filter(Mutations=="All") %>% 
+  ggplot(aes(x = name, y = value, fill = Tool)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_grid(Sample~Type) +  # or ~Type, ~Purity, etc.
+  labs(x = "Metric", y = "Value", fill = "Metric") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+p
+```
+
+## Filtered mutations
+
+This plots show the metrics for "PASS" mutations according to the tool:
+
+```{r plot_somatic_pass, echo=FALSE,out.width = '100%',fig.align='center',fig.height=5,fig.width=8}
+p <- s %>% filter(Mutations!="All") %>% 
+  ggplot(aes(x = name, y = value, fill = Tool)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_grid(Sample~Type) +  # or ~Type, ~Purity, etc.
+  labs(x = "Metric", y = "Value", fill = "Metric") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+p
+```
+
+# Germline mutations
+
+The germline validation section focuses on assessing variant calling performance using the normal sample only. Unlike the somatic analysis, this evaluation is not split by mutation type but instead provides an overall assessment of variant detection accuracy. A performance summary table reports key metrics—including accuracy, precision, recall, F1 score, and false positive rate—for each variant caller. This is complemented by a plot that visually compares tool performance, offering insights into the relative strengths of each method in identifying germline variants.
+
+
+```{r germline_mutations}
+g <- get_mutations_metrics(spn = "SPN01",comb = comb,samples = c("normal"),type = "germline") %>% 
+  dplyr::mutate(value=as.numeric(value))
+
+
+reactable(
+  g,
+  filterable = TRUE, rownames=FALSE,
+  columns = list(
+    value = colDef(
+      style = function(value) {
+        n_colors <- 100
+        color_palette <- rev(heat.colors(n_colors))
+        index <- round(value * (n_colors - 1)) + 1
+        list(background = color_palette[index], color = "black")
+      }
+    )
+  )
+)
+```
+
+
+
+```{r plot_germ, echo=FALSE,out.width = '100%',fig.align='center',fig.height=3,fig.width=8}
+p <- g %>%
+  ggplot(aes(x = name, y = value, fill = Tool)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~Mutations)+
+  labs(x = "Metric", y = "Value", fill = "Metric") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+p
+```
+
+
+# Copy Number Alterations
+
+The CNA validation section assesses the accuracy of copy number profiling across samples and tools. A summary table presents the proportion of the genome correctly estimated by each tool for each sample, offering a high-level view of overall performance. In addition, a bar plot compares the true and inferred values of key global parameters—tumor purity and ploidy—across tools and samples. These visualizations highlight each tool’s ability to accurately model essential genomic features and provide insight into their reliability for downstream analysis.
+
+
+```{r cna_metrics}
+c <-get_cna_metrics(spn = "SPN01",comb = comb, samples=samples)
+
+c %>% filter(name=="proportion of correctly inferred genome") %>%
+  dplyr::select(!name) %>%
+  dplyr::mutate(value=round(as.numeric(value),2)) %>%
+    reactable(filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 10,
+    bordered = TRUE, striped = TRUE, rownames=FALSE,
+    columns = list(
+      value = colDef(
+        cell = function(value) {
+          div(style = list(position = "relative", height = "20px", background = "#e0e0e0", borderRadius = "4px"),
+            div(style = list(
+              position = "absolute",
+              left = "0",
+              top = "0",
+              height = "100%",
+              width = paste0(value * 100, "%"),
+              background = "#90be6d",
+              borderRadius = "4px"
+            )),
+            div(style = list(
+              position = "absolute",
+              left = "50%",
+              top = "50%",
+              transform = "translate(-50%, -50%)",
+              fontWeight = "bold"
+            ), sprintf("%.3f", value))
+          )
+        },
+        minWidth = 120
+      )
+    )
+  )
+```
+
+## Purity estimate
+
+This plot shows for each sample the difference between the true simulated purity and the inferred purity by ASCAT.
+
+```{r plot_purity_estimate}
+c %>% 
+  dplyr::filter(name%in%c("inferred purity","true purity")) %>% 
+  ggplot(aes(x = name, y = value, fill = name)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~Sample) +  # or ~Type, ~Purity, etc.
+  labs(x = "Sample", y = "Metric Value", fill = "Metric") +
+  theme_minimal() +
+  theme(legend.position = "bottom",axis.text.x = element_blank())+
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1")
+```
+
+## Ploidy estimate
+
+This plot shows for each sample the difference between the true simulated ploidy and the inferred ploidy by ASCAT.
+
+```{r plot_ploidy_estimate}
+c %>% 
+  dplyr::filter(name%in%c("inferred ploidy","true ploidy")) %>% 
+  ggplot(aes(x = name, y = value, fill = name)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~Sample) +  # or ~Type, ~Purity, etc.
+  labs(x = "Sample", y = "Metric Value", fill = "Metric") +
+  theme_minimal() +
+  theme(legend.position = "bottom",axis.text.x = element_blank())+
+  # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1")
+```
