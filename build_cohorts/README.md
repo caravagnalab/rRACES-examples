@@ -293,6 +293,7 @@ SCOUT/SPN01/sequencing
     ├── tumourevo_50x_0.3p_strelka_ascat.sh                # .sh file for running tumourevo for strelka and ascat for tumour coverage 50X and purity 0.3
     └── ...           
 ```
+<!--
 ## After sequencing
 Once sequencing is terminated, please copy the entire folder in LTS folder using rsync. (ADD MORE DETAILS, LIKE THE CMD, THE OUTPUT FOLDER,
 THE NEED FOR RESOURCE).
@@ -300,7 +301,7 @@ THE NEED FOR RESOURCE).
 > [!IMPORTANT]
 > If the sequencing went straight without any issue, please remove the `BAM`
 > folder in the `SCOUT/{SPNID}/sequencing` folder.
-
+-->
 
 ## Run nextflow pipelines
 
@@ -355,7 +356,7 @@ As described previously, the `sarek` directory will store both `.csv` and `.sh` 
 The first files generated will be `sarek_normal.csv` and `sarek_mapping_normal.sh`. Once these files are created, you can start the mapping of the normal sample by running:  
 
 ```{sh}
-sbatch sarek_mapping_normal.sh
+sbatch sarek_mapping_vc_normal.sh
 ```
 
 Once the first purity combination (0.3) is completed, the following files will be generated:
