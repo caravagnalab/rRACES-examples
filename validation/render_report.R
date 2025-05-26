@@ -12,7 +12,7 @@ output <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 input <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 
 COV = c(50)
-PUR = c(0.6)
+PUR = c(0.6,0.3)
 #NORMAL_COV = 30
 
 dir.create(paste0(output,'/', spn, '/validation/report/'), recursive = T, showWarnings = F)
