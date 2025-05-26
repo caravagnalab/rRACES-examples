@@ -45,9 +45,13 @@ comb <- params$comb
 
 ```{r load_data, include = FALSE, echo =TRUE}
 scout_dir <-"/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"
+files_cna <- list.files(paste0(scout_dir, params$spn, "/process/cna_data"), full.names = T, pattern = '_cna.rds')
+sample_names <- sapply(files_cna, function(path) {
+  base_name <- basename(path)
+  sub("_cna.rds$", "", base_name)
+})
+
 validation_dir_somatic <- paste0(scout_dir,spn,"/validation/somatic/",spn)
-#phylo_forest <- load_phylogenetic_forest(filename = paste0(scout_dir,spn,"/process/phylo_forest.sff"))
-samples <- c("SPN01_1.1","SPN01_1.2","SPN01_1.3") #phylo_forest$get_samples_info()$name
 ```
 
 ---
@@ -94,7 +98,7 @@ p <- s %>%  filter(Mutations=="All") %>%
   ggplot(aes(x = name, y = value, fill = Tool)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   facet_grid(Sample~Type) +  # or ~Type, ~Purity, etc.
-  labs(x = "Metric", y = "Value", fill = "Metric") +
+  labs(x = "Metric", y = "Value", fill = "Tool") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Dark2")
@@ -110,7 +114,7 @@ p <- s %>% filter(Mutations!="All") %>%
   ggplot(aes(x = name, y = value, fill = Tool)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   facet_grid(Sample~Type) +  # or ~Type, ~Purity, etc.
-  labs(x = "Metric", y = "Value", fill = "Metric") +
+  labs(x = "Metric", y = "Value", fill = "Tool") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Dark2")
@@ -123,7 +127,7 @@ The germline validation section focuses on assessing variant calling performance
 
 
 ```{r germline_mutations}
-g <- get_mutations_metrics(spn = "SPN01",comb = comb,samples = c("normal"),type = "germline") %>% 
+g <- get_mutations_metrics(spn = params$spn,comb = comb,samples = c("normal"),type = "germline") %>% 
   dplyr::mutate(value=as.numeric(value))
 
 
@@ -150,7 +154,7 @@ p <- g %>%
   ggplot(aes(x = name, y = value, fill = Tool)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   facet_wrap(~Mutations)+
-  labs(x = "Metric", y = "Value", fill = "Metric") +
+  labs(x = "Metric", y = "Value", fill = "Tool") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Dark2")
@@ -164,9 +168,10 @@ The CNA validation section assesses the accuracy of copy number profiling across
 
 
 ```{r cna_metrics}
-c <-get_cna_metrics(spn = "SPN01",comb = comb, samples=samples)
+c <- get_cna_metrics(spn = params$spn,comb = comb, samples=samples)
 
-c %>% filter(name=="proportion of correctly inferred genome") %>%
+c %>% 
+  filter(name=="proportion of correctly inferred genome") %>%
   dplyr::select(!name) %>%
   dplyr::mutate(value=round(as.numeric(value),2)) %>%
     reactable(filterable = FALSE, resizable = T,highlight = T,defaultPageSize = 10,
@@ -206,12 +211,14 @@ This plot shows for each sample the difference between the true simulated purity
 ```{r plot_purity_estimate}
 c %>% 
   dplyr::filter(name%in%c("inferred purity","true purity")) %>% 
+  mutate(value = as.numeric(value)) %>% 
   ggplot(aes(x = name, y = value, fill = name)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   facet_wrap(~Sample) +  # or ~Type, ~Purity, etc.
-  labs(x = "Sample", y = "Metric Value", fill = "Metric") +
+  labs(x = "", y = "Purity", fill = "") +
   theme_minimal() +
-  theme(legend.position = "bottom",axis.text.x = element_blank())+
+  theme(legend.position = "bottom",axis.text.x = element_blank()) +
+  ylim(0,1) + 
   # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Set1")
 ```
@@ -223,10 +230,11 @@ This plot shows for each sample the difference between the true simulated ploidy
 ```{r plot_ploidy_estimate}
 c %>% 
   dplyr::filter(name%in%c("inferred ploidy","true ploidy")) %>% 
+  mutate(value = as.numeric(value)) %>% 
   ggplot(aes(x = name, y = value, fill = name)) +
   geom_bar(stat = "identity", position = position_dodge()) +
   facet_wrap(~Sample) +  # or ~Type, ~Purity, etc.
-  labs(x = "Sample", y = "Metric Value", fill = "Metric") +
+  labs(x = "", y = "Ploidy", fill = "") +
   theme_minimal() +
   theme(legend.position = "bottom",axis.text.x = element_blank())+
   # theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
