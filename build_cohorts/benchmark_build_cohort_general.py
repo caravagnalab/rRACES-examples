@@ -583,7 +583,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
 nextlow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination -profile singularity -c $config
+    --outdir $output_dir_combination -profile singularity --igenomes_base {IGENOME_BASE} -c $config
 """
 
 sarek_file_normal_launcher="""#!/bin/bash
@@ -609,7 +609,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
 nextlow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity -c $config
+    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity --igenomes_base {IGENOME_BASE} -c $config
 """
 
 
@@ -637,7 +637,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 config={CONFIG}
 nextlow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
-    --outdir $output_dir_combination -profile singularity -c $config
+    --outdir $output_dir_combination -profile singularity --igenomes_base {IGENOME_BASE} -c $config
 """
 
 tumourevo_launcher="""#!/bin/bash
@@ -828,6 +828,8 @@ if (__name__ == '__main__'):
                        help="The version of VEP cache",required=True)
     parser.add_argument('-FP', '--fasta_path', type=str, default="",
                        help="The full path to fasta reference genome",required=True)
+    parser.add_argument('-IB', '--igenome_base', type=str, default="",
+                       help="The full path to igenome base directory",required=True)
 
     cohorts = { 'normal': {
                     'max_coverage': 30,
@@ -992,6 +994,8 @@ if (__name__ == '__main__'):
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{CONFIG}', str(config_file))
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+		sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{IGENOME_BASE}', str(args.igenome_base))
+		    
 
                 with open(f'{sarek_dir}/sarek_mapping_vc_normal.sh', 'w') as outstream:
                     outstream.write(sarek_file_normal_launcher)
@@ -1047,7 +1051,8 @@ if (__name__ == '__main__'):
                     sarek_file_launcher = sarek_file_launcher.replace('{JOB_NAME}', str(job_id))
                     sarek_file_launcher = sarek_file_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                     sarek_file_launcher = sarek_file_launcher.replace('{CONFIG}', str(config_file))
-                    sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir)) 
+                    sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+		    sarek_file_launcher = sarek_file_launcher.replace('{IGENOME_BASE}', str(args.igenome_base))
 
                     with open(f'{sarek_dir}/sarek_mapping_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_file_launcher)
@@ -1063,6 +1068,7 @@ if (__name__ == '__main__'):
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{CONFIG}', str(config_file))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+		    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{IGENOME_BASE}', str(args.igenome_base))
                     
                     with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_variant_calling_launcher)
