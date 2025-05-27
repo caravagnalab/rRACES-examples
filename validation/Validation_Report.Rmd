@@ -33,6 +33,7 @@ library(sparkline)
 library(htmltools)
 library(fmsb)
 library(colormap)
+library(RColorBrewer)
 source("getter_validation_report.R")
 ```
 

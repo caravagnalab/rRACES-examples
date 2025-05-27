@@ -170,7 +170,7 @@ if (__name__ == '__main__'):
             './validate_cna.sh']
         subprocess.run(cmd)
 
-    if len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{SPN}/validation/germline/vcf')) != 72 and len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{SPN}/validation/germline/report')) != 6:
+    if len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf')) != 72 and len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report')) != 6:
       
       ## Run processing for germline
       with open('run_processing_germline.sh', 'w') as outstream:
