@@ -17,6 +17,6 @@ DIR="/orfeo/cephfs/scratch/area/lvaleriani/ProCESS-examples"
 
 # to keep as it is
 QUEUE="EPYC"
-ACCOUT="cdlab"
+ACCOUT="cdslab"
 
 $DIR/validation/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT
