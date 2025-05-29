@@ -170,6 +170,8 @@ if (__name__ == '__main__'):
             './validate_cna.sh']
         subprocess.run(cmd)
 
+    os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf', exist_ok = True)
+    os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report', exist_ok = True)
     if len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf')) != 72 and len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report')) != 6:
       
       ## Run processing for germline
