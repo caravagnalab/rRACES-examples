@@ -581,8 +581,9 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
+profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination -profile singularity -c $config
+    --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
 sarek_file_normal_launcher="""#!/bin/bash
@@ -607,8 +608,9 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
+profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity -c $config
+    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity,${profile} -c $config
 """
 
 
@@ -634,9 +636,10 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
+profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
-    --outdir $output_dir_combination -profile singularity -c $config
+    --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
 tumourevo_launcher="""#!/bin/bash
@@ -661,7 +664,7 @@ output_base_dir={TUMOUREVO_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-
+profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run /orfeo/cephfs/scratch/cdslab/shared/SCOUT/tumourevo/main.nf --input $input \
     --tools mobster,viber,pyclone-vi,sparsesignatures,sigprofiler \
     --genome GRCh38 \
@@ -672,7 +675,7 @@ config={CONFIG}
     --vep_cache_version 110 \
     --vep_species Homo_sapiens \
     --filter false \
-    --outdir $output_dir_combination -profile singularity -c $config
+    --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
 def get_lot_prefix(seq_type):
