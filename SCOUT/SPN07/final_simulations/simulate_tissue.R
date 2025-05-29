@@ -7,7 +7,7 @@ library(dplyr)
 library(ggplot2)
 
 dir <- getwd()
-outdir <- "/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations"
+outdir <- "/orfeo/scratch/cdslab/shared/SCOUT/SPN07/process" #"/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations"
 setwd(outdir)
 set.seed(12345)
 sim <- SpatialSimulation(name = 'SPN07', seed = 12345, save_snapshot=T, width = 1e3, height = 1e3)
@@ -128,6 +128,6 @@ sim$sample_cells("SPN07_2.2", sample_e$lower_corner, sample_e$upper_corner)
 forest <- sim$get_samples_forest()
 f2 = annotate_forest(forest = forest,tree_plot = plot_forest(forest),MRCAs = T)
 ggsave(f2, filename='/orfeo/cephfs/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations/forest_2.png')
-forest$save('/orfeo/cephfs/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations/sample_forest.sff')
+forest$save(paste0(outdir, 'sample_forest.sff'))
 
 

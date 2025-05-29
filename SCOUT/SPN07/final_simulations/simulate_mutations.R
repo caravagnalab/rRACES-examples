@@ -13,36 +13,36 @@ m_engine$set_germline_subject("NA18941")
 
 ## 1. Add Drivers
 m_engine$add_mutant(mutant_name = "Clone 1",
-                    passenger_rates = c(SNV = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, CNA = 1e-9, indel = 1e-9),
                     drivers = list(list('PTEN R130*', allele=0))
 )
 m_engine$add_mutant(mutant_name = "Clone 2",
-                    passenger_rates = c(SNV = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, CNA = 1e-12, indel=1e-9),
                     drivers = list(
                       CNA("D", "10", 87862638 , 109292 ,allele = 1)
                     )
 )
 m_engine$add_mutant(mutant_name = "Clone 3",
-                    passenger_rates = c(SNV = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, CNA = 1e-12, indel=1e-9),
                     drivers = list(
                       list('NF1 Q1174*', allele=0)
                     )
 )
 # Convert mutation in protein coordinates to genome coordinates : https://bibliome.ai/GRCh38/gene/ATRX
 m_engine$add_mutant(mutant_name = "Clone 4",
-                    passenger_rates = c(SNV = 1e-8, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-8, CNA = 1e-12, indel=1e-9),
                     drivers = list(
                       SNV('X', 2719, 'T','C') # ARTX R907*
                     )
 )
 m_engine$add_mutant(mutant_name = "Clone 5",
-                    passenger_rates = c(SNV = 1e-7, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-7, CNA = 1e-12, indel=1e-9),
                     drivers = list(
                       SNV('2', 1082, 'A','G') # MSH6 c.1082G>A	p.R361H
                     )
 )
 m_engine$add_mutant(mutant_name = "Clone 6",
-                    passenger_rates = c(SNV = 1e-7, CNA = 1e-11),
+                    passenger_rates = c(SNV = 1e-7, CNA = 1e-10, indel=1e-9),
                     drivers = list(
                       list('TP53 R248W')
                     )
@@ -59,15 +59,15 @@ m_engine$add_exposure(time = 110.4, c(SBS1 = .1, SBS5 = .1,SBS6=.4,
                                       SBS21=.2, SBS44=.2))
 
 
-samples_forest <- load_samples_forest("/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations/sample_forest.sff")
+samples_forest <- load_samples_forest("/orfeo/scratch/cdslab/shared/SCOUT/SPN07/process/sample_forest.sff")
 phylo_forest <- m_engine$place_mutations(samples_forest, 500, 200)
-phylo_forest$save("/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations/phyloforest.sff")
+phylo_forest$save("/orfeo/scratch/cdslab/shared/SCOUT/SPN07/process/phylo_forest.sff")
 
 
 sample_names <- phylo_forest$get_samples_info()[["name"]]
 lapply(sample_names,function(s){
   cna <- phylo_forest$get_bulk_allelic_fragmentation(s)
-  saveRDS(file=paste0("/orfeo/scratch/cdslab/antonelloa/ProCESS-examples/SCOUT/SPN07/final_simulations/cna_data/",s,"_cna.rds"),object=cna)
+  saveRDS(file=paste0("/orfeo/scratch/cdslab/shared/SCOUT/SPN07/process/cna_data/",s,"_cna.rds"),object=cna)
 })
 
 forest = samples_forest
