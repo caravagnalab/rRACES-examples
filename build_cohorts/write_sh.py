@@ -34,7 +34,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 config={CONFIG}
 profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination --igenomes_base /orfeo/LTS/CDSLab/LT_storage/tmp_references/ -profile singularity,${profile} -c $config
+    --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
 sarek_file_normal_launcher="""#!/bin/bash
@@ -61,7 +61,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 config={CONFIG}
 profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity,${profile} --igenomes_base /orfeo/LTS/CDSLab/LT_storage/tmp_references/ -c $config
+    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity,${profile} -c $config
 """
 
 sarek_variant_calling_launcher="""#!/bin/bash
@@ -90,7 +90,7 @@ profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "u
 
 /orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
-    --outdir $output_dir_combination -profile singularity,${profile} --igenomes_base /orfeo/LTS/CDSLab/LT_storage/tmp_references/ -c $config
+    --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
 tumourevo_launcher="""#!/bin/bash
