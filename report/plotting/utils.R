@@ -474,48 +474,73 @@ annotate_drivers <- function(phylo_forest){
   return(drivers)
 }
 
-annotate_plots <- function(plot,drivers,ref){
-  reference_genome = reference_genome = CNAqc:::get_reference(ref = ref)
-  vfrom = reference_genome$from
-  names(vfrom) = reference_genome$chr
+annotate_plots <- function(plot, drivers, ref) {
+  reference_genome <- CNAqc:::get_reference(ref = ref)
+  vfrom <- reference_genome$from
+  names(vfrom) <- reference_genome$chr
   
-  drivers <- drivers %>% 
-    dplyr::mutate(pos = pos + vfrom[chr]) %>% 
-    dplyr::mutate(end = end + vfrom[chr])
-  driver_SID <- drivers %>% filter(type=="SID")
-  driver_CNA <- drivers %>% filter(type=="CNA")
-  driver_WGD <- drivers %>% filter(type=="WGD")
-  L = ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
-  driver_CNA$y = L$y.range[2] * .7
-  driver_SID$y = L$y.range[2] * .7
-  p <- plot +
-    ggplot2::geom_vline(
-      data = driver_SID,
-      show.legend = FALSE,
-      ggplot2::aes(xintercept = pos),
-      linetype = 'dashed',
-      color = 'black',
-      size = .3
-    ) +
-    geom_rect(data=driver_CNA, aes(xmin=pos,xmax=end,fill=CNA_type),
-              ymin=0,ymax=(L$y.range[2]), size=0.5, alpha=0.2)+
-    ggrepel::geom_label_repel(
-      data = driver_SID,
-      ggplot2::aes(
-        x = pos,
-        y = y,
-        label = driver_label
-      ),
-      ylim = c(L$y.range[2] * .7, NA),
-      size = 2,
-      nudge_y = 0,
-      nudge_x = 0,
-      show.legend = FALSE
-    )+
-    geom_rect(data=driver_WGD, aes(xmin=L$x.range[1],xmax=L$x.range[2],fill=type),
-              ymin=0,ymax=(L$y.range[2]), size=0.5, alpha=0.2) +
-    scale_fill_manual(values=c("A" = "red", "D" = "blue","WGD" = "grey"))
-  return(p)
+  if (nrow(drivers) > 0) {
+    drivers <- drivers %>%
+      dplyr::mutate(pos = pos + vfrom[chr]) %>%
+      dplyr::mutate(end = end + vfrom[chr])
+    
+    driver_SID <- dplyr::filter(drivers, type == "SID")
+    driver_CNA <- dplyr::filter(drivers, type == "CNA")
+    driver_WGD <- dplyr::filter(drivers, type == "WGD")
+    
+    # Only call ggplot_build if there's at least one non-empty driver type
+    if (nrow(driver_SID) > 0 || nrow(driver_CNA) > 0 || nrow(driver_WGD) > 0) {
+      L <- ggplot2::ggplot_build(plot)$layout$panel_params[[1]]
+      
+      if (nrow(driver_CNA) > 0) {
+        driver_CNA$y <- L$y.range[2] * 0.7
+        plot <- plot +
+          ggplot2::geom_rect(
+            data = driver_CNA,
+            ggplot2::aes(xmin = pos, xmax = end, fill = CNA_type),
+            ymin = 0, ymax = L$y.range[2],
+            size = 0.5, alpha = 0.2
+          )
+      }
+      
+      if (nrow(driver_SID) > 0) {
+        driver_SID$y <- L$y.range[2] * 0.7
+        plot <- plot +
+          ggplot2::geom_vline(
+            data = driver_SID,
+            ggplot2::aes(xintercept = pos),
+            linetype = 'dashed',
+            color = 'black',
+            size = 0.3,
+            show.legend = FALSE
+          ) +
+          ggrepel::geom_label_repel(
+            data = driver_SID,
+            ggplot2::aes(x = pos, y = y, label = driver_label),
+            ylim = c(L$y.range[2] * 0.7, NA),
+            size = 2,
+            nudge_y = 0,
+            nudge_x = 0,
+            show.legend = FALSE
+          )
+      }
+      
+      if (nrow(driver_WGD) > 0) {
+        plot <- plot +
+          ggplot2::geom_rect(
+            data = driver_WGD,
+            ggplot2::aes(xmin = L$x.range[1], xmax = L$x.range[2], fill = type),
+            ymin = 0, ymax = L$y.range[2],
+            size = 0.5, alpha = 0.2
+          )
+      }
+      
+      plot <- plot + 
+        ggplot2::scale_fill_manual(values = c("A" = "red", "D" = "blue", "WGD" = "grey"))
+    }
+  }
+  
+  return(plot)
 }
 
 

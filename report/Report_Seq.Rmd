@@ -404,7 +404,7 @@ final_labels = sample_forest$get_nodes() %>% as_tibble() %>%
 
 ```{r plot_marginals, echo=FALSE, fig.height=15, fig.width=15, out.width = '100%'}
 fix_n_samples_per_height <- 3
-palette_labels <- RColorBrewer::brewer.pal(n = length(unique(model_df$label)), name = "Set3")
+palette_labels <- RColorBrewer::brewer.pal(n = length(unique(model_df$label)), name = "Dark2")
 names(palette_labels) <-unique(model_df$label)
 pl_sticks <- plot_sticks(sample_forest, labels=final_labels,cls = palette_labels) %>%
   annotate_forest(sample_forest, samples=TRUE, drivers=TRUE)

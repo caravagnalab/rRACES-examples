@@ -12,12 +12,11 @@ output <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 input <- "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
 
 COV = c(50)
-PUR = c(0.6)
+PUR = c(0.6,0.3)
 #NORMAL_COV = 30
 
-#dir.create(paste0(output,'/', spn, '/validation/'), recursive = T, showWarnings = F)
+dir.create(paste0(output,'/', spn, '/validation/report/'), recursive = T, showWarnings = F)
 setwd(workdir)
-
 
 for (cov in COV){
   for (pur in PUR){
@@ -29,7 +28,7 @@ for (cov in COV){
     print(paste0('Rendering SPN validation report: purity ', pur, ', coverage ', cov))
     rmarkdown::render("Validation_Report.Rmd",
                       params = params,
-                      output_file = paste0(output,'/', spn, '/validation/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
+                      output_file = paste0(output,'/', spn, '/validation/report/', spn, '_purity_', pur, '_coverage_', cov, 'x.html'))
   }
 }
 
