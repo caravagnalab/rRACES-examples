@@ -39,7 +39,7 @@ workflow SEQUENZA {
         SEQUENZAUTILS_GCWIGGLE(fasta)
         wiggle = SEQUENZAUTILS_GCWIGGLE.out.wig
     } else {
-        wiggle = Channel.fromPath(params.wiggle).collect() 
+        wiggle = Channel.fromPath(params.wiggle)
     }
 
     SEQUENZAUTILS_BAM2SEQZ(seq_input_matched,
