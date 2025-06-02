@@ -1,0 +1,70 @@
+Jun-02 12:34:52.209 [main] DEBUG nextflow.cli.Launcher - $> nextflow run /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/main.nf -profile singularity,genoa -c /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/myconfig
+Jun-02 12:34:52.517 [main] DEBUG nextflow.cli.CmdRun - N E X T F L O W  ~  version 24.10.3
+Jun-02 12:34:52.557 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/u/area/lvaleriani/.nextflow/plugins; core-plugins: nf-amazon@2.9.2,nf-azure@1.10.2,nf-cloudcache@0.4.2,nf-codecommit@0.2.2,nf-console@1.1.4,nf-google@1.15.3,nf-tower@1.9.3,nf-wave@1.7.4
+Jun-02 12:34:52.618 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+Jun-02 12:34:52.624 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+Jun-02 12:34:52.627 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.12.0 in 'deployment' mode
+Jun-02 12:34:52.668 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+Jun-02 12:34:52.731 [main] DEBUG nextflow.config.ConfigBuilder - Found config base: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/nextflow.config
+Jun-02 12:34:52.732 [main] DEBUG nextflow.config.ConfigBuilder - Found config local: /orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/nextflow.config
+Jun-02 12:34:52.741 [main] DEBUG nextflow.config.ConfigBuilder - User config file: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/myconfig
+Jun-02 12:34:52.742 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/nextflow.config
+Jun-02 12:34:52.743 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /orfeo/cephfs/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/nextflow.config
+Jun-02 12:34:52.746 [main] DEBUG nextflow.config.ConfigBuilder - Parsing config file: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/myconfig
+Jun-02 12:34:52.823 [main] DEBUG n.secret.LocalSecretsProvider - Secrets store: /u/area/lvaleriani/.nextflow/secrets/store.json
+Jun-02 12:34:52.830 [main] DEBUG nextflow.secret.SecretsLoader - Discovered secrets providers: [nextflow.secret.LocalSecretsProvider@28782602] - activable => nextflow.secret.LocalSecretsProvider@28782602
+Jun-02 12:34:52.846 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `singularity,genoa`
+Jun-02 12:34:54.797 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `singularity,genoa`
+Jun-02 12:34:55.050 [main] DEBUG nextflow.config.ConfigBuilder - Applying config profile: `singularity,genoa`
+Jun-02 12:34:55.867 [main] DEBUG nextflow.config.ConfigBuilder - Available config profiles: [debug, apptainer, wave, docker, thin, gitpod, shifter, mamba, charliecloud, conda, genoa, singularity, epyc, arm, podman]
+Jun-02 12:34:55.939 [main] DEBUG nextflow.cli.CmdRun - Applied DSL=2 by global default
+Jun-02 12:34:55.975 [main] DEBUG nextflow.cli.CmdRun - Launching `/orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/main.nf` [special_lorenz] DSL2 - revision: 2f65d6a900
+Jun-02 12:34:55.977 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins declared=[nf-validation]
+Jun-02 12:34:55.981 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins default=[]
+Jun-02 12:34:55.982 [main] DEBUG nextflow.plugin.PluginsFacade - Plugins resolved requirement=[nf-validation]
+Jun-02 12:34:55.982 [main] DEBUG nextflow.plugin.PluginUpdater - Installing plugin nf-validation version: latest
+Jun-02 12:34:57.029 [main] INFO  org.pf4j.AbstractPluginManager - Plugin 'nf-validation@1.1.4' resolved
+Jun-02 12:34:57.029 [main] INFO  org.pf4j.AbstractPluginManager - Start plugin 'nf-validation@1.1.4'
+Jun-02 12:34:57.043 [main] DEBUG nextflow.plugin.BasePlugin - Plugin started nf-validation@1.1.4
+Jun-02 12:34:57.146 [main] DEBUG nextflow.Session - Session UUID: 45959147-8b90-4f34-8fac-c95de3167413
+Jun-02 12:34:57.147 [main] DEBUG nextflow.Session - Run name: special_lorenz
+Jun-02 12:34:57.151 [main] DEBUG nextflow.Session - Executor pool size: 2
+Jun-02 12:34:57.164 [main] DEBUG nextflow.file.FilePorter - File porter settings maxRetries=3; maxTransfers=50; pollTimeout=null
+Jun-02 12:34:57.176 [main] DEBUG nextflow.util.ThreadPoolBuilder - Creating thread pool 'FileTransfer' minSize=10; maxSize=10; workQueue=LinkedBlockingQueue[10000]; allowCoreThreadTimeout=false
+Jun-02 12:34:57.214 [main] DEBUG nextflow.cli.CmdRun - 
+  Version: 24.10.3 build 5933
+  Created: 16-12-2024 15:34 UTC (16:34 CEST)
+  System: Linux 6.13.12-200.fc41.x86_64
+  Runtime: Groovy 4.0.23 on OpenJDK 64-Bit Server VM 21.0.2+13-LTS
+  Encoding: UTF-8 (UTF-8)
+  Process: 159459@epyc001.hpc.rd.areasciencepark.it [10.128.6.171]
+  CPUs: 1 - Mem: 503.3 GB (318.8 GB) - Swap: 8 GB (8 GB)
+Jun-02 12:34:57.261 [main] DEBUG nextflow.Session - Work-dir: /orfeo/cephfs/fast/area/lvaleriani/work [ceph]
+Jun-02 12:34:57.262 [main] DEBUG nextflow.Session - Script base path does not exist or is not a directory: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/bin
+Jun-02 12:34:57.284 [main] DEBUG nextflow.executor.ExecutorFactory - Extension executors providers=[]
+Jun-02 12:34:57.304 [main] DEBUG nextflow.Session - Observer factory: DefaultObserverFactory
+Jun-02 12:34:57.394 [main] DEBUG nextflow.cache.CacheFactory - Using Nextflow cache factory: nextflow.cache.DefaultCacheFactory
+Jun-02 12:34:57.413 [main] DEBUG nextflow.util.CustomThreadPool - Creating default thread pool > poolSize: 2; maxThreads: 1000
+Jun-02 12:34:57.607 [main] DEBUG nextflow.Session - Session start
+Jun-02 12:34:57.609 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow started -- trace file: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/test/pipeline_info/execution_trace_2025-06-02_12-34-54.txt
+Jun-02 12:34:57.878 [main] DEBUG nextflow.script.ScriptRunner - > Launching execution
+Jun-02 12:34:57.904 [main] DEBUG nextflow.Session - Workflow process names [dsl2]: 
+Jun-02 12:34:57.912 [main] WARN  nextflow.Session - There's no process matching config selector: SEQUENZAUTILS_GCWIGGLE
+Jun-02 12:34:57.913 [main] WARN  nextflow.Session - There's no process matching config selector: SEQUENZAUTILS_MERGESEQZ
+Jun-02 12:34:57.913 [main] WARN  nextflow.Session - There's no process matching config selector: SEQUENZAUTILS_BINNING
+Jun-02 12:34:57.916 [main] DEBUG nextflow.Session - Igniting dataflow network (0)
+Jun-02 12:34:57.916 [main] DEBUG nextflow.script.ScriptRunner - Parsed script files:
+  Script_310e0edd47db6f72: /orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza/main.nf
+Jun-02 12:34:57.917 [main] DEBUG nextflow.script.ScriptRunner - > Awaiting termination 
+Jun-02 12:34:57.917 [main] DEBUG nextflow.Session - Session await
+Jun-02 12:34:57.917 [main] DEBUG nextflow.Session - Session await > all processes finished
+Jun-02 12:34:57.917 [main] DEBUG nextflow.Session - Session await > all barriers passed
+Jun-02 12:34:57.930 [main] DEBUG n.trace.WorkflowStatsObserver - Workflow completed > WorkflowStats[succeededCount=0; failedCount=0; ignoredCount=0; cachedCount=0; pendingCount=0; submittedCount=0; runningCount=0; retriesCount=0; abortedCount=0; succeedDuration=0ms; failedDuration=0ms; cachedDuration=0ms;loadCpus=0; loadMemory=0; peakRunning=0; peakCpus=0; peakMemory=0; ]
+Jun-02 12:34:57.931 [main] DEBUG nextflow.trace.TraceFileObserver - Workflow completed -- saving trace file
+Jun-02 12:34:57.954 [main] DEBUG nextflow.trace.ReportObserver - Workflow completed -- rendering execution report
+Jun-02 12:34:59.272 [main] DEBUG nextflow.trace.TimelineObserver - Workflow completed -- rendering execution timeline
+Jun-02 12:34:59.591 [main] DEBUG nextflow.cache.CacheDB - Closing CacheDB done
+Jun-02 12:34:59.637 [main] INFO  org.pf4j.AbstractPluginManager - Stop plugin 'nf-validation@1.1.4'
+Jun-02 12:34:59.637 [main] DEBUG nextflow.plugin.BasePlugin - Plugin stopped nf-validation
+Jun-02 12:34:59.640 [main] DEBUG nextflow.util.ThreadPoolManager - Thread pool 'FileTransfer' shutdown completed (hard=false)
+Jun-02 12:34:59.640 [main] DEBUG nextflow.script.ScriptRunner - > Execution complete -- Goodbye
