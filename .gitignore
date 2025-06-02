@@ -30,4 +30,4 @@
 **.dat
 **.rff
 sequenza/test/*
-*.nextflow*
+**.nextflow*
