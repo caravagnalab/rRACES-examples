@@ -15,4 +15,4 @@ module load singularity
 
 base=/orfeo/scratch/area/lvaleriani/races/ProCESS-examples/sequenza
 config=$base/myconfig
-/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run $base/main.nf -profile singularity,genoa -c $config
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run $base/main.nf -profile singularity,genoa -c $config -resume

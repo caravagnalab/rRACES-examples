@@ -10,7 +10,7 @@ process SEQUENZAUTILS_BAM2SEQZ {
 
     input:
     tuple val(meta), path(normalbam), path(tumourbam)
-    path fasta
+    tuple val(meta_fasta), path(fasta)
     path wigfile
 
     output:

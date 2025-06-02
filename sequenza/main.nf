@@ -34,12 +34,11 @@ workflow SEQUENZA {
                     def meta = [patient:patient, sample:sample1, id:id1, gender:gender1]
                     [ meta, files11, files21] }
 
-
     if (params.create_wiggle) {
         SEQUENZAUTILS_GCWIGGLE(fasta)
         wiggle = SEQUENZAUTILS_GCWIGGLE.out.wig
     } else {
-        wiggle = Channel.fromPath(params.wiggle)
+        wiggle = Channel.fromPath(params.wiggle).collect() 
     }
 
     SEQUENZAUTILS_BAM2SEQZ(seq_input_matched,

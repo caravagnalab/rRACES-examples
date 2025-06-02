@@ -3,7 +3,6 @@ process SEQUENZAUTILS_MERGESEQZ {
     label 'process_medium'
     label 'error_retry'
     
-    conda (params.enable_conda ? "bioconda::sequenza-utils=3.0.0" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/sequenza-utils:3.0.0--py39h67e14b5_5' :
         'quay.io/biocontainers/sequenza-utils:3.0.0--py39h67e14b5_5' }"
