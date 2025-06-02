@@ -2,7 +2,7 @@
 
 singularity {
     enabled      = true
-    envWhitelist = ['SINGULARITY_TMPDIR']
+    envWhitelist = ['SINGULARITY_TMPDIR', 'REF_CACHE', 'REF_PATH']
     runOptions   = '--bind /orfeo:/orfeo --contain --workdir ${SINGULARITY_TMPDIR} --writable-tmpfs'
     cacheDir = "/orfeo/scratch/area/lvaleriani/cache"
 }

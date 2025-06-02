@@ -6,7 +6,7 @@ include { SEQUENZAUTILS_GCWIGGLE  } from './modules/nf-core/sequenzautils/gcwigg
 include { SEQUENZAUTILS_BAM2SEQZ  } from './modules/nf-core/sequenzautils/bam2seqz/main'
 include { SEQUENZAUTILS_MERGESEQZ } from './modules/local/sequenzautils/mergeseqz/main'
 include { SEQUENZAUTILS_BINNING   } from './modules/local/sequenzautils/seqzbin/main'
-// include { SEQUENZAUTILS_RSEQZ     } from '../modules/nf-core/sequenzautils/seqz_R/main.nf'
+include { SEQUENZAUTILS_RSEQZ     } from './modules/local/sequenzautils/seq_R/main'
 
 include { samplesheetToList } from 'plugin/nf-schema'
 
@@ -51,6 +51,7 @@ workflow SEQUENZA {
 
     SEQUENZAUTILS_MERGESEQZ(merge_seqz_input)
     SEQUENZAUTILS_BINNING(SEQUENZAUTILS_MERGESEQZ.out.concat_seqz, params.bin)
+    SEQUENZAUTILS_RSEQZ(SEQUENZAUTILS_BINNING.out.seqz_bin)
 }
 
 workflow  {   

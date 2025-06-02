@@ -4,7 +4,7 @@ process SEQUENZAUTILS_MERGESEQZ {
     label 'error_retry'
     
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/sequenza-utils:3.0.0--py39h67e14b5_5' :
+        'https://depot.galaxyproject.org/singularity/sequenza-utils%3A3.0.0--py39he88f293_8' :
         'quay.io/biocontainers/sequenza-utils:3.0.0--py39h67e14b5_5' }"
     
     input:
