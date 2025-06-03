@@ -10,8 +10,9 @@ process SEQUENZAUTILS_RSEQZ {
     tuple val(meta), path(seqz_bin)
 
     output:
-    tuple val(meta), path("*"), emit: rseqz
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*pdf"), emit: plot
+    tuple val(meta), path("*txt"), emit: txt
+    tuple val(meta), path("*RData"), emit: data
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,18 +20,18 @@ process SEQUENZAUTILS_RSEQZ {
     script:
     def seqz_in = "${seqz_bin.toString().minus(".gz")}"
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${tissue}"
+    def prefix = task.ext.prefix ?: "${meta.id}"
     
     """
     #!/usr/bin/env Rscript
     if (!require(sequenza)) stop("Package 'sequenza' missing\n.")
     
-    input <- ${seqz_bin}
-    output_prefix <- ${meta.id}
-    gender <- ${meta.gender}
-    ploidy <- params.ploidy
-    ccf <- params.purity
-    gam <- params.gamma
+    input = "${seqz_bin}"
+    output_prefix = "${meta.id}"
+    gender = "${meta.gender}"
+    ploidy = as.numeric("$params.ploidy")
+    ccf = as.numeric("$params.purity")
+    gam = as.numeric("$params.gamma")
     
     if (ploidy == 7) {
       low_p <- 1
@@ -54,109 +55,79 @@ process SEQUENZAUTILS_RSEQZ {
       is_female = FALSE
     }
     
-
-    sequenzaAnalysis <- function(input,
-                                 output_prefix,
-                                 output_dir = '',
-                                 window = 1e5,
-                                 overlap = 1,
-                                 gamma = gam,
-                                 kmin = 300,
-                                 min_reads = 40,
-                                 min_reads_normal = 10,
-                                 min_reads_baf = 1,
-                                 max_mut_types = 1,
-                                 breaks = NULL,
-                                 assembly = "hg38",
-                                 weighted_mean = TRUE,
-                                 normalization_method = "mean",
-                                 is_female = is_female,
-                                 segment_filter = 3e6,
-                                 ratio_priority = FALSE,
-                                 method = "baf",
-                                 low_cell = low_ccf,
-                                 up_cell = high_ccf,
-                                 low_ploidy = low_p,
-                                 up_ploidy = up_p,
-                                 CNt_max = 20) {
+    output_dir = '.'
+    window = 1e5
+    overlap = 1
+    gamma = gam
+    kmin = 300
+    min_reads = 40
+    min_reads_normal = 10
+    min_reads_baf = 1
+    max_mut_types = 1
+    breaks = NULL
+    assembly = "hg19"
+    weighted_mean = TRUE
+    normalization_method = "mean"
+    segment_filter = 3e6
+    ratio_priority = FALSE
+    method = "baf"
+    low_cell = low_ccf
+    up_cell = high_ccf
+    low_ploidy = low_p
+    up_ploidy = up_p
+    CNt_max = 20
     
-        #  Define chromosomes to analyse (note these will subset to those that
-        # are available for sequenza:
-        chr_list <- c(1:22, "X")
-        if (gender != "XX") {
-            chr_list <- c(chr_list, "Y")
-        }
-    
-        chr_list <- c(chr_list, paste0("chr", chr_list))
-    
-        # Extract sequenza data for model:
-        cat(sprintf("- Starting analysis for %s\n", input))
-        cat("- Calculating gc-stats\n")
-        gc_stats <- gc.sample.stats(input)
-    
-        cat("- Loading data\n")
-        modDat <- sequenza.extract(input,
-            window = window,
-            overlap = overlap,
-            gamma = gamma,
-            kmin = kmin,
-            min.reads = min_reads,
-            min.reads.normal = min_reads_normal,
-            min.reads.baf = min_reads_baf,
-            max.mut.types = max_mut_types,
-            chromosome.list = chr_list,
-            breaks = breaks,
-            assembly = assembly,
-            weighted.mean = weighted_mean,
-            normalization.method = normalization_method,
-            parallel = 8,
-            gc.stats = gc_stats
-        )
-    
-        # Fit the model:
-        cat("- Fitting the model\n")
-        cells <- seq(low_ccf, high_ccf, 0.01)
-        plo <- seq(low_p, up_p, 0.1)
-        fit <- sequenza.fit(modDat,
-            female = is_female,
-            segment.filter = segment_filter,
-            cellularity = cells,
-            ploidy = plo,
-            XY = c(X = "chrX", Y = "chrY"),
-            ratio.priority = ratio_priority,
-            method = method
-        )
-    
-        # Export the data:
-        cat("- Exporting results\n")
-        sequenza.results(modDat,
-            fit,
-            output_prefix,
-            out.dir = output_dir,
-            female = is_female,
-            CNt.max = CNt_max,
-            XY = c(X = "chrX", Y = "chrY"),
-            ratio.priority = ratio_priority
-        )
+    #  Define chromosomes to analyse (note these will subset to those that
+    # are available for sequenza:
+    chr_list <- c(1:22, "X")
+    if (gender != "XX") {
+        chr_list <- c(chr_list, "Y")
     }
     
-    sequenzaAnalysis(input, output_prefix)
+    chr_list <- c(chr_list, paste0("chr", chr_list))
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        sequenzautils: \$(echo \$(sequenza-utils 2>&1) | sed 's/^.*is version //; s/ .*\$//')
-    END_VERSIONS
-    """
-    stub:
-    def seqz_in = "${seqz_bin.toString().minus(".gz")}"
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${tissue}"
-    """
-    echo "analyse_cn_sequenza.R ${seqz_in} ${prefix} ${meta.id} ${gender} ${ploidy} ${purity} ${seq_gam}"
-    mkdir ${tissue}
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        sequenzautils: 3.0.0
-    END_VERSIONS
+    # Extract sequenza data for model:
+    gc_stats <- gc.sample.stats(input)
+
+    modDat <- sequenza.extract(input,
+        window = window,
+        overlap = overlap,
+        gamma = gamma,
+        kmin = kmin,
+        min.reads = min_reads,
+        min.reads.normal = min_reads_normal,
+        min.reads.baf = min_reads_baf,
+        max.mut.types = max_mut_types,
+        chromosome.list = chr_list,
+        breaks = breaks,
+        assembly = assembly,
+        weighted.mean = weighted_mean,
+        normalization.method = normalization_method,
+        parallel = 8,
+        gc.stats = gc_stats
+    )
+
+    # Fit the model:
+    cells <- seq(low_ccf, high_ccf, 0.01)
+    plo <- seq(low_p, up_p, 0.1)
+    fit <- sequenza.fit(modDat,
+        female = is_female,
+        segment.filter = segment_filter,
+        cellularity = cells,
+        ploidy = plo,
+        XY = c(X = "chrX", Y = "chrY"),
+        ratio.priority = ratio_priority,
+        method = method
+    )
+
+    # Export the data:
+    sequenza.results(modDat,
+        fit,
+        output_prefix,
+        out.dir = output_dir,
+        female = is_female,
+        CNt.max = CNt_max,
+        XY = c(X = "chrX", Y = "chrY"),
+        ratio.priority = ratio_priority)
     """
 }

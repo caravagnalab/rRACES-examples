@@ -81,7 +81,7 @@
                 "anyOf": [
                     {
                         "type": "string",
-                        "pattern": "^\\S+\\.(crai)$"
+                        "pattern": "^\\S+\\.(bai|crai)$"
                     },
                     {
                         "type": "string",

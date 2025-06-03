@@ -2,6 +2,8 @@
 // from https://github.com/chelauk/nf-core-mutectplatypus/blob/master/workflows/mutect_platypus.nf
 nextflow.enable.dsl=2
 
+include { SAMTOOLS_CONVERT  as  SAMTOOLS_CONVERT_T    } from './modules/nf-core/samtools/convert/main'
+include { SAMTOOLS_CONVERT  as SAMTOOLS_CONVERT_N   } from './modules/nf-core/samtools/convert/main'
 include { SEQUENZAUTILS_GCWIGGLE  } from './modules/nf-core/sequenzautils/gcwiggle/main'
 include { SEQUENZAUTILS_BAM2SEQZ  } from './modules/nf-core/sequenzautils/bam2seqz/main'
 include { SEQUENZAUTILS_MERGESEQZ } from './modules/local/sequenzautils/mergeseqz/main'
@@ -14,29 +16,43 @@ workflow SEQUENZA {
     take:
     input_samplesheet
     fasta
+    fai
 
     main:
-    input_samplesheet
-                    .map{ meta, cram, crai ->
-                    meta = meta + [id: "${meta.patient}_${meta.sample}"]
-                    [meta.patient,meta.sample,meta.status,meta.id,meta.gender,cram,crai] }
-                    .branch {
-                        tumour: it[2] == 1
-                        normal: it[2] == 0
-                    }
-                    .set{seq_split}
+    input_samplesheet.branch { meta, cram, crai ->
+                        tumour: meta.status == 1
+                        normal: meta.status == 0
+                    }.set{seq_split}
 
-    seq_split.tumour.combine(seq_split.normal, by:0)
-                    .set{seq_input_pair}
+    seq_split.tumour.map{ meta, cram, crai -> 
+                        meta = meta + [id:meta.patient + meta.sample]
+                        [meta, cram, crai]
+                    }.set{tumour_cram}
+                    
+    SAMTOOLS_CONVERT_T(tumour_cram,fasta,fai).bam.map{ meta, bam, bai -> 
+                         [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+                    }.set{tumour_bam}
+                    
+    seq_split.normal.map{ meta, cram, crai -> 
+                        meta = meta + [id:meta.patient + meta.sample]
+                        [meta, cram, crai]
+                     }.set{normal_cram}
+                    
+    SAMTOOLS_CONVERT_N(normal_cram,fasta,fai).bam.map{ meta, bam, bai -> 
+                         [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+                      }.set{normal_bam}
+                    
 
-    seq_input_matched = seq_input_pair
-                    .map{ patient, sample1, status1, id1, gender1, files11, files12, sample2, status2, gender2, id2, files21, files22 ->
-                    def meta = [patient:patient, sample:sample1, id:id1, gender:gender1]
-                    [ meta, files11, files21] }
+    tumour_bam
+            .combine(normal_bam, by:0)
+            .map { patient, meta1, files1, meta2, files2 ->
+                    [meta1 + [patient:patient], files1, files2]
+            }
+            .set{seq_input_matched}
 
     if (params.create_wiggle) {
         SEQUENZAUTILS_GCWIGGLE(fasta)
-        wiggle = SEQUENZAUTILS_GCWIGGLE.out.wig
+        wiggle = SEQUENZAUTILS_GCWIGGLE.out.wig // something wrong here
     } else {
         wiggle = Channel.fromPath(params.wiggle).collect() 
     }
@@ -55,9 +71,11 @@ workflow SEQUENZA {
 }
 
 workflow  {   
-    fasta             = params.fasta ? Channel.fromPath(params.fasta).map{ it -> [ [id:it.baseName], it ] }.collect() : Channel.empty()
+    fasta           = params.fasta ? Channel.fromPath(params.fasta).map{ it -> [ [id:it.baseName], it ] }.collect() : Channel.empty()
+    fai             = params.fasta ? Channel.fromPath(params.fai).map{ it -> [ [id:it.baseName], it ] }.collect() : Channel.empty()
+
     input_samplesheet = params.input ? Channel.fromList(samplesheetToList(params.input, "assets/schema_input.json")) : Channel.empty()
     
-    SEQUENZA(input_samplesheet, fasta)
+    SEQUENZA(input_samplesheet, fasta, fai)
 
 }
