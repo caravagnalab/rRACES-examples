@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=GENOA
 #SBATCH --job-name=sequenza
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

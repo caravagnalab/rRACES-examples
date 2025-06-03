@@ -152,6 +152,36 @@ def get_sample_names_from_FASTQ(fastq_dir):
         sample_names.add(fastq_basename[prefix_up_to+1:-len(suffix)])
     
     return sorted(list(sample_names))
+  
+  
+    
+def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
+    variant_caller = combination[0]
+    base_path = f'{sarek_output_dir}/{coverage}x_{purity}p'
+    path = f'{base_path}/variant_calling'
+    
+    if variant_caller == 'mutect2':
+        rel_path = f'{path}/{variant_caller}/{SPN}'
+        name = f'{SPN}.mutect2.filtered.vcf.gz'
+    elif variant_caller == 'strelka':
+        rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
+        name= f'{sample_name}_vs_normal_sample.strelka.somatic_snvs.vcf.gz'
+    elif variant_caller == 'freebayes':
+        rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
+        name = f'{sample_name}_vs_normal_sample.freebayes.vcf.gz'
+    
+    path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
+    segment = f'{sample_name}_vs_normal_sample.segments.txt'
+    purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
+    cn_caller = 'ASCAT'
+    
+    if  variant_caller == 'mutect2':
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
+    else:
+        cram_tumour = f'{base_path}/preprocessing/recalibrated/{sample_name}/{sample_name}.recal.cram'
+        cram_normal = f'{sarek_output_dir}/normal/preprocessing/recalibrated/normal_sample/normal_sample.recal.cram'
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type},{cram_tumour},{cram_normal}')
+
 
 
 if (__name__ == '__main__'):
@@ -250,8 +280,6 @@ if (__name__ == '__main__'):
 
             
             if seq_type == 'normal':
-
-                
                 job_id=seq_type
                 sarek_file_launcher_orig = sarek_file_normal_launcher
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{ACCOUNT}', str(account))
@@ -270,7 +298,6 @@ if (__name__ == '__main__'):
                 sample_names = get_sample_names_from_FASTQ(tumour_fastq_dir)
                 for cohort_cov in cohort_coverages:
 
-        
                     #sarek mapping sh file
                     sarek_file_launcher_orig = sarek_file_launcher    
                     job_id=f'{cohort_cov}x_{purity}p'
@@ -304,11 +331,19 @@ if (__name__ == '__main__'):
                     cn_caller = 'ascat'
                     combinations = []
                     for vc in variant_callers:
-                            combinations.append([vc, cn_caller])
+                        combinations.append([vc, cn_caller])
                     
                     for comb in combinations:
                         vc = comb[0]
                         cc = comb[1]
+                        with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.csv', 'w') as tumourevo_file:
+                            if comb[0] == 'mutect2':
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            else:
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type,tumour_alignment,tumour_alignment_index')
+                                
+                            for sample_name in sample_names:
+                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
                     
                         tumourevo_launcher_orig = tumourevo_launcher
                         job_id=f'{cohort_cov}x_{purity}p_{vc}_{cc}'

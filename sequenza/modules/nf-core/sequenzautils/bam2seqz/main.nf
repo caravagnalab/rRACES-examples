@@ -1,5 +1,5 @@
 process SEQUENZAUTILS_BAM2SEQZ {
-    tag "$meta.id"
+    tag "${meta.id}_${chromosome}"
     label 'process_medium'
     label 'error_retry'
 
@@ -9,9 +9,10 @@ process SEQUENZAUTILS_BAM2SEQZ {
         'biocontainers/sequenza-utils:3.0.0--py38h6ed170a_2' }"
 
     input:
-    tuple val(meta), path(normalbam), path(tumourbam)
+    tuple val(meta), path(normalbam), path(tumourbam), path(normalbai), path(tumourbai)
     tuple val(meta_fasta), path(fasta)
     path wigfile
+    each chromosome
 
     output:
     tuple val(meta), path("*.gz"), emit: seqz
@@ -21,8 +22,8 @@ process SEQUENZAUTILS_BAM2SEQZ {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def args = task.ext.args ?: "-C ${chromosome}"
+    def prefix = task.ext.prefix ?: "${meta.id}_${chromosome}"
     
     """
     sequenza-utils \\

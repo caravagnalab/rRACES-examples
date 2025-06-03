@@ -29,24 +29,27 @@ workflow SEQUENZA {
                         [meta, cram, crai]
                     }.set{tumour_cram}
                     
-    SAMTOOLS_CONVERT_T(tumour_cram,fasta,fai).bam.map{ meta, bam, bai -> 
-                         [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
-                    }.set{tumour_bam}
+    SAMTOOLS_CONVERT_T(tumour_cram,fasta,fai)
+    out_bam_T = SAMTOOLS_CONVERT_T.out.bam.join(SAMTOOLS_CONVERT_T.out.bai)
+    out_bam_T.map{ meta, bam, bai -> 
+            [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+        }.set{tumour_bam}
                     
     seq_split.normal.map{ meta, cram, crai -> 
                         meta = meta + [id:meta.patient + meta.sample]
                         [meta, cram, crai]
-                     }.set{normal_cram}
-                    
-    SAMTOOLS_CONVERT_N(normal_cram,fasta,fai).bam.map{ meta, bam, bai -> 
-                         [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
-                      }.set{normal_bam}
-                    
+                     }.set{normal_cram} 
 
+    SAMTOOLS_CONVERT_N(normal_cram,fasta,fai)
+    out_bam_N = SAMTOOLS_CONVERT_N.out.bam.join(SAMTOOLS_CONVERT_N.out.bai)
+    out_bam_N.map{ meta, bam, bai -> 
+                [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+            }.set{normal_bam}
+                    
     tumour_bam
             .combine(normal_bam, by:0)
-            .map { patient, meta1, files1, meta2, files2 ->
-                    [meta1 + [patient:patient], files1, files2]
+            .map { patient, meta1, files1, files11, meta2, files2, files22 ->
+                    [meta1 + [patient:patient], files2, files1, files22, files11]
             }
             .set{seq_input_matched}
 
@@ -57,9 +60,16 @@ workflow SEQUENZA {
         wiggle = Channel.fromPath(params.wiggle).collect() 
     }
 
+    fai.map{meta, chr -> [chr]}.set{fai_fasta}
+    seqz_chr = fai_fasta.splitCsv(sep: "\t")
+        .map{ chr -> chr[0][0] }
+        .filter( ~/^chr\d+|^chr[X,Y]|^\d+|[X,Y]/ )
+        .collect()
+
     SEQUENZAUTILS_BAM2SEQZ(seq_input_matched,
                             fasta,
-                            wiggle)
+                            wiggle,
+                            seqz_chr)
 
     SEQUENZAUTILS_BAM2SEQZ.out.seqz
                             .groupTuple()
