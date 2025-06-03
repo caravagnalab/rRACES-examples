@@ -5,6 +5,7 @@ import sys
 import math
 import glob
 import time
+
 import subprocess
 import argparse
 import fnmatch
@@ -109,8 +110,19 @@ if (__name__ == '__main__'):
         account = process.communicate()
     else:
         account = args.account
-
-    chromosomes = list(range(1, 23)) + ['X', 'Y']
+   
+    scout_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+    with open(os.path.join(scout_dir, args.SPN, "process", "subject_gender.txt")) as gender_file:
+      gender = gender_file.read().strip()
+      
+    if gender == "XX":
+      chromosomes = list(range(1, 23)) + ['X']
+    elif gender == "XY":
+      chromosomes = list(range(1, 23)) + ['X', 'Y']
+    else:
+      raise ValueError(f"Unexpected gender value: {gender}")
+    print(chromosomes)
+    
     #curr_dir = os.getcwd()
     base_dir = args.directory
     log_dir = '{}/validation/out/'.format(base_dir)
@@ -118,6 +130,7 @@ if (__name__ == '__main__'):
     with open('run_processing.sh', 'w') as outstream:
         outstream.write(somatic_processing_shell_script)
     chr_job_ids = [] 
+    
     for chr in chromosomes:
 
         cmd = ['sbatch','--parsable',

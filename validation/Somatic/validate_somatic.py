@@ -70,8 +70,20 @@ if (__name__ == '__main__'):
         account = process.communicate()
     else:
         account = args.account
+    
+    scout_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"
+    
+    with open(os.path.join(scout_dir, args.SPN, "process", "subject_gender.txt")) as gender_file:
+    gender = gender_file.read().strip()
 
-    chromosomes = list(range(1, 23)) + ['X', 'Y']
+    # Determine chromosomes based on gender
+    if gender == "XX":
+        chromosomes = list(range(1, 23)) + ['X']
+    elif gender == "XY":
+        chromosomes = list(range(1, 23)) + ['X', 'Y']
+    else:
+        raise ValueError(f"Unexpected gender value: {gender}")
+    
     curr_dir = os.getcwd()
     log_dir = '{}/out/'.format(curr_dir)
 

@@ -23,11 +23,16 @@ purity = paste0(opt$purity,"p")
 purity_th = opt$purity_th
 correct_th = opt$correct_th
 caller = "ascat"
+
+
+phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
+gender <-  phylo_forest$get_germline_subject()$gender
+
 ############ Load data
 #### ProCESS data
 # CNA calls
 CNA_races = readRDS(paste0(data_dir,spn_id,'/process/cna_data/',sample_id,'_cna.rds')) %>%
-  mutate(chr = paste0('chr',chr)) %>% rename(from=begin,to=end) %>% as_tibble()
+  mutate(chr = paste0('chr',chr)) %>% dplyr::rename(from=begin,to=end) %>% as_tibble()
 
 # SNP data from which compute BAF and DR
 mutations = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/tumour/purity_',strsplit(purity,'p')[[1]],
@@ -62,7 +67,11 @@ message("Reading ASCAT data")
 #### CNVkit data
 
 ############ Process data
-chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
+if (gender=="female"){
+  chromosomes = c(paste0('chr',1:22), 'chrX')
+} else {
+  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
+}
 
 message("Create joint ProCESS SNPs table")
 snps = mutations %>% 
@@ -104,7 +113,17 @@ joint_table_snps_shifted = Reduce(rbind,joint_table_snps_shifted)
 message("Create joint table ProCESS and ascat calls") 
 joint_segmentation = lapply(chromosomes, function(c){
   print(c)
-  CNA_races_chr = CNA_races %>% filter(chr==c)
+  CNA_races_chr = CNA_races %>% filter(chr==c) %>% 
+    mutate(group = cumsum(
+      lag(major, default = dplyr::first(major)) != major |
+        lag(minor, default = dplyr::first(minor)) != minor |
+        lag(ratio, default = dplyr::first(ratio)) != ratio
+    )) %>%
+    group_by(chr, major, minor, ratio, group) %>%
+    summarise(from = min(from), to = max(to), .groups = "drop") %>%
+    select(chr, from, to, major, minor, ratio) %>% 
+    arrange(from, to)
+
   CNA_ascat_chr = CNA_ascat %>% filter(chr==c)
   froms = c(CNA_races_chr$from %>% unique(), CNA_ascat_chr$from %>% unique())
   tos = c(CNA_races_chr$to %>% unique(), CNA_ascat_chr$to %>% unique())
@@ -245,7 +264,7 @@ for (s in segments){
   
   ploidy = ploidy + ((nA1+nB1)*ccf + (nA2+nB2)*(1-ccf))*purity_number*genome_fraction
 }
-ploidy = ploidy + 2*(1-purity_number)
+# ploidy = ploidy + 2*(1-purity_number)
 
 # Theoretical vs inferred BAF and DR
 already_seen_segment = c()

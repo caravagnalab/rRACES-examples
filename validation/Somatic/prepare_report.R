@@ -2,6 +2,7 @@ rm(list = ls())
 options(bitmapType='cairo')
 require(tidyverse)
 library(optparse)
+library(ProCESS)
 source("utils/utils.R")
 source("utils/plot_utils.R")
 
@@ -16,10 +17,18 @@ spn_id = opt$spn_id
 coverage = opt$coverage
 purity = opt$purity
 
+phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
+gender <-  phylo_forest$get_germline_subject()$gender
+
+if (gender=="female"){
+  chromosomes = c(paste0('chr',1:22), 'chrX')
+} else {
+  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
+}
 
 # INPUT PARAMATERS ####
 callers = c("mutect2", "strelka", "freebayes")
-chromosomes = paste0("chr", c(1:22, "X", "Y"))
+# chromosomes = paste0("chr", c(1:22, "X", "Y"))
 min_vaf = .02
 mut_types = c("INDEL", "SNV")
 comb = list(PI = purity, COV = coverage)
