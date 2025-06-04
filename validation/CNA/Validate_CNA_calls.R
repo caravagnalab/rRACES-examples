@@ -9,12 +9,13 @@ library(ggplot2)
 option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN03_1.1'),
 		                make_option(c("--spn_id"), type = "character", default = 'SPN03'),
                     make_option(c("--purity"), type = "character", default = '0.9'),
-                    make_option(c("--coverage"), type = "character", default = '100'),
+                    make_option(c("--coverage"), type = "character", default = '50'),
                     make_option(c("--purity_th"), type = "character", default = '.1'),
-                    make_option(c("--correct_th"), type = "character", default = '.6'))
+                    make_option(c("--correct_th"), type = "character", default = '.6'),
+		                make_option(c("--caller"), type = "character", default = 'ascat'))
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
-data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
+data_dir = "/Users/aliceantonello/dati_Orfeo/shared/SCOUT/" #'/orfeo/scratch/cdslab/shared/SCOUT/'
 
 sample_id = opt$sample_id
 spn_id = opt$spn_id
@@ -22,7 +23,7 @@ coverage = paste0(opt$coverage,"x")
 purity = paste0(opt$purity,"p")
 purity_th = opt$purity_th
 correct_th = opt$correct_th
-caller = "ascat"
+caller = opt$caller #"ascat"
 
 
 phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
@@ -64,7 +65,34 @@ purity_ploidy = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', puri
                                 '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                                 sample_id,'_vs_normal_sample.purityploidy.txt'), sep='\t')
 message("Reading ASCAT data")
+
 #### CNVkit data
+# CNA calls
+# library(vcfR)
+# CNA_cnvkit = vcfR::read.vcfR(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
+#                             '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
+#                             sample_id,'_vs_normal_sample.cnvcall.vcf'),verbose = F) 
+# gt_field = vcfR::extract_gt_tidy(CNA_cnvkit, verbose = F)
+# fix_field = CNA_cnvkit@fix %>% as_tibble()
+# CNA_cnvkit = cbind(fix_field, gt_field)
+CNA_cnvkit = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity,
+                            '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
+                            sample_id,'.call.cns'),sep='\t')
+
+# BAF and DR ascat
+BAF_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
+                                    '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
+                                    sample_id,'_vs_normal_sample.tumour_tumourBAF.txt'), sep='\t')
+colnames(BAF_file) = c('id', 'Chromosome', 'Position', 'BAF')
+DR_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
+                                   '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
+                                   sample_id,'_vs_normal_sample.tumour_tumourLogR.txt'), sep='\t')
+colnames(DR_file) = c('id', 'Chromosome', 'Position', 'LogR')
+purity_ploidy = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
+                                '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
+                                sample_id,'_vs_normal_sample.purityploidy.txt'), sep='\t')
+message("Reading CNVkit data")
+
 
 ############ Process data
 if (gender=="female"){
