@@ -48,90 +48,103 @@ p_info <- ps::ps_handle()
 start_time <- Sys.time()
 initial_cpu <- ps::ps_cpu_times(p_info)
 initial_mem <- ps::ps_memory_info(p_info)["rss"] / 1024^3
+
+
 if (type=="tumour"){
   muts_dir <- paste0(input_dir,"/tumour/purity_",purity,"/data/mutations/")
   max_coverage <- as.double(args[6]) #200 ## this is hard-coded now
   num_of_lots <- as.double(args[7]) #40 ## this is hard-coded now
   coverage<-(max_coverage*lot_end)/num_of_lots
   data <- list()
- 
-  if (lot_end<=10){
-    rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[1:lot_end]
-    data <- lapply(rds_files,function(x){
-      readRDS(x)  %>%
-        dplyr::select(-ends_with(".VAF"))
-    })
-  } else{
-    lot_start<-lot_end-10+1
-    previous_lot <- lot_end-10
-    previous_coverage <- (max_coverage*previous_lot)/num_of_lots
-    print(previous_coverage)
-    previous_lots <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_merged_coverage_",previous_coverage),full.names = T)
-    rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[lot_start:lot_end]
+  
+  if (!file.exists(paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))){
+    if (lot_end<=10){
+        rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[1:lot_end]
+        data <- lapply(rds_files,function(x){
+        readRDS(x)  %>%
+            dplyr::select(-ends_with(".VAF"))
+        })
+    } else{
+        lot_start<-lot_end-10+1
+        previous_lot <- lot_end-10
+        previous_coverage <- (max_coverage*previous_lot)/num_of_lots
+        print(previous_coverage)
+        previous_lots <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_merged_coverage_",previous_coverage),full.names = T)
+        rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)[lot_start:lot_end]
+        
+        rds_files_all <- c(rds_files,previous_lots)
+        message(paste0("Merging the following rds: ",rds_files_all))
+        data <- lapply(rds_files_all,function(x){
+        readRDS(x)  %>%
+            dplyr::select(-ends_with(".VAF"))
+        })
+    }
     
-    rds_files_all <- c(rds_files,previous_lots)
-    message(paste0("Merging the following rds: ",rds_files_all))
-    data <- lapply(rds_files_all,function(x){
-      readRDS(x)  %>%
-        dplyr::select(-ends_with(".VAF"))
+    ids <- grep(pattern = "coverage",x = colnames(data[[1]]),value = T) %>% strsplit("\\\.")
+    print("Combining dataframes ...")
+    combined_df <- bind_rows(data)
+    sample_names <- sapply(ids, function(x) {
+        parts <- unlist(strsplit(x, "\\\."))
+        paste(parts[1], parts[2], sep = ".")
     })
+    
+    print("Summing up NV and DP...")
+    
+    columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
+    result <- combined_df %>%
+        group_by(chr, chr_pos,ref,alt,classes,causes) %>% 
+        summarize(across(all_of(columns), sum, .names = "{.col}"))
+    
+    print("Recalculate VAF...")
+    for (s in sample_names){
+        col_name_DP <- paste0(s,".coverage")
+        col_name_NV <- paste0(s,".occurrences")
+        col_name_VAF <- paste0(s,".VAF")
+        result <- result %>% 
+        mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
+        print(s)
+    }
+    print("Saving merged rds...")
+    saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))
+    print("Done merging!")
+  } else {
+      print("Merging already present, skipping")
   }
   
-  ids <- grep(pattern = "coverage",x = colnames(data[[1]]),value = T) %>% strsplit("\\\.")
-  print("Combining dataframes ...")
-  combined_df <- bind_rows(data)
-  sample_names <- sapply(ids, function(x) {
-    parts <- unlist(strsplit(x, "\\\."))
-    paste(parts[1], parts[2], sep = ".")
-  })
-  
-  print("Summing up NV and DP...")
-  
-  columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
-  result <- combined_df %>%
-    group_by(chr, chr_pos,ref,alt,classes,causes) %>% 
-    summarize(across(all_of(columns), sum, .names = "{.col}"))
-  
-  print("Recalculate VAF...")
-  for (s in sample_names){
-    col_name_DP <- paste0(s,".coverage")
-    col_name_NV <- paste0(s,".occurrences")
-    col_name_VAF <- paste0(s,".VAF")
-    result <- result %>% 
-      mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
-    print(s)
-  }
-  print("Saving merged rds...")
-  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))
-  print("Done merging!")
 } else if (type=="normal"){
   max_coverage <- as.double(args[6])
   num_of_lots <- as.double(args[7]) #40 ## this is hard-coded now
   coverage<-(max_coverage*lot_end)/num_of_lots
   muts_dir <- paste0(input_dir,"/normal/purity_1/data/mutations/")
-  rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)
-  data <- lapply(rds_files,function(x){
-    readRDS(x)  %>%
-      dplyr::select(-ends_with(".VAF"))
-  })
-  print("Combining dataframes ...")
-  combined_df <- bind_rows(data)
-
-  print("Summing up NV and DP...")
-  columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
-
-  result <- combined_df %>%
-    group_by(chr, chr_pos,ref,alt,classes,causes) %>%
-    summarize(across(all_of(columns), sum, .names = "{.col}"))
   
-  print("Recalculate VAF...")
-  s <- "normal_sample"
-  col_name_DP <- paste0(s,".coverage")
-  col_name_NV <- paste0(s,".occurrences")
-  col_name_VAF <- paste0(s,".VAF")
-  result <- result %>% 
-    mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
-  saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",max_coverage,"x", ".rds"))
+  if (!file.exists(paste0(muts_dir,"seq_results_muts_merged_coverage_",max_coverage,"x", ".rds"))){
+    rds_files <- list.files(path = muts_dir, pattern = paste0("seq_results_muts_",spn,"_"),full.names = T)
+    data <- lapply(rds_files,function(x){
+        readRDS(x)  %>%
+        dplyr::select(-ends_with(".VAF"))
+    })
+    print("Combining dataframes ...")
+    combined_df <- bind_rows(data)
+
+    print("Summing up NV and DP...")
+    columns  <- colnames(combined_df)[c(7:ncol(combined_df))]
+
+    result <- combined_df %>%
+        group_by(chr, chr_pos,ref,alt,classes,causes) %>%
+        summarize(across(all_of(columns), sum, .names = "{.col}"))
+    
+    print("Recalculate VAF...")
+    s <- "normal_sample"
+    col_name_DP <- paste0(s,".coverage")
+    col_name_NV <- paste0(s,".occurrences")
+    col_name_VAF <- paste0(s,".VAF")
+    result <- result %>% 
+        mutate(!!col_name_VAF := .data[[col_name_NV]] / .data[[col_name_DP]])
+    saveRDS(result, file = paste0(muts_dir,"seq_results_muts_merged_coverage_",max_coverage,"x", ".rds"))
+    print("Done merging!")
+  } else {
+      print("Merging already present, skipping")
+  }
 }
 
 end_time <- Sys.time()
@@ -151,10 +164,10 @@ resource_usage <- data.frame(
 )
 rownames(resource_usage) <- NULL
 
-if (type=="tumour"){
+if (type=="tumour" & !file.exists(paste0(muts_dir,"seq_results_muts_merged_coverage_",coverage,"x", ".rds"))){
   data_dir_resources <- paste0(input_dir,"/tumour/purity_",purity,"/data/resources/")
   saveRDS(resource_usage, file = paste0(data_dir_resources,"seq_results_merging_coverage_",coverage,"x", ".rds"))
-} else if (type=="normal"){
+} else if (type=="normal" & !file.exists(paste0(muts_dir,"seq_results_muts_merged_coverage_",max_coverage,"x", ".rds"))){
   data_dir_resources <- paste0(input_dir,"/normal/purity_1/data/resources/")
   saveRDS(resource_usage, file = paste0(data_dir_resources,"seq_results_merging_coverage_",max_coverage,"x", ".rds"))
 }
@@ -766,7 +779,8 @@ def write_sarek_sample_variant_calling_lines(sarek_file, SPN, seq_type, sample_n
     
 def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
     variant_caller = combination[0]
-    path = f'{sarek_output_dir}/{coverage}x_{purity}p/variant_calling'
+    base_path = f'{sarek_output_dir}/{coverage}x_{purity}p'
+    path = f'{base_path}/variant_calling'
     
     if variant_caller == 'mutect2':
         rel_path = f'{path}/{variant_caller}/{SPN}'
@@ -782,7 +796,15 @@ def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverag
     segment = f'{sample_name}_vs_normal_sample.segments.txt'
     purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
     cn_caller = 'ASCAT'
-    tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
+    
+    if  variant_caller == 'mutect2':
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
+    else:
+        cram_tumour = f'{base_path}/preprocessing/recalibrated/{sample_name}/{sample_name}.recal.cram'
+        cram_normal = f'{sarek_output_dir}/normal/preprocessing/recalibrated/normal_sample/normal_sample.recal.cram'
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type},{cram_tumour},{cram_normal}')
+
+
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
@@ -965,7 +987,7 @@ if (__name__ == '__main__'):
             while (len(completed_ids) != len(submitted)):
                 time.sleep(60)
                 completed_ids = get_completed_jobs(output_dir, lot_prefix)
-            print(seq_type) 
+
             if seq_type == 'normal':
                 with open(gender_filename, "r") as gender_file:
                     subject_gender = gender_file.read().strip('\n')
@@ -1068,7 +1090,11 @@ if (__name__ == '__main__'):
                         vc = comb[0]
                         cc = comb[1]
                         with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.csv', 'w') as tumourevo_file:
-                            tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            if comb[0] == 'mutect2':
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            else:
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type,tumour_alignment,tumour_alignment_index')
+                                
                             for sample_name in sample_names:
                                 write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
                     
