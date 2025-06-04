@@ -32,7 +32,7 @@ workflow SEQUENZA {
     SAMTOOLS_CONVERT_T(tumour_cram,fasta,fai)
     out_bam_T = SAMTOOLS_CONVERT_T.out.bam.join(SAMTOOLS_CONVERT_T.out.bai)
     out_bam_T.map{ meta, bam, bai -> 
-            [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+            [meta.patient, [id:meta.id , status:meta.status, gender:meta.gender], bam, bai]
         }.set{tumour_bam}
                     
     seq_split.normal.map{ meta, cram, crai -> 
@@ -43,7 +43,7 @@ workflow SEQUENZA {
     SAMTOOLS_CONVERT_N(normal_cram,fasta,fai)
     out_bam_N = SAMTOOLS_CONVERT_N.out.bam.join(SAMTOOLS_CONVERT_N.out.bai)
     out_bam_N.map{ meta, bam, bai -> 
-                [meta.patient, [ id:meta.id , status:meta.status], bam, bai]
+                [meta.patient, [ id:meta.id, status:meta.status, gender:meta.gender], bam, bai]
             }.set{normal_bam}
                     
     tumour_bam
@@ -52,7 +52,7 @@ workflow SEQUENZA {
                     [meta1 + [patient:patient], files2, files1, files22, files11]
             }
             .set{seq_input_matched}
-
+    
     if (params.create_wiggle) {
         SEQUENZAUTILS_GCWIGGLE(fasta)
         wiggle = SEQUENZAUTILS_GCWIGGLE.out.wig // something wrong here
@@ -65,7 +65,8 @@ workflow SEQUENZA {
         .map{ chr -> chr[0][0] }
         .filter( ~/^chr\d+|^chr[X,Y]|^\d+|[X,Y]/ )
         .collect()
-
+    
+    seq_input_matched.view()
     SEQUENZAUTILS_BAM2SEQZ(seq_input_matched,
                             fasta,
                             wiggle,
