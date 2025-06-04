@@ -25,8 +25,14 @@ correct_th = opt$correct_th
 caller = "ascat"
 
 
-phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
-gender <-  phylo_forest$get_germline_subject()$gender
+gender_file <- read.table(file = paste0(data_dir,spn_id,"/process/subject_gender.txt"),header = FALSE,col.names = "gender")
+gender <- gender_file$gender
+
+if (gender=="XX"){
+  chromosomes = c(paste0('chr',1:22), 'chrX')
+} else {
+  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
+}
 
 ############ Load data
 #### ProCESS data
@@ -67,11 +73,6 @@ message("Reading ASCAT data")
 #### CNVkit data
 
 ############ Process data
-if (gender=="female"){
-  chromosomes = c(paste0('chr',1:22), 'chrX')
-} else {
-  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
-}
 
 message("Create joint ProCESS SNPs table")
 snps = mutations %>% 
