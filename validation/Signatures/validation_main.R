@@ -13,7 +13,7 @@ spn_list <- c("SPN01", "SPN02", "SPN03", "SPN04")
 coverage_list <- c(50)
 purity_list <- c(0.3, 0.6)
 
-results_list <- list()
+process_exposure <- list()
 
 for (spn in spn_list) {
   for (cov in coverage_list) {
