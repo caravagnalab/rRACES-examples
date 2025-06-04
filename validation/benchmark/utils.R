@@ -39,17 +39,20 @@ parse_rds <- function(dir, type, merging){
 
 
 theme_custom <- function() {
-  theme_bw(base_size = 13) + # Start with a minimal theme
+  theme_light(base_size = 11) + # Start with a minimal theme
     theme(
       # Background color
       panel.background = element_rect(fill = "white", color = NA),
       plot.background = element_rect(fill = "white", color = NA),
       
       # Title and axis labels
-      plot.title = element_text(size = 15, color = "#333333"), #hjust = 0.5),
-      plot.subtitle = element_text(size = 13, color = "#444444"),
-      axis.title = element_text(size = 15, color = "#444444"),
-      axis.text = element_text(size = 14, color = "#555555"),
+      plot.title = element_text(size = 13, color = "#333333"), #hjust = 0.5),
+      plot.subtitle = element_text(size = 11, color = "#444444"),
+      axis.title = element_text(size = 13, color = "#444444"),
+      axis.text = element_text(size = 12, color = "#555555"),
+      
+      strip.text.x = element_text(size = 11, color = "#555555"), 
+      strip.text.y = element_text(size = 11, color = "#555555"),
       
       # Grid lines
       panel.grid.major = element_line(color = "grey90", size = 0.5),
@@ -57,8 +60,8 @@ theme_custom <- function() {
       
       # Legend
       legend.background = element_rect(fill = "white", color = "NA"),
-      legend.text = element_text(size = 14, color = "#444444"),
-      legend.title = element_text(size = 14, color = "#444444"),
+      legend.text = element_text(size = 12, color = "#444444"),
+      legend.title = element_text(size = 12, color = "#444444"),
       legend.position = 'bottom',
       legend.box.spacing = unit(-0.5, "pt"),
       

@@ -2,7 +2,7 @@ plot_qc <- function(cnaqc_list, type = 'simple_clonal'){
   if (type == 'simple_clonal'){
     table <- lapply(names(cnaqc_list), function(sample) {
       x <- cnaqc_list[[sample]]
-      s <- str_split(sample, '_') %>% unlist()
+      s <- stringr::str_split(sample, '_') %>% unlist()
       
       xqc = CNAqc:::compute_QC_table(x)
       QC_table = xqc$QC_table
@@ -59,17 +59,17 @@ plot_qc <- function(cnaqc_list, type = 'simple_clonal'){
 get_statistics_qc <- function(cnaqc_list, purity) {
   tt <- lapply(names(cnaqc_list), function(sample) {
     x <- cnaqc_list[[sample]]
-    s <- str_split(sample, '_') %>% unlist()
+    s <- stringr::str_split(sample, '_') %>% unlist()
     
     tt = dplyr::tibble(
       sample = paste0(s[2], '_', s[3]),
       n_muts = x$n_mutations, 
       passed_muts = paste0(x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(), ' (', (round(x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow() / x$mutations %>% nrow(), digits = 2))*100, '%)'), 
-      #n_failed_muts = x$mutations %>% dplyr::filter(QC_PASS == FALSE) %>% nrow(), 
+      passed_muts0 = x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(),
       n_clonal_cnas = x$n_cna_clonal,
       n_subclonal_cnas = x$n_cna_subclonal, 
       passed_clonal_cnas = paste0(x$cna %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(), ' (', (round(x$cna %>% dplyr::filter(QC_PASS == TRUE) %>% nrow() / x$cna %>% nrow(), digits = 2))*100, '%)'), 
-      #failed_clonal_cnas = x$cna %>% dplyr::filter(QC_PASS == FALSE) %>% nrow(), 
+      passed_clonal_cnas0 = x$cna %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(),
       true_purity = purity,
       caller_purity = x$purity, 
       purity_correction = round(x$peaks_analysis$score, 5),
@@ -87,10 +87,11 @@ get_statistics_qc <- function(cnaqc_list, purity) {
       dplyr::mutate(sample = paste0(s[2], '_', s[3]))
     
     return(tt)
-  }) %>% dplyr::bind_rows() %>% 
-    tidyr::pivot_wider(values_from = values, names_from = sample)
+  }) %>% dplyr::bind_rows() 
+    
+  tt_wider <- tt %>% tidyr::pivot_wider(values_from = values, names_from = sample)
   
-  table <- tt %>%
+  table <- tt_wider %>%
     dplyr::select(gg, info, everything()) %>% 
     dplyr::mutate(info = ifelse(info == "sample", "", info)) %>% 
     dplyr::mutate(gg = ifelse(info == "QC", "QC", gg)) %>% 
@@ -100,7 +101,7 @@ get_statistics_qc <- function(cnaqc_list, purity) {
     gt::tab_header(title = gt::md("**QC summary**")) %>% 
     gt::tab_options(column_labels.hidden = T,  table.layout = "auto")
   
-  return(table)
+  return(list(plot = table, table = tt))
 }
 
 
