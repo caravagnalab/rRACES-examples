@@ -107,3 +107,17 @@ for (spn in spn_list) {
 }
 
 
+## Map De novo SparseSignatures to COSMIC using cosine similarity ##
+
+# Extract de novo signatures and exposures
+sparsesig_out <- tumourevo_signature_res[["SPN04"]][["coverage_50"]][["purity_0.6"]][["Sparsesig"]]
+mut_counts <- tumourevo_signature_res[["SPN04"]][["coverage_50"]][["purity_0.6"]][["mut_counts"]]
+cosmic_path <- "COSMIC_v3.4/COSMIC_v3.4_SBS_GRCh38.txt"
+threshold = 0.7
+
+remapped_exposures_prop <- map_sparsesig_to_cosmic(
+  sparsesig_out = sparsesig_out,
+  mut_counts = mut_counts,
+  cosmic_path = cosmic_path,
+  threshold = threshold
+)

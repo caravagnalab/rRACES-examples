@@ -148,7 +148,6 @@ get_sbs_exposures <- function(phylo_forest, sample_forest_path, snapshot_path) {
   samples_data <- samples_table(snapshot = snapshot_path, sample_forest = samples_forest)
 
   sample_ids <- samples_data %>%
-    dplyr::filter(Samping_Time == 0) %>%
     dplyr::pull(Sample_ID)
 
   # Conditionally filter out time = 0 exposures
