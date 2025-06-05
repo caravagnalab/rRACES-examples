@@ -188,6 +188,8 @@ def get_sample_names_from_FASTQ(fastq_dir):
     
 def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
     variant_caller = combination[0]
+    cna_caller = combination[1]
+    
     base_path = f'{sarek_output_dir}/{coverage}x_{purity}p'
     path = f'{base_path}/variant_calling'
     
@@ -201,10 +203,17 @@ def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverag
         rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
         name = f'{sample_name}_vs_normal_sample.freebayes.vcf.gz'
     
-    path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
-    segment = f'{sample_name}_vs_normal_sample.segments.txt'
-    purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
-    cn_caller = 'ASCAT'
+    if cna_caller == 'ascat':
+        path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample.segments.txt'
+        purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
+        cn_caller = 'ASCAT'
+        
+    elif cna_caller == 'sequenza':
+        path_cn = f'{path}/sequenza/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample_segments.txt'
+        purity = f'{sample_name}_vs_normal_sample_confints_CP.txt'
+        cn_caller = 'sequenza'
     
     if  variant_caller == 'mutect2':
         tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
@@ -374,10 +383,11 @@ if (__name__ == '__main__'):
                     
                     #tumourevo sh file and csv file
                     variant_callers = ['freebayes', 'strelka', 'mutect2']
-                    cn_caller = 'ascat'
+                    cn_caller = ['ascat', 'sequenza']
                     combinations = []
                     for vc in variant_callers:
-                        combinations.append([vc, cn_caller])
+                        for cnc in cn_caller:
+                            combinations.append([vc, cnc])
                     
                     for comb in combinations:
                         vc = comb[0]
