@@ -25,7 +25,7 @@ workflow SEQUENZA {
                     }.set{seq_split}
 
     seq_split.tumour.map{ meta, cram, crai -> 
-                        meta = meta + [id:meta.patient + meta.sample]
+                        meta = meta + [id:meta.patient + "_" + meta.sample]
                         [meta, cram, crai]
                     }.set{tumour_cram}
                     
