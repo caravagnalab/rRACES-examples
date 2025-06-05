@@ -9,13 +9,11 @@
 
 module load R/4.4.1
 
-# to modify
-SPN="SPN03"
-COV="100"
-PUR="0.9"
-DIR="/orfeo/cephfs/scratch/area/lvaleriani/ProCESS-examples"
+SPN=$1
+COV=$2
+PUR=$3
+DIR=${PWD}
 
-# to keep as it is
 QUEUE="EPYC"
 ACCOUT="cdslab"
 
