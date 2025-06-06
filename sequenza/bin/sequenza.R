@@ -7,25 +7,18 @@ args <- commandArgs(TRUE)
 input <- args[1]
 output_prefix <- args[2]
 gender <- args[3]
-ploidy <- as.integer(args[4])
-ccf <- as.numeric(args[5])
-gam <- as.integer(args[6])
 
-if (ploidy == 7) {
-  low_p <- 1
-  up_p <- 7
-} else  {
-  low_p <- ploidy - 0.5
-  up_p <- ploidy + 0.5
-}
+# as ascat
+gam <- 70
 
-if (ccf == 1) {
-  high_ccf <- 1.0
-  low_ccf <- 0.1
-} else {
-  high_ccf <- ccf + 0.1
-  low_ccf <- ccf - 0.1
-}
+# ploidy as ascat 
+low_p <- 1.05
+up_p <- 5.5
+
+# complete spectrum of purity
+high_ccf <- 1.0
+low_ccf <- 0.1
+
 
 if (gender == 'XX'){
   is_female = TRUE

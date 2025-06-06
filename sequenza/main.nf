@@ -25,7 +25,7 @@ workflow SEQUENZA {
                     }.set{seq_split}
 
     seq_split.tumour.map{ meta, cram, crai -> 
-                        meta = meta + [id:meta.patient + meta.sample]
+                        meta = meta + [id:meta.sample+'_vs_normal_sample']
                         [meta, cram, crai]
                     }.set{tumour_cram}
                     
@@ -66,7 +66,6 @@ workflow SEQUENZA {
         .filter( ~/^chr\d+|^chr[X,Y]|^\d+|[X,Y]/ )
         .collect()
     
-    seq_input_matched.view()
     SEQUENZAUTILS_BAM2SEQZ(seq_input_matched,
                             fasta,
                             wiggle,

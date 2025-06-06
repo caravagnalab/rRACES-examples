@@ -123,6 +123,45 @@ COLS_TO_KEEP <- c("chr", "from", "to", "ref","alt","mutationID","NV","DP","VAF",
 #   return(calls)
 # }
 
+find_inserted_substring <- function(s1, s2) {
+  
+  if (nchar(s2) <= nchar(s1)) {
+    return(NULL)
+  }
+  
+  # Try each possible insertion position in s1
+  for (i in 0:nchar(s1)) {
+    # Split s1 at position i
+    if (i == 0) {
+      prefix <- ""
+      suffix <- s1
+    } else if (i == nchar(s1)) {
+      prefix <- s1
+      suffix <- ""
+    } else {
+      prefix <- substr(s1, 1, i)
+      suffix <- substr(s1, i + 1, nchar(s1))
+    }
+    
+    # Check if s2 starts with prefix and ends with suffix
+    starts_with_prefix <- (prefix == "" || substr(s2, 1, nchar(prefix)) == prefix)
+    ends_with_suffix <- (suffix == "" || substr(s2, nchar(s2) - nchar(suffix) + 1, nchar(s2)) == suffix)
+    
+    if (starts_with_prefix && ends_with_suffix) {
+      # Calculate the length of the inserted part
+      inserted_length <- nchar(s2) - nchar(prefix) - nchar(suffix)
+      
+      # Extract the inserted substring
+      if (inserted_length > 0) {
+        inserted <- substr(s2, nchar(prefix) + 1, nchar(prefix) + inserted_length)
+        return(inserted)
+      }
+    }
+  }
+  
+  return(NULL)
+}
+
 parse_FreeBayes = function(vcf, filter_mutations = FALSE, chromosome = NULL, mut_type = NULL, min_vaf = 0.01, max_normal_vaf = 0.02){
   # Validate mut_type parameter
   if (!is.null(mut_type) && !(mut_type %in% c("SNV", "INDEL"))) {
@@ -248,6 +287,42 @@ parse_FreeBayes = function(vcf, filter_mutations = FALSE, chromosome = NULL, mut
     } else if (mut_type == "INDEL") {
       somatic_mutations = somatic_mutations %>% 
         dplyr::filter(nchar(ref) != 1 | nchar(alt) != 1)
+      
+      # Parse correctly
+      parsed_ref_alt_df = lapply(1:nrow(somatic_mutations), function(i) {
+        ref = somatic_mutations[i,]$ref
+        alt = somatic_mutations[i,]$alt
+        
+        alts = unlist(strsplit(alt, ","))
+        if (length(alts) != 1) {
+          df_alts = lapply(alts, function(alt) {
+            insertion = find_inserted_substring(ref, alt)
+            if (!is.null(insertion)) {
+              new_ref = str_split(ref, insertion)[[1]][1]
+              new_alt = paste0(new_ref, insertion)
+              dplyr::tibble(new_ref, new_alt)
+            }    
+          }) %>% do.call("bind_rows", .)
+          if (nrow(df_alts) != 0) {
+            df_alts[1,]
+          } else {
+            dplyr::tibble(new_ref = ref, new_alt = alt)
+          }
+        } else {
+          insertion = find_inserted_substring(ref, alt)
+          if (is.null(insertion)) {
+            dplyr::tibble(new_ref = ref, new_alt = alt)
+          } else {
+            new_ref = str_split(ref, insertion)[[1]][1]
+            new_alt = paste0(new_ref, insertion)
+            dplyr::tibble(new_ref, new_alt)
+          }  
+        } 
+      }) %>% do.call(bind_rows, .)
+      
+      somatic_mutations = cbind(somatic_mutations, parsed_ref_alt_df)
+      somatic_mutations = somatic_mutations %>% 
+        dplyr::mutate(alt = new_alt, ref=new_ref)
     }
   }
   
