@@ -127,7 +127,7 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "purityploidy.txt")) {
-        named_files[["purity_ploidy"]] <- list_of_output_files[i] 
+        named_files[["purityploidy"]] <- list_of_output_files[i] 
       } else if (endsWith(list_of_output_files[i], "segments.txt")) {
         named_files[["segments"]] <- list_of_output_files[i]
       }
@@ -149,7 +149,7 @@ get_sarek_vcf_file <- function(spn,
                                sampleID,
                                coverage,
                                purity,
-                               variant_caller,
+                               caller,
                                type,
                                basedir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"){
   file_list <- parse_sarek_variant_called_files(
@@ -157,7 +157,7 @@ get_sarek_vcf_file <- function(spn,
                                    sampleID = sampleID,
                                    coverage = coverage,
                                    purity = purity,
-                                   variant_caller = variant_caller,
+                                   variant_caller = caller,
                                    type = type,
                                    basedir = basedir)
   )
