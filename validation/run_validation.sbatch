@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=GENOA
 #SBATCH --mem=24GB
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
@@ -12,9 +12,10 @@ module load R/4.4.1
 SPN=$1
 COV=$2
 PUR=$3
+SKIP=$4
 DIR=${PWD}
 
-QUEUE="EPYC"
+QUEUE="GENOA"
 ACCOUT="cdslab"
 
-$DIR/validation/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT
+$DIR/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT -S $SKIP
