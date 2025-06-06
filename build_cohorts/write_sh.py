@@ -367,7 +367,7 @@ if (__name__ == '__main__'):
                     #sequenza sh file
                     sequenza_launcher_orig = sequenza_launcher
                     job_id=f'{cohort_cov}x_{purity}p'
-                    process_path = '/'.join(str(config_file).split('/')[:-2]) + '/sequenza'
+                    process_path = os.path.join('/'.join(os.path.normpath(config_file).split(os.path.sep)[:-2]), 'sequenza')
                     
                     sequenza_launcher = sequenza_launcher.replace('{ACCOUNT}', str(account))
                     sequenza_launcher = sequenza_launcher.replace('{JOB_NAME}', str(job_id))
