@@ -2,7 +2,7 @@ rm(list = ls())
 options(bitmapType='cairo')
 require(tidyverse)
 library(optparse)
-library(ProCESS)
+
 source("utils/utils.R")
 source("utils/plot_utils.R")
 
@@ -17,10 +17,10 @@ spn_id = opt$spn_id
 coverage = opt$coverage
 purity = opt$purity
 
-phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
-gender <-  phylo_forest$get_germline_subject()$gender
+gender_file <- read.table(file = paste0(data_dir,spn_id,"/process/subject_gender.txt"),header = FALSE,col.names = "gender")
+gender <- gender_file$gender
 
-if (gender=="female"){
+if (gender=="XX"){
   chromosomes = c(paste0('chr',1:22), 'chrX')
 } else {
   chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')

@@ -24,6 +24,6 @@ process SEQUENZAUTILS_RSEQZ {
     
     """
     zcat ${seqz_bin} > $seqz_in
-    sequenza.R ${seqz_in} ${meta.id} ${meta.gender} ${params.ploidy} ${params.purity} ${params.gamma}
+    sequenza.R ${seqz_in} ${meta.id} ${meta.gender}
     """
 }

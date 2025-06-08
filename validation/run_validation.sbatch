@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=EPYC
+#SBATCH --partition=GENOA
 #SBATCH --mem=24GB
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
@@ -9,14 +9,13 @@
 
 module load R/4.4.1
 
-# to modify
-SPN="SPN03"
-COV="100"
-PUR="0.9"
-DIR="/orfeo/cephfs/scratch/area/lvaleriani/ProCESS-examples"
+SPN=$1
+COV=$2
+PUR=$3
+SKIP=$4
+DIR=${PWD}
 
-# to keep as it is
-QUEUE="EPYC"
+QUEUE="GENOA"
 ACCOUT="cdslab"
 
-$DIR/validation/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT
+$DIR/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUT -S $SKIP

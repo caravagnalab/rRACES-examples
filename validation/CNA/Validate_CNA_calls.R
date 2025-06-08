@@ -9,12 +9,13 @@ library(ggplot2)
 option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN03_1.1'),
 		                make_option(c("--spn_id"), type = "character", default = 'SPN03'),
                     make_option(c("--purity"), type = "character", default = '0.9'),
-                    make_option(c("--coverage"), type = "character", default = '100'),
+                    make_option(c("--coverage"), type = "character", default = '50'),
                     make_option(c("--purity_th"), type = "character", default = '.1'),
-                    make_option(c("--correct_th"), type = "character", default = '.6'))
+                    make_option(c("--correct_th"), type = "character", default = '.6'),
+		                make_option(c("--caller"), type = "character", default = 'ascat'))
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
-data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
+data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/' # "/Users/aliceantonello/dati_Orfeo/shared/SCOUT/" 
 
 sample_id = opt$sample_id
 spn_id = opt$spn_id
@@ -22,11 +23,17 @@ coverage = paste0(opt$coverage,"x")
 purity = paste0(opt$purity,"p")
 purity_th = opt$purity_th
 correct_th = opt$correct_th
-caller = "ascat"
+caller = opt$caller #"ascat"
 
 
-phylo_forest <- load_phylogenetic_forest(paste0(data_dir,spn_id,"/process/phylo_forest.sff"))
-gender <-  phylo_forest$get_germline_subject()$gender
+gender_file <- read.table(file = paste0(data_dir,spn_id,"/process/subject_gender.txt"),header = FALSE,col.names = "gender")
+gender <- gender_file$gender
+
+if (gender=="XX"){
+  chromosomes = c(paste0('chr',1:22), 'chrX')
+} else {
+  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
+}
 
 ############ Load data
 #### ProCESS data
@@ -64,14 +71,53 @@ purity_ploidy = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', puri
                                 '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
                                 sample_id,'_vs_normal_sample.purityploidy.txt'), sep='\t')
 message("Reading ASCAT data")
+
 #### CNVkit data
+# CNA calls
+
+# library(vcfR)
+# CNA_cnvkit = vcfR::read.vcfR(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
+#                             '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
+#                             sample_id,'_vs_normal_sample.cnvcall.vcf'),verbose = F) 
+# gt_field = vcfR::extract_gt_tidy(CNA_cnvkit, verbose = F)
+# fix_field = CNA_cnvkit@fix %>% as_tibble()
+# CNA_cnvkit = cbind(fix_field, gt_field)
+
+CNA_cnvkit = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity,
+                            '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
+                            sample_id,'.somatic.call.cns'),sep='\t')
+# DR cnvkit
+DR_file_cnvkit = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity,
+                                          '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
+                                          sample_id,'.cnr'), sep='\t') %>% as_tibble()
+
+## inspect CNVkit calls
+CNA_cnvkit_shifted =lapply(chromosomes, function(c){
+  from_c = CNAqc:::get_reference('hg38') %>% filter(chr == c) %>% pull(from)
+  CNA_cnvkit %>% filter(chromosome == c) %>% 
+    mutate(start = start+from_c,
+           end = end+from_c)
+})
+CNA_cnvkit_shifted = Reduce(rbind,CNA_cnvkit_shifted)
+
+DR_file_cnvkit_shifted =lapply(chromosomes, function(c){
+  from_c = CNAqc:::get_reference('hg38') %>% filter(chr == c) %>% pull(from)
+  DR_file_cnvkit %>% filter(chromosome == c) %>% 
+    mutate(start = start+from_c,
+           end = end+from_c)
+})
+DR_file_cnvkit_shifted = Reduce(rbind,DR_file_cnvkit_shifted )
+
+
+# CNAqc:::blank_genome()+
+#   geom_segment(data=DR_file_cnvkit_shifted, aes(x=start,xend=end, y=weight, yend=weight), color='indianred', size=2)+
+#   geom_segment(data=CNA_cnvkit_shifted, aes(x=start,xend=end, y=cn/2, yend=cn/2))+
+#   ylim(0,4)
+
+message("Reading CNVkit data")
+
 
 ############ Process data
-if (gender=="female"){
-  chromosomes = c(paste0('chr',1:22), 'chrX')
-} else {
-  chromosomes = c(paste0('chr',1:22), 'chrX', 'chrY')
-}
 
 message("Create joint ProCESS SNPs table")
 snps = mutations %>% 
@@ -148,9 +194,9 @@ joint_segmentation = lapply(chromosomes, function(c){
     }
     if (nrow(true_cna)>1){
       true_M1=true_cna[1,] %>% pull(major)
-      true_m1=true_cna[1,] %>% pull(major)
+      true_m1=true_cna[1,] %>% pull(minor)
       true_M2=true_cna[2,] %>% pull(major)
-      true_m2=true_cna[2,] %>% pull(major)
+      true_m2=true_cna[2,] %>% pull(minor)
     }
     if (nrow(inferred_cna)==0){
       true_M=NA
@@ -196,15 +242,106 @@ joint_segmentation_shifted_longer = joint_segmentation_shifted %>%
     values_to = "Value"  # New column for values
   )
 
-# Compute CNA correctness - percentage of the genome correctly called by ascat 
+message("Create joint table ProCESS and CNVkit calls") 
+joint_segmentation_cnvkit = lapply(chromosomes, function(c){
+  print(c)
+  CNA_races_chr = CNA_races %>% filter(chr==c) %>% 
+    mutate(group = cumsum(
+      lag(major, default = dplyr::first(major)) != major |
+        lag(minor, default = dplyr::first(minor)) != minor |
+        lag(ratio, default = dplyr::first(ratio)) != ratio
+    )) %>%
+    group_by(chr, major, minor, ratio, group) %>%
+    summarise(from = min(from), to = max(to), .groups = "drop") %>%
+    select(chr, from, to, major, minor, ratio) %>% 
+    arrange(from, to)
+  
+  CNA_cnvkit_chr = CNA_cnvkit %>% filter(chromosome==c)
+  froms = c(CNA_races_chr$from %>% unique(), CNA_cnvkit_chr$start %>% unique())
+  tos = c(CNA_races_chr$to %>% unique(), CNA_cnvkit_chr$end %>% unique())
+  breakpoints = c(froms, tos) %>% sort()
+  df = data.frame()
+  for (i in 1:(length(breakpoints)-1)){
+    f = breakpoints[i]
+    t = breakpoints[i+1]
+    true_cna= CNA_races_chr %>% filter(from <= f, from < t, to>=t) 
+    inferred_cna= CNA_cnvkit_chr %>% filter(start <= f, start < t, end>=t) 
+    if (nrow(true_cna)==0){
+      true_M1=NA
+      true_m1=NA
+      true_M2=NA
+      true_m2=NA
+      true_cn=NA
+    }
+    if (nrow(true_cna)==1){
+      true_M1=true_cna %>% pull(major)
+      true_m1=true_cna %>% pull(minor)
+      true_M2=NA
+      true_m2=NA
+      true_cn = true_M1+true_m1
+    }
+    if (nrow(true_cna)>1){
+      true_M1=true_cna[1,] %>% pull(major)
+      true_m1=true_cna[1,] %>% pull(minor)
+      true_M2=true_cna[2,] %>% pull(major)
+      true_m2=true_cna[2,] %>% pull(minor)
+      ratio=true_cna[1,] %>% pull(ratio)
+      true_cn = ratio*(true_M1+true_m1) + (1-ratio)*(true_M2+true_m2) 
+    }
+    if (nrow(inferred_cna)==0){
+      total_cn = NA
+    }
+    if (nrow(inferred_cna)==1){
+      total_cn=inferred_cna %>% pull(cn)
+    }
+    df = rbind(df, data.frame(
+      'from' =f,
+      'to'=t,
+      'chromosome'=c,
+      'TRUE_Major1'= true_M1,
+      'TRUE_minor1'= true_m1,
+      'TRUE_Major2'= true_M2,
+      'TRUE_minor2'= true_m2,
+      'TRUE_cn'= true_cn,
+      'INFERRED_cn'=total_cn
+    ))
+  }
+  df
+  
+}) #%>% Reduce(rbind)
+joint_segmentation_cnvkit = Reduce(rbind, joint_segmentation_cnvkit)
+joint_segmentation_cnvkit_shifted = lapply(1:nrow(joint_segmentation_cnvkit), function(r){
+  chromosome = joint_segmentation_cnvkit[r,]$chromosome
+  from_chromosome = CNAqc:::get_reference('hg38') %>% filter(chr==chromosome) %>% pull(from)
+  joint_segmentation_cnvkit[r,] %>% mutate(from = from + from_chromosome, to = to + from_chromosome)
+})
+joint_segmentation_cnvkit_shifted = Reduce(rbind, joint_segmentation_cnvkit_shifted)
+joint_segmentation_cnvkit_shifted_longer = joint_segmentation_cnvkit_shifted %>% 
+  mutate(is_match = 
+           case_when(
+             abs(TRUE_cn - INFERRED_cn)<.1 ~ 'complete match',
+             abs(TRUE_cn - INFERRED_cn)>=.1 & abs(TRUE_cn - INFERRED_cn)<.5 ~ 'close',
+             .default = 'no match'
+           )) %>% select(from, to, chromosome, TRUE_cn, INFERRED_cn,is_match)%>%
+  pivot_longer(
+    cols = c('TRUE_cn', 'INFERRED_cn'),  
+    names_to = "Type",  # New column for variable names
+    values_to = "Value"  # New column for values
+  )
+
+
+ # Compute CNA correctness - percentage of the genome correctly called by ascat 
 # (call is considered correct if the major and minor allele match, event if the match 
 # is reffered only to the most prevalent subclone)
 message("Compute metrics")
 ascat_correctness =  1-( (joint_segmentation_shifted_longer %>% filter(is_match == 'no match') %>% mutate(len=to-from) %>%
   pull(len) %>% unique() %>% sum()) / (joint_segmentation_shifted_longer %>% mutate(len=to-from) %>%
                                          pull(len) %>% unique() %>% sum()))
+cnvkit_correctness =  1-( (joint_segmentation_cnvkit_shifted_longer %>% filter(is_match == 'no match') %>% mutate(len=to-from) %>%
+                            pull(len) %>% unique() %>% sum()) / (joint_segmentation_cnvkit_shifted_longer %>% mutate(len=to-from) %>%
+                                                                   pull(len) %>% unique() %>% sum()))
 purity_correctness = purity_ploidy$AberrantCellFraction - as.double(strsplit(purity, 'p')[[1]])
-if (purity_th < purity_correctness & correct_th < ascat_correctness){state = 'PASS'}else{state='FAIL'}
+if (purity_th < purity_correctness & correct_th < ascat_correctness & correct_th < cnvkit_correctness){state = 'PASS'}else{state='FAIL'}
 
 ## BAF and DR ascat
 BAF_DR = left_join(
@@ -319,6 +456,63 @@ inferred_baf_dr = lapply(1:nrow(CNA_ascat), function(r){
 })
 inferred_baf_dr = Reduce(rbind,inferred_baf_dr)
 
+## Segmentation correctness
+# ASCAT
+CNA_races_unique <- CNA_races[!duplicated(CNA_races$seg_id), ]
+seg_ids = CNA_races$seg_id %>% unique()
+# find closest segment:
+# 1. for each real, select the segment that overlaps the most in the inferred segments
+# 2. remove duplicates by keeping closest segments
+# 3. compute the average distance between inferred breakpoints 
+best_segments = lapply(seg_ids, function(s){
+  print(s)
+  f = CNA_races_unique %>% filter(seg_id==s) %>% pull(from)
+  t = CNA_races_unique %>% filter(seg_id==s) %>% pull(to)
+  c = CNA_races_unique %>% filter(seg_id==s) %>% pull(chr)
+  max_overlap_df = CNA_ascat %>% filter(chr == c) %>% rowwise() %>% mutate(l= (min(t,to)-max(f,from))) %>%
+    mutate(p= (100*l)/(t-f)) 
+  max_overlap = max(max_overlap_df$p)
+  best_match = max_overlap_df %>% filter(p==max_overlap) 
+  if (nrow(best_match)>0){
+  best_match=best_match %>% mutate(original_from= f, original_to= t, distance = mean(abs(from-f), abs(to-t)))
+  }
+  })
+best_segments = Reduce(rbind,best_segments)
+best_segments = best_segments %>% rowwise() %>% mutate(ids = paste0(chr, ':',from,':',to))
+ids = best_segments$ids %>% unique()
+filtered_best_segments = lapply(ids, function(i){
+  best_segments_i= best_segments %>% filter(ids == i)
+  best_segments_i = best_segments_i %>% filter(p==max(best_segments_i$p)) 
+  best_segments_i = best_segments_i %>% filter(l==max(best_segments_i$l))
+  best_segments_i
+})
+filtered_best_segments = Reduce(rbind, filtered_best_segments)
+
+# CNVkit
+best_segments_cnvkit = lapply(seg_ids, function(s){
+  #print(s)
+  f = CNA_races_unique %>% filter(seg_id==s) %>% pull(from)
+  t = CNA_races_unique %>% filter(seg_id==s) %>% pull(to)
+  c = CNA_races_unique %>% filter(seg_id==s) %>% pull(chr)
+  max_overlap_df = CNA_cnvkit %>% filter(chromosome == c) %>% rowwise() %>% mutate(l= (min(t,end)-max(f,start))) %>%
+    mutate(p= (100*l)/(t-f)) 
+  max_overlap = max(max_overlap_df$p)
+  best_match = max_overlap_df %>% filter(p==max_overlap) 
+  if (nrow(best_match)>0){
+    best_match=best_match %>% mutate(original_from= f, original_to= t, distance = mean(abs(start-f), abs(end-t)))
+  }
+})
+best_segments_cnvkit = Reduce(rbind,best_segments_cnvkit)
+best_segments_cnvkit = best_segments_cnvkit %>% rowwise() %>% mutate(ids = paste0(chr, ':',from,':',to))
+ids = best_segments_cnvkit$ids %>% unique()
+filtered_best_segments_cnvkit = lapply(ids, function(i){
+  best_segments_i= best_segments %>% filter(ids == i)
+  best_segments_i = best_segments_i %>% filter(p==max(best_segments_i$p)) 
+  best_segments_i = best_segments_i %>% filter(l==max(best_segments_i$l))
+  best_segments_i
+})
+filtered_best_segments_cnvkit = Reduce(rbind, filtered_best_segments_cnvkit)
+
 ########### Plots
 message("Generate plots")
 color_by_state = c("TRUE_Major1"=alpha('firebrick', 1),
@@ -326,10 +520,13 @@ color_by_state = c("TRUE_Major1"=alpha('firebrick', 1),
                    "TRUE_Major2"=alpha('#ff00abb3'),
                    "TRUE_minor2"=alpha('slateblue', 1),
                    "INFERRED_Major1"=alpha('firebrick', .5),
-                   "INFERRED_minor1"=alpha('#000080ff',.5))
+                   "INFERRED_minor1"=alpha('#000080ff',.5),
+                   'TRUE_cn'= alpha('firebrick', 1),
+                   'INFERRED_cn'=alpha('#ff00abb3'))
 
 fill_by_match = c('complete match'= alpha('gainsboro', .03),
                   'undetected subclone'= alpha('goldenrod', .08),
+                  'close'= alpha('goldenrod', .08),
                   'no match' = alpha('indianred', .08)
 )
 # fill_by_match_2 = c('complete match'= alpha('forestgreen', .5),
@@ -341,6 +538,7 @@ fill_by_match = c('complete match'= alpha('gainsboro', .03),
 
 #CNAqc:::blank_genome() + geom_point(data=snps, aes(x=chr_pos, y =SPN01_1.1.VAF))
 
+### Plots ASCAT
 baf_ascat = CNAqc:::blank_genome() + 
   geom_point(data = BAF_DR_shifted %>% sample_n(size = n()/2), #%>% mutate(BAF = ifelse(BAF>.5, 1-BAF,BAF))
              aes(x=Position, y=BAF), size = .1, alpha=1)+
@@ -411,43 +609,105 @@ st =
    GGGGGG
    GGGGGG'
 
-report = patchwork::wrap_plots(
+report_ascat = patchwork::wrap_plots(
   baf_ascat, dr_ascat, baf_races, dr_races, baf_comparison, dr_comparison, cna_calls_comparison,
   design = st
 ) + patchwork::plot_annotation(
-  title = element_text(paste0('CNA validation of sample: ', sample_id)),
+  title = element_text(paste0('ASCAT CNA validation of sample: ', sample_id)),
   subtitle = element_text(paste0(
     'Proportion of genome inferred correctly: ', round(ascat_correctness,2)*100,'%',
     '\nTrue purity: ',purity_number,' Inferred purity: ', purity_ploidy$AberrantCellFraction,
     '\nTrue ploidy: ',round(ploidy,2),' Inferred ploidy: ', round(purity_ploidy$Ploidy,2),
     '\nNumber of subclonal segments: ', joint_segmentation_shifted %>% filter(!is.na(TRUE_Major1)) %>% 
-      filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow())
+      filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow()),
+    '\nAverage breakpoint distance: ',mean(filtered_best_segments$distance)
 )) 
 
-outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/',caller,"/", sample_id,"/")
-dir.create(outdir, recursive = T, showWarnings = F)
-ggsave(report, file = paste0(outdir,'report.png'), height = 12, width = 12)
 
-reportdir <- paste0(data_dir,spn_id,"/validation/cna/report/")
-dir.create(reportdir, recursive = T, showWarnings = F)
-filename <- paste(spn_id,coverage,purity, caller, sample_id, sep='_')
-file_path <- file.path(reportdir, filename)
-ggsave(report, file = paste0(file_path,'.png'), height = 12, width = 12)
+### Plots CNVkit
+dr_cnvkit = CNAqc:::blank_genome() + 
+  geom_segment(data = DR_file_cnvkit_shifted %>% sample_n(size = n()/2), 
+             aes(x=start,xend=end, y=weight, yend=weight), size = 2, alpha=1)+
+  geom_segment(data = CNA_cnvkit_shifted, aes(x=start, xend=end, y=cn/2), color='red', size=1)+
+  ylab('DR CNVkit')+
+  ylim(0,4)
+
+#dr_races 
+
+dr_comparison_cnvkit=CNAqc:::blank_genome() + 
+  geom_segment(data = simulated_baf_dr, aes(x=from, xend=to, y=simulated_dr+.07), color ='goldenrod', size=1)+
+  geom_segment(data = CNA_cnvkit_shifted, aes(x=start, xend=end, y=cn/2-.07), color ='steelblue', size=1)+
+  ylab('DR') + 
+  ylim(0,4) + 
+  ggtitle('DR: inferred (cnvkit, blue) vs simulated (ProCESS, yellow)')
+
+cna_calls_comparison_cnvkit = CNAqc:::blank_genome() + 
+  geom_rect(data = joint_segmentation_cnvkit_shifted_longer,
+            aes(xmin=from, xmax=to, ymin=-Inf, ymax=Inf, fill=is_match)) +
+  geom_segment(data=joint_segmentation_cnvkit_shifted_longer %>% 
+                 mutate(Value = case_when(
+                   Type == 'TRUE_cn' ~ Value + .09,
+                   Type == 'INFERRED_cn' ~ Value - .09
+                 )), 
+               aes(x=from, xend=to, y=Value, color=Type), size=1)+
+  scale_color_manual(values=color_by_state)+
+  scale_fill_manual(values=fill_by_match)+
+  labs(fill = "", color = "")+
+  guides(fill = guide_legend(override.aes = list(alpha = 1))) +
+  theme(legend.text=element_text(size=12))+
+  ylab('Total CN')
+
+
+st = 
+  'AAABBB
+   CCC###
+   DDDDDD
+   DDDDDD'
+
+report_cnvkit = patchwork::wrap_plots(
+  dr_cnvkit, dr_races, dr_comparison_cnvkit, cna_calls_comparison_cnvkit,
+  design = st
+) + patchwork::plot_annotation(
+  title = element_text(paste0('CNVkit CNA validation of sample: ', sample_id)),
+  subtitle = element_text(paste0(
+    'Proportion of genome inferred correctly: ', round(cnvkit_correctness,2)*100,'%',
+    '\nAverage breakpoint distance: ',mean(filtered_best_segments_cnvkit$distance)
+  ))) 
+
+
+
+### Save reports 
+outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/',sample_id,'/')
+dir.create(outdir, recursive = T, showWarnings = F)
+# ascat
+ggsave(report_ascat, file = paste0(outdir,'ascat_report.png'), height = 12, width = 12)
+# cnvkit
+ggsave(report_cnvkit, file = paste0(outdir,'cnvkit_report.png'), height = 7, width = 12)
+
+# reportdir <- paste0(data_dir,spn_id,"/validation/cna/report/")
+# dir.create(reportdir, recursive = T, showWarnings = F)
+# filename <- paste(spn_id,coverage,purity, caller, sample_id, sep='_')
+# file_path <- file.path(reportdir, filename)
+# ggsave(report, file = paste0(file_path,'.png'), height = 12, width = 12)
 
 CNA_validation_summmary = list(
-  'data' = joint_segmentation,
-  'caller results' = CNA_ascat,
+  #'data' = joint_segmentation,
+  'ascat results' = CNA_ascat,
+  'cnvkit results' = CNA_cnvkit,
   'ProCESS results' = CNA_races,
   'SNPs subset' = joint_table_snps_shifted,
-  'proportion of correctly inferred genome'= ascat_correctness,
+  'proportion of correctly inferred genome (ascat)'= ascat_correctness,
+  'proportion of correctly inferred genome (cnvkit)'= cnvkit_correctness,
   'true purity' = purity_number,
-  'inferred purity' = purity_ploidy$AberrantCellFraction,
+  'inferred purity (ascat)' = purity_ploidy$AberrantCellFraction,
   'true ploidy' = ploidy,
-  'inferred ploidy' = purity_ploidy$Ploidy,
+  'inferred ploidy (ascat)' = purity_ploidy$Ploidy,
   'simulated purity' = as.double(strsplit(purity, 'p')[[1]]),
+  'average bp distance (ascat)'= mean(filtered_best_segments$distance),
+  'average bp distance (cnvkit)'= mean(filtered_best_segments$distance),
   'state' = state
 )
-
+#outdir <- paste0(data_dir,spn_id,"/validation/cna/",spn_id,"/",coverage,"_",purity,'/sample_id/')
 saveRDS(CNA_validation_summmary, file = paste0(outdir, 'metrics.rds'))
 message("Report saved for combination: purity=", purity, ", cov=", coverage)
 

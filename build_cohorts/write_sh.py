@@ -93,6 +93,37 @@ profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "u
     --outdir $output_dir_combination -profile singularity,${profile} -c $config
 """
 
+
+sequenza_launcher="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=sequenza_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=24:00:00
+#SBATCH --output=sequenza_{JOB_NAME}_%J.out 
+#SBATCH --error=sequenza_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/sarek_variant_calling_{JOB_NAME}.csv"
+
+output_base_dir={SAREK_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+base={PROCESS_DIR}
+profile=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print tolower($1), $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
+
+/orfeo/cephfs/scratch/cdslab/shared/SCOUT/nextflow run $base/main.nf -profile singularity,${profile} --input $input --outdir $output_dir_combination -c $config
+"""
+
+
+
 tumourevo_launcher="""#!/bin/bash
 #SBATCH --partition=EPYC
 #SBATCH --job-name=tumourevo_{JOB_NAME}
@@ -157,6 +188,8 @@ def get_sample_names_from_FASTQ(fastq_dir):
     
 def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
     variant_caller = combination[0]
+    cna_caller = combination[1]
+    
     base_path = f'{sarek_output_dir}/{coverage}x_{purity}p'
     path = f'{base_path}/variant_calling'
     
@@ -170,17 +203,23 @@ def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverag
         rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
         name = f'{sample_name}_vs_normal_sample.freebayes.vcf.gz'
     
-    path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
-    segment = f'{sample_name}_vs_normal_sample.segments.txt'
-    purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
-    cn_caller = 'ASCAT'
+    if cna_caller == 'ascat':
+        path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample.segments.txt'
+        purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
+        cn_caller = 'ASCAT'
+        
+    elif cna_caller == 'sequenza':
+        path_cn = f'{path}/sequenza/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample_segments.txt'
+        purity = f'{sample_name}_vs_normal_sample_confints_CP.txt'
+        cn_caller = 'sequenza'
     
     if  variant_caller == 'mutect2':
         tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
     else:
         cram_tumour = f'{base_path}/preprocessing/recalibrated/{sample_name}/{sample_name}.recal.cram'
-        cram_normal = f'{sarek_output_dir}/normal/preprocessing/recalibrated/normal_sample/normal_sample.recal.cram'
-        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type},{cram_tumour},{cram_normal}')
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type},{cram_tumour},{cram_tumour}.crai')
 
 
 
@@ -320,18 +359,35 @@ if (__name__ == '__main__'):
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{JOB_NAME}', str(job_id))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{CONFIG}', str(config_file))
-                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
-                    
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))                    
                     with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_variant_calling_launcher)
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher_orig
                     
+                    #sequenza sh file
+                    sequenza_launcher_orig = sequenza_launcher
+                    job_id=f'{cohort_cov}x_{purity}p'
+                    process_path = os.path.join('/'.join(os.path.normpath(config_file).split(os.path.sep)[:-2]), 'sequenza')
+                    
+                    sequenza_launcher = sequenza_launcher.replace('{ACCOUNT}', str(account))
+                    sequenza_launcher = sequenza_launcher.replace('{JOB_NAME}', str(job_id))
+                    sequenza_launcher = sequenza_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                    sequenza_launcher = sequenza_launcher.replace('{CONFIG}', str(config_file))
+                    sequenza_launcher = sequenza_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+                    sequenza_launcher = sequenza_launcher.replace('{PROCESS_DIR}', str(process_path))
+
+                    
+                    with open(f'{sarek_dir}/sequenza_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
+                        outstream.write(sequenza_launcher)
+                    sequenza_launcher = sequenza_launcher_orig
+                    
                     #tumourevo sh file and csv file
                     variant_callers = ['freebayes', 'strelka', 'mutect2']
-                    cn_caller = 'ascat'
+                    cn_caller = ['ascat', 'sequenza']
                     combinations = []
                     for vc in variant_callers:
-                        combinations.append([vc, cn_caller])
+                        for cnc in cn_caller:
+                            combinations.append([vc, cnc])
                     
                     for comb in combinations:
                         vc = comb[0]
