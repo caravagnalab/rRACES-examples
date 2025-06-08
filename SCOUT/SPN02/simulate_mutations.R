@@ -8,7 +8,7 @@ library(dplyr)
 
 # load time in which is born the third clone and the samples forest
 clone3_born = readRDS("clone3_clock.rds")
-sampled_phylogeny = load_samples_forest("samples_forest.sff")
+sampled_phylogeny = load_samples_forest("sample_forest.sff")
 
 curr_dir = getwd()
 setwd("/orfeo/cephfs/scratch/cdslab/shared/ProCESS/GRCh38")
@@ -59,7 +59,7 @@ m_engine$add_exposure(
 # Sys.time()
 # add mutations on the forest with 1000 pre-neoplastic mutations
 phylo_forest <- m_engine$place_mutations(sampled_phylogeny, 
-    num_of_preneoplatic_SNVs = 800, 
+    num_of_preneoplatic_SNVs = 1000, 
     num_of_preneoplatic_indels = 200
 )
 
