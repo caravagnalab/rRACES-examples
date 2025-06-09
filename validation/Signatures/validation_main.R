@@ -107,17 +107,83 @@ for (spn in spn_list) {
 }
 
 
-## Map De novo SparseSignatures to COSMIC using cosine similarity ##
+### Map De novo SparseSignatures results to COSMIC using cosine similarity ###
 
-# Extract de novo signatures and exposures
-sparsesig_out <- tumourevo_signature_res[["SPN04"]][["coverage_50"]][["purity_0.6"]][["Sparsesig"]]
-mut_counts <- tumourevo_signature_res[["SPN04"]][["coverage_50"]][["purity_0.6"]][["mut_counts"]]
 cosmic_path <- "COSMIC_v3.4/COSMIC_v3.4_SBS_GRCh38.txt"
-threshold = 0.7
+sparsig_cosmic <- list()
 
-remapped_exposures_prop <- map_sparsesig_to_cosmic(
-  sparsesig_out = sparsesig_out,
-  mut_counts = mut_counts,
-  cosmic_path = cosmic_path,
-  threshold = threshold
+for (spn in names(tumourevo_signature_res)) {
+
+  # Set threshold depending on SPN
+  threshold <- switch(spn,
+                      "SPN01" = 0.5,
+                      "SPN03" = 0.7,
+                      "SPN04" = 0.7,
+                      0.7)  # default if any others
+
+  for (coverage in names(tumourevo_signature_res[[spn]])) {
+    for (purity in names(tumourevo_signature_res[[spn]][[coverage]])) {
+
+      # Access Sparsesig output and mutation counts
+      sparsesig_out <- tumourevo_signature_res[[spn]][[coverage]][[purity]][["Sparsesig"]]
+      mut_counts <- tumourevo_signature_res[[spn]][[coverage]][[purity]][["mut_counts"]]
+
+      # Map to COSMIC signatures with appropriate threshold
+      remapped_exposures_prop <- map_sparsesig_to_cosmic(
+        sparsesig_out = sparsesig_out,
+        mut_counts = mut_counts,
+        cosmic_path = cosmic_path,
+        threshold = threshold
+      )
+
+      # Store results
+      sparsig_cosmic[[spn]][[coverage]][[purity]] <- remapped_exposures_prop
+    }
+  }
+}
+
+
+### Validate Signatures across combinations ###
+
+spn_list <- c("SPN01", "SPN03", "SPN04")
+coverage <- 50
+purity <- 0.6
+
+ground_truth <- list()
+
+for (spn in spn_list) {
+  if (spn %in% names(process_exposures_list)) {
+    gt <- process_exposures_list[[spn]] %>%
+      tibble::column_to_rownames("Sample_ID") %>%
+      as.matrix()
+    
+    ground_truth[[spn]] <- gt
+  } else {
+    warning(paste("Missing ground truth for", spn))
+  }
+}
+
+sparsesig_aligned <- align_sparsesig_res(sparsig_cosmic)
+sigprof_aligned <- align_sigprofiler_res(tumourevo_signature_res)
+
+
+ground_truth_nested <- list()
+
+for (spn in names(ground_truth)) {
+  ground_truth_nested[[spn]] <- list()
+  coverage_key <- paste0("coverage_", coverage)  # "coverage_50"
+  purity_key <- paste0("purity_", purity)        # "purity_0.6"
+  
+  ground_truth_nested[[spn]][[coverage_key]] <- list()
+  ground_truth_nested[[spn]][[coverage_key]][[purity_key]] <- ground_truth[[spn]]
+}
+
+metrics_sparsesig <- evaluate_all_combined(ground_truth_nested, sparsesig_aligned, threshold = 0.05)
+metrics_sigprof <- evaluate_all_combined(ground_truth_nested, sigprof_aligned, threshold = 0.05)
+
+combined_metrics <- bind_rows(
+  metrics_sparsesig %>% mutate(Tool = "SparseSignatures"),
+  metrics_sigprof %>% mutate(Tool = "SigProfiler")
 )
+
+saveRDS(combined_metrics, file = "combined_metrics_signatures.rds")

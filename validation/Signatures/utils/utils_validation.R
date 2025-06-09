@@ -40,6 +40,141 @@ evaluate_signatures <- function(true_signatures, predicted_signatures) {
 }
 
 
+align_sigprofiler_res <- function(sigprofiler_list) {
+  aligned <- list()
+
+  for (spn in names(sigprofiler_list)) {
+    aligned[[spn]] <- list()
+
+    for (coverage in names(sigprofiler_list[[spn]])) {
+      aligned[[spn]][[coverage]] <- list()
+
+      for (purity in names(sigprofiler_list[[spn]][[coverage]])) {
+        df <- sigprofiler_list[[spn]][[coverage]][[purity]][["Sigprofiler_CosmicExposure"]]
+
+        if (is.null(df)) next
+
+        df <- as.data.frame(df)
+        colnames(df)[1] <- "Sample_ID"
+
+        df <- df %>%
+          tibble::column_to_rownames("Sample_ID") %>%
+          mutate(across(everything(), as.numeric))
+
+        df_norm <- t(apply(df, 1, function(x) if (sum(x) == 0) x else x / sum(x)))
+        df <- as.data.frame(df_norm)
+
+        pattern <- "^.*?_(SPN\\d+_\\d+\\.\\d+)$"
+        rn <- rownames(df)
+        rn_new <- ifelse(
+          grepl(pattern, rn),
+          sub(pattern, "\\1", rn),
+          rn
+        )
+        rownames(df) <- rn_new
+
+        aligned[[spn]][[coverage]][[purity]] <- df
+      }
+    }
+  }
+
+  return(aligned)
+}
+
+
+align_sparsesig_res <- function(sparse_list) {
+  aligned <- list()
+
+  for (spn in names(sparse_list)) {
+    aligned[[spn]] <- list()
+
+    for (coverage in names(sparse_list[[spn]])) {
+      aligned[[spn]][[coverage]] <- list()
+
+      for (purity in names(sparse_list[[spn]][[coverage]])) {
+        mat <- sparse_list[[spn]][[coverage]][[purity]]
+
+        # Generate sample IDs based on matrix row count
+        n_samples <- nrow(mat)
+        sample_ids <- paste0(spn, "_1.", seq_len(n_samples))
+        rownames(mat) <- sample_ids
+
+        aligned[[spn]][[coverage]][[purity]] <- as.matrix(mat)
+      }
+    }
+  }
+
+  return(aligned)
+}
+
+
+evaluate_all_combined <- function(ground_truth_list, predicted_list, threshold = 0) {
+  results <- data.frame()
+
+  for (spn in names(ground_truth_list)) {
+    for (coverage in names(ground_truth_list[[spn]])) {
+      for (purity in names(ground_truth_list[[spn]][[coverage]])) {
+
+        gt_mat <- ground_truth_list[[spn]][[coverage]][[purity]]
+        pred_mat <- predicted_list[[spn]][[coverage]][[purity]]
+
+        if (is.null(gt_mat) || is.null(pred_mat)) next
+
+        # Align samples and signatures
+        common_samples <- intersect(rownames(gt_mat), rownames(pred_mat))
+        gt_mat <- gt_mat[common_samples, , drop = FALSE]
+        pred_mat <- pred_mat[common_samples, , drop = FALSE]
+
+        all_sigs <- union(colnames(gt_mat), colnames(pred_mat))
+
+        # Convert to data.frame for easier column handling
+        gt_mat <- as.data.frame(gt_mat)
+        pred_mat <- as.data.frame(pred_mat)
+
+        # Add missing columns with zeros
+        for (sig in all_sigs) {
+          if (!(sig %in% colnames(gt_mat))) gt_mat[[sig]] <- 0
+          if (!(sig %in% colnames(pred_mat))) pred_mat[[sig]] <- 0
+        }
+
+        # Reorder columns
+        gt_mat <- gt_mat[, all_sigs, drop = FALSE]
+        pred_mat <- pred_mat[, all_sigs, drop = FALSE]
+
+        # Flatten matrices into vectors: presence across all samples and all signatures
+        gt_presence <- as.vector(gt_mat > threshold)
+        pred_presence <- as.vector(pred_mat > threshold)
+
+        # Get indices where present (=1)
+        true_sigs <- which(gt_presence)
+        pred_sigs <- which(pred_presence)
+
+        # Calculate metrics
+        metrics <- evaluate_signatures(true_sigs, pred_sigs)
+
+        # Collect results
+        results <- rbind(results, data.frame(
+          SPN = spn,
+          Coverage = coverage,
+          Purity = purity,
+          Accuracy = metrics$Accuracy,
+          Precision = metrics$Precision,
+          Recall = metrics$Recall,
+          F1_Score = metrics$F1_Score,
+          TP = metrics$TP,
+          FP = metrics$FP,
+          FN = metrics$FN,
+          TN = metrics$TN
+        ))
+      }
+    }
+  }
+  rownames(results) <- NULL
+  return(results)
+}
+
+
+
 plot_confusion_matrix <- function(conf_matrix, tool_name) {
   conf_df <- as.data.frame(as.table(conf_matrix))
   colnames(conf_df) <- c("True", "Predicted", "Count")
