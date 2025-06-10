@@ -78,6 +78,22 @@ $cnr
 
 $somatic.call
 [1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT//SPN01/sarek/50x_0.3p/variant_calling/cnvkit/SPN01_1.1_vs_normal_sample/SPN01_1.1.somatic.call.cns"
+
+> get_sarek_cna_file(spn = 'SPN03', 
++                    coverage = 50, 
++                    purity = 0.3, 
++                    caller = 'sequenza', 
++                    type = "tumour", 
++                    sampleID = "SPN03_1.1")
+$confints_CP
+[1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT//SPN03/sarek/50x_0.3p/variant_calling/sequenza/SPN03_1.1_vs_normal_sample/SPN03_1.1_vs_normal_sample_confints_CP.txt"
+
+$mutations
+[1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT//SPN03/sarek/50x_0.3p/variant_calling/sequenza/SPN03_1.1_vs_normal_sample/SPN03_1.1_vs_normal_sample_mutations.txt"
+
+$segments
+[1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT//SPN03/sarek/50x_0.3p/variant_calling/sequenza/SPN03_1.1_vs_normal_sample/SPN03_1.1_vs_normal_sample_segments.txt"
+
 ```
 
 ### get_sarek_vcf_file
