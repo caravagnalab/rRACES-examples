@@ -202,39 +202,12 @@ sankey_df <- sankey_df %>%
     Coverage = as.numeric(gsub("coverage_", "", Coverage)),
     Purity = as.numeric(gsub("purity_", "", Purity))
   )
-sankey_df <- sankey_df %>% 
-  dplyr::filter(SPN == "SPN01")
 
-gt_sigs <- unique(sankey_df$Signature[sankey_df$Method == "GroundTruth"])
-ss_sigs <- unique(sankey_df$Signature[sankey_df$Method == "SparseSignatures"])
-sp_sigs <- unique(sankey_df$Signature[sankey_df$Method == "SigProfiler"])
+spns <- c("SPN01", "SPN03", "SPN04")
+sankey_plots <- lapply(spns, function(spn) generate_sankey(spn, cov = 50, pur = 0.6))
 
-presence_df <- data.frame(Signature = all_sigs) %>%
-  mutate(
-    GroundTruth = Signature %in% gt_sigs,
-    SparseSignatures = Signature %in% ss_sigs,
-    SigProfiler = Signature %in% sp_sigs
-  )
+wrapped_sankey <- wrap_plots(sankey_plots, ncol = 3)
+wrapped_sankey
 
-long_df <- presence_df %>%
-  tidyr::pivot_longer(cols = c(GroundTruth, SparseSignatures, SigProfiler),
-               names_to = "Method",
-               values_to = "Present") %>%
-  dplyr::filter(Present) %>%
-  dplyr::select(-Present) %>%
-  dplyr::mutate(Method = factor(Method, levels = c("GroundTruth", "SparseSignatures", "SigProfiler")))
 
-long_df$alluvium <- long_df$Signaturelong_df$alluvium <- long_df$Signature
-
-sankey <- ggplot(long_df,
-       aes(x = Method, stratum = Signature, alluvium = alluvium, fill = Signature, label = Signature)) +
-  geom_flow(width = 1/3) +
-  geom_stratum(width = 1/3, color = "black") +
-  geom_text(stat = "stratum", size = 3) +
-  scale_fill_brewer(palette = "Set3") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(title = "",
-       x = "Method",
-       y = "Signatures")
-
+### Exposure validation ###

@@ -175,52 +175,6 @@ evaluate_all_combined <- function(ground_truth_list, predicted_list, threshold =
 
 
 
-plot_confusion_matrix <- function(conf_matrix, tool_name) {
-  conf_df <- as.data.frame(as.table(conf_matrix))
-  colnames(conf_df) <- c("True", "Predicted", "Count")
-
-  conf_df$True <- factor(conf_df$True, levels = c("1", "0"))
-  conf_df$Predicted <- factor(conf_df$Predicted, levels = c("1", "0"))
-
-  conf_df$Label <- with(conf_df, ifelse(Predicted == "1" & True == "1", "TP",
-                                        ifelse(Predicted == "0" & True == "0", "TN",
-                                               ifelse(Predicted == "1" & True == "0", "FP", "FN"))))
-
-  conf_df$Group <- ifelse(conf_df$Label %in% c("TP", "TN"), "Correct", "Incorrect")
-  color_map <- c("Correct" = "#91D1C2B2", "Incorrect" = "#F39B7FB2")
-
-  ggplot(conf_df, aes(x = Predicted, y = True, fill = Group)) +
-    geom_tile(color = "black") +
-    geom_text(aes(label = paste0(Label, "\n", Count)), size = 6) +
-    scale_fill_manual(values = color_map, name = "Classification") +
-    scale_x_discrete(labels = c("0" = "Negative", "1" = "Positive")) +
-    scale_y_discrete(labels = c("1" = "Positive", "0" = "Negative")) +
-    labs(title = paste(tool_name),
-         x = "Predicted Label",
-         y = "True Label") +
-    theme_minimal() +
-    theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
-          axis.title = element_text(size = 14),
-          axis.text = element_text(size = 12),
-          legend.position = "right",
-          legend.title = element_text(size = 13),
-          legend.text = element_text(size = 11))
-}
-
-
-align_columns <- function(df, target_columns) {
-  df <- df[, intersect(colnames(df), target_columns), drop = FALSE]
-  # Add missing columns as zero
-  missing_cols <- setdiff(target_columns, colnames(df))
-  for (col in missing_cols) {
-    df[[col]] <- 0
-  }
-
-  df <- df[, target_columns, drop = FALSE]
-  return(df)
-}
-
-
 cosine_similarity_exposures <- function(vec1, vec2) {
   if (all(vec1 == 0) || all(vec2 == 0)) return(NA)
   return(sum(vec1 * vec2) / (sqrt(sum(vec1^2)) * sqrt(sum(vec2^2))))
