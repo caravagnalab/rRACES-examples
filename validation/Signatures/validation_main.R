@@ -280,7 +280,7 @@ for (method in names(aligned_exposures)) {
     Purity <- as.numeric(parts[5])
 
     # Cosine similarity per sample
-    sims <- compute_cosine_per_sample(gt_mat, tool_mat)
+    sims <- cosine_similarity_exposures(gt_mat, tool_mat)
     common_samples <- intersect(rownames(gt_mat), rownames(tool_mat))
 
     cosine_results[[cosine_idx]] <- tibble(
