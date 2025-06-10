@@ -12,19 +12,19 @@ generate_sankey <- function(spn_id, cov = NULL, pur = NULL) {
   all_sigs <- sort(unique(c(gt_sigs, ss_sigs, sp_sigs)))
   
   presence_df <- data.frame(Signature = all_sigs) %>%
-    mutate(
+    dplyr::mutate(
       GroundTruth = Signature %in% gt_sigs,
       SparseSignatures = Signature %in% ss_sigs,
       SigProfiler = Signature %in% sp_sigs
     )
   
   long_df <- presence_df %>%
-    pivot_longer(cols = c(GroundTruth, SparseSignatures, SigProfiler),
+    tidyr::pivot_longer(cols = c(GroundTruth, SparseSignatures, SigProfiler),
                  names_to = "Method",
                  values_to = "Present") %>%
-    filter(Present) %>%
-    select(-Present) %>%
-    mutate(Method = factor(Method, levels = c("GroundTruth", "SparseSignatures", "SigProfiler")),
+    dplyr::filter(Present) %>%
+    dplyr::select(-Present) %>%
+    dplyr::mutate(Method = factor(Method, levels = c("GroundTruth", "SparseSignatures", "SigProfiler")),
            alluvium = Signature)
   
   # Build dynamic title

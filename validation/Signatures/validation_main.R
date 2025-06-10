@@ -1,7 +1,7 @@
 setwd("/orfeo/cephfs/scratch/cdslab/kdavydzenka/ProCESS-examples/validation/Signatures")
 
 pkgs <- c("tidyverse", "ggplot2", "caret", "ggtext", "reshape2", "lsa", "Metrics", "MutationalPatterns",
-"ggalluvial")
+"ggalluvial", "patchwork")
 
 sapply(pkgs, require, character.only = TRUE)
 
@@ -9,6 +9,7 @@ source("utils/utils_getters.R")
 source("utils/utils_sparsesig.R")
 source("utils/utils_validation.R")
 source("utils/utils.R")
+source("utils/utils_plots.R")
 
 ### Get ProCESS exposure data ###
 
