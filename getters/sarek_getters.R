@@ -18,14 +18,14 @@ get_sarek_variant_called_files <- function(spn,
   }
   
   # input checking
-  accepted_callers <- c("mutect2", "strelka", "ascat", "freebayes", "haplotypecaller", "cnvkit")
+  accepted_callers <- c("mutect2", "strelka", "ascat", "freebayes", "haplotypecaller", "cnvkit", "sequenza")
   if (!(variant_caller %in% accepted_callers)) {
     stop("Variant caller not supported. Or check spelling of variant_caller arg.")
   }
   
   # get files
   if (type == "tumour" || is.null(type)) {
-    if (variant_caller %in% c("strelka", "ascat", "cnvkit", "freebayes", "haplotypecaller")) {
+    if (variant_caller %in% c("strelka", "ascat", "cnvkit", "freebayes", "haplotypecaller", "sequenza")) {
       sample_naming <- paste0(sampleID, "_vs_", normalID)
       path_to_files <- file.path(basedir, spn, "sarek",
                                  paste0(as.character(coverage),
@@ -74,6 +74,7 @@ get_sarek_variant_called_files <- function(spn,
 # take a list of filenames from strelka, mutect2, or ascat and structure them 
 # into a named list
 parse_sarek_variant_called_files <- function(list_of_output_files) {
+  
   # check which caller we are looking at
   if (grepl("mutect", as.character(list_of_output_files[1]), fixed = TRUE)) {
     named_files <- list()
@@ -149,8 +150,23 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
         named_files[["cnr"]] <- list_of_output_files[i]
       }
     }
+  } else if (grepl("sequenza", as.character(list_of_output_files[1]), fixed = TRUE)) {
+    named_files <- list()
+    # check for substrings in each file to tell us what the file is
+    for (i in 1:length(list_of_output_files)) {
+      if (endsWith(list_of_output_files[i], "segments.txt")) {
+        named_files[["segments"]] <- list_of_output_files[i]
+      } else if (endsWith(list_of_output_files[i], "confints_CP.txt")) {
+        named_files[["confints_CP"]] <- list_of_output_files[i]
+      } else if (endsWith(list_of_output_files[i], 'mutations.txt')){
+        named_files[["mutations"]] <- list_of_output_files[i]
+      }
+    }
+    return(named_files)
+  }  else{
+    stop('Error: combination does not exist')
   }
-  return(named_files)
+  
 }
 
 
@@ -201,6 +217,7 @@ get_sarek_cna_file <- function(spn,
                                caller,
                                type=NULL,
                                basedir="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/") {
+  
   file_list <- parse_sarek_variant_called_files(
     get_sarek_variant_called_files(spn = spn,
                                    sampleID = sampleID,
@@ -214,6 +231,8 @@ get_sarek_cna_file <- function(spn,
     output <- file_list
   } else if (caller == "cnvkit") {
     output <- file_list
+  } else if (caller == "sequenza") {
+    output <- file_list 
   } else {
     stop("Error: Invalid caller name supplied")
   }
