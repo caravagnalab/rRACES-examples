@@ -12,10 +12,11 @@ get_sarek_variant_called_files <- function(spn,
                                            patientID=NULL) {
   # testing
   if (!is.null(type)){
-    if (type %in% c("tumour", "normal")) {
+    if (!(type %in% c("tumour", "normal"))) {
       stop("Options for type are tumour or normal")
     }
   }
+  
   # input checking
   accepted_callers <- c("mutect2", "strelka", "ascat", "freebayes", "haplotypecaller", "cnvkit")
   if (!(variant_caller %in% accepted_callers)) {
@@ -75,7 +76,7 @@ get_sarek_variant_called_files <- function(spn,
 parse_sarek_variant_called_files <- function(list_of_output_files) {
   # check which caller we are looking at
   if (grepl("mutect", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "filtered.vcf.gz")) {
@@ -85,7 +86,7 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
       }
     }
   } else if (grepl("strelka", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "snvs.vcf.gz")) {
@@ -103,7 +104,7 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
       }
     }
   } else if (grepl("freebayes", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "freebayes.vcf.gz")) {
@@ -113,7 +114,7 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
       }
     }
   } else if (grepl("haplotypecaller", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "haplotypecaller.filtered.vcf.gz")) {
@@ -123,21 +124,29 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
       }
     }
   } else if (grepl("ascat", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
       if (endsWith(list_of_output_files[i], "purityploidy.txt")) {
         named_files[["purityploidy"]] <- list_of_output_files[i] 
       } else if (endsWith(list_of_output_files[i], "segments.txt")) {
         named_files[["segments"]] <- list_of_output_files[i]
-      }
+      } else if  (endsWith(list_of_output_files[i], "cnvs.txt")) {
+        named_files[["cnvs"]] <- list_of_output_files[i]
+      } else if  (endsWith(list_of_output_files[i], "tumourBAF.txt")) {
+        named_files[["tumourBAF"]] <- list_of_output_files[i]
+      } else if  (endsWith(list_of_output_files[i], "tumourLogR.txt")) {
+        named_files[["tumourLogR"]] <- list_of_output_files[i]
+      } 
     }
   } else if (grepl("cnvkit", as.character(list_of_output_files[1]), fixed = TRUE)) {
-    named_files <- vector("list")
+    named_files <- list()
     # check for substrings in each file to tell us what the file is
     for (i in 1:length(list_of_output_files)) {
-      if (endsWith(list_of_output_files[i], "call.cns") & !endsWith(list_of_output_files[i], "somatic.call.cns")) {
-        named_files[["calls"]] <- list_of_output_files[i]
+      if (endsWith(list_of_output_files[i], "somatic.call.cns")) {
+        named_files[["somatic.call"]] <- list_of_output_files[i]
+      } else if (endsWith(list_of_output_files[i], ".cnr")) {
+        named_files[["cnr"]] <- list_of_output_files[i]
       }
     }
   }
@@ -161,22 +170,24 @@ get_sarek_vcf_file <- function(spn,
                                    type = type,
                                    basedir = basedir)
   )
-  if (variant_caller == "strelka") {
+
+  if (caller == "strelka") {
     if (type == "tumour") {
-      output <- file_list[grep(paste(c("snvs_vcf", "indels_vcf"), collapse = "|"),
-                               names(file_list),
-                               ignore.case = TRUE)
-                          ]
-      names(output) <- c("SNV", "INDEL")
+      output <- file_list
+      # output <- file_list[grep(paste(c("snvs_vcf", "indels_vcf"), collapse = "|"),
+      #                          names(file_list),
+      #                          ignore.case = TRUE)
+      #                     ]
+      # names(output) <- c("SNV", "INDEL")
     } else if (type == "normal") {
-      output <- file_list$variants_vcf
+      output <- file_list
     }
-  } else if (variant_caller == "mutect2") {
-    output <- file_list$vcf
-  } else if (variant_caller == "freebayes") {
-    output <- file_list$vcf
-  } else if (variant_caller == "haplotypecaller") {
-    output <- file_list$vcf
+  } else if (caller == "mutect2") {
+    output <- file_list
+  } else if (caller == "freebayes") {
+    output <- file_list
+  } else if (caller == "haplotypecaller") {
+    output <- file_list
   } else {
     stop("Error: Invalid variant_caller name supplied")
   }
@@ -202,7 +213,7 @@ get_sarek_cna_file <- function(spn,
   if (caller == "ascat") {
     output <- file_list
   } else if (caller == "cnvkit") {
-    output <- file_list$calls
+    output <- file_list
   } else {
     stop("Error: Invalid caller name supplied")
   }
