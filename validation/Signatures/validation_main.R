@@ -194,7 +194,7 @@ combined_metrics <- bind_rows(
 saveRDS(combined_metrics, file = "combined_metrics_signatures.rds")
 
 
-# Sankey plot - Compare estimated and true signatures  #
+# Sankey plot - Compare estimated and true signatures  
 
 sankey_df <- prepare_sankey_data(ground_truth_nested, sparsesig_aligned, sigprof_aligned)
 
@@ -212,3 +212,110 @@ wrapped_sankey
 
 
 ### Exposure validation ###
+
+# Align exposure data
+
+aligned_exposures <- list(
+  SparseSignatures = list(),
+  SigProfiler = list()
+)
+
+spn_list <- names(ground_truth_nested)
+
+for (spn in spn_list) {
+  coverage_list <- names(ground_truth_nested[[spn]])
+
+  for (coverage in coverage_list) {
+    purity_list <- names(ground_truth_nested[[spn]][[coverage]])
+
+    for (purity in purity_list) {
+      # Access exposure matrices
+      gt <- ground_truth_nested[[spn]][[coverage]][[purity]]
+      sparse <- sparsesig_aligned[[spn]][[coverage]][[purity]]
+      sigprof <- sigprof_aligned[[spn]][[coverage]][[purity]]
+
+      # Find shared signatures
+      shared_sparse <- intersect(colnames(gt), colnames(sparse))
+      shared_sigprof <- intersect(colnames(gt), colnames(sigprof))
+
+      # Subset to shared signatures
+      gt_sparse <- gt[, shared_sparse, drop = FALSE]
+      sparse <- sparse[, shared_sparse, drop = FALSE]
+
+      gt_sigprof <- gt[, shared_sigprof, drop = FALSE]
+      sigprof <- sigprof[, shared_sigprof, drop = FALSE]
+
+      # Create unique key for storage
+      key <- paste(spn, coverage, purity, sep = "_")
+
+      # Store aligned pairs
+      aligned_exposures$SparseSignatures[[key]] <- list(gt = gt_sparse, tool = sparse)
+      aligned_exposures$SigProfiler[[key]]     <- list(gt = gt_sigprof, tool = sigprof)
+    }
+  }
+}
+
+
+# Calculate Cosine similarity and MSE
+
+cosine_results <- vector("list", length = sum(lengths(aligned_exposures)))
+mse_results <- vector("list", length = sum(lengths(aligned_exposures)))
+
+cosine_idx <- 1
+mse_idx <- 1
+
+for (method in names(aligned_exposures)) {
+  keys <- names(aligned_exposures[[method]])
+
+  for (key in keys) {
+    gt_mat <- aligned_exposures[[method]][[key]]$gt
+    tool_mat <- aligned_exposures[[method]][[key]]$tool
+
+    if (nrow(gt_mat) == 0) next
+
+    # Parse key only once (handle your key format)
+    parts <- str_split(key, "_", simplify = TRUE)
+    SPN <- parts[1]
+    Coverage <- as.numeric(parts[3])
+    Purity <- as.numeric(parts[5])
+
+    # Cosine similarity per sample
+    sims <- compute_cosine_per_sample(gt_mat, tool_mat)
+    common_samples <- intersect(rownames(gt_mat), rownames(tool_mat))
+
+    cosine_results[[cosine_idx]] <- tibble(
+      Sample = common_samples,
+      SPN = SPN,
+      Coverage = Coverage,
+      Purity = Purity,
+      Tool = method,
+      CosineSimilarity = sims
+    )
+    cosine_idx <- cosine_idx + 1
+
+    # MSE per signature
+    # Ensure columns align (intersect signatures)
+    common_sigs <- intersect(colnames(gt_mat), colnames(tool_mat))
+    gt_sub <- gt_mat[, common_sigs, drop = FALSE]
+    tool_sub <- tool_mat[, common_sigs, drop = FALSE]
+
+    mse_vec <- colMeans((gt_sub - tool_sub)^2, na.rm = TRUE)
+
+    mse_results[[mse_idx]] <- tibble(
+      SPN = SPN,
+      Coverage = Coverage,
+      Purity = Purity,
+      Tool = method,
+      Signature = names(mse_vec),
+      MSE = mse_vec
+    )
+    mse_idx <- mse_idx + 1
+  }
+}
+
+cosine_df <- bind_rows(cosine_results[1:(cosine_idx-1)])
+mse_df <- bind_rows(mse_results[1:(mse_idx-1)])
+
+saveRDS(cosine_df, file = "exposures_cosine.rds")
+saveRDS(mse_df, file = "exposures_mse.rds")
+

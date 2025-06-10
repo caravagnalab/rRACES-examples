@@ -80,6 +80,7 @@ align_sigprofiler_res <- function(sigprofiler_list) {
 
   return(aligned)
 }
+       
 
 
 align_sparsesig_res <- function(sparse_list) {
@@ -175,35 +176,6 @@ evaluate_all_combined <- function(ground_truth_list, predicted_list, threshold =
 
 
 
-cosine_similarity_exposures <- function(vec1, vec2) {
-  if (all(vec1 == 0) || all(vec2 == 0)) return(NA)
-  return(sum(vec1 * vec2) / (sqrt(sum(vec1^2)) * sqrt(sum(vec2^2))))
-}
-
-
-compute_sample_cosine_similarity <- function(mat1, mat2) {
-  sapply(seq_len(nrow(mat1)), function(i) {
-    cosine_similarity_exposures(mat1[i, ], mat2[i, ])
-  })
-}
-
-
-compute_similarity_matrix <- function(inferred_mat, ground_truth_mat) {
-  similarity_matrix <- matrix(NA,
-                              nrow = ncol(inferred_mat),
-                              ncol = ncol(ground_truth_mat),
-                              dimnames = list(colnames(inferred_mat), colnames(ground_truth_mat)))
-
-  for (i in seq_len(ncol(inferred_mat))) {
-    for (j in seq_len(ncol(ground_truth_mat))) {
-      similarity_matrix[i, j] <- cosine_similarity_exposures(inferred_mat[, i], ground_truth_mat[, j])
-    }
-  }
-
-  return(similarity_matrix)
-}
-
-
 compute_mse <- function(inferred_mat, ground_truth_mat) {
   inferred_mat <- as.matrix(inferred_mat)
   ground_truth_mat <- as.matrix(ground_truth_mat)
@@ -218,7 +190,7 @@ compute_mse <- function(inferred_mat, ground_truth_mat) {
 
   # MSE per signature (column-wise mean)
   mse_per_signature <- colMeans(mse_matrix, na.rm = TRUE)
-  names(mse_per_signature) <- common_cols  # Ensure names
+  names(mse_per_signature) <- common_cols  
 
   mse_overall <- mean(mse_matrix, na.rm = TRUE)
 
@@ -229,41 +201,41 @@ compute_mse <- function(inferred_mat, ground_truth_mat) {
 }
 
 
-validate_exposures <- function(process_exposures, sparsesig_out, sigprofiler_out) {
-  sparsesig_exp <- align_columns(sparsesig_out, colnames(process_exposures))
-  sigprofiler_exp <- align_columns(sigprofiler_out, colnames(process_exposures))
 
-  sparsesig_exp <- as.matrix(sparsesig_exp)
-  sigprofiler_exp <- as.matrix(sigprofiler_exp)
-  process_exposures <- as.matrix(process_exposures)
+cosine_similarity_exposures <- function(gt, tool) {
+  # Ensure samples order
+  common_samples <- intersect(rownames(gt), rownames(tool))
+  gt <- gt[common_samples, , drop = FALSE]
+  tool <- tool[common_samples, , drop = FALSE]
 
-  # Cosine similarity per sample
-  similarity_sparsesig <- compute_sample_cosine_similarity(sparsesig_exp, process_exposures)
-  similarity_sigprofiler <- compute_sample_cosine_similarity(sigprofiler_exp, process_exposures)
+  # Normalize rows (sample vectors) to length 1
+  norm_rows <- function(mat) mat / sqrt(rowSums(mat^2))
+  gt_norm <- norm_rows(gt)
+  tool_norm <- norm_rows(tool)
 
-  # MSE overall per sample
-  mse_sparsesig <- mean(rowMeans((sparsesig_exp - process_exposures)^2))
-  mse_sigprofiler <- mean(rowMeans((sigprofiler_exp - process_exposures)^2))
-
-  # Compute per-signature MSE (across samples)
-  mse_per_signature <- function(inferred_mat, true_mat) {
-    sapply(seq_len(ncol(inferred_mat)), function(j) {
-      mean((inferred_mat[, j] - true_mat[, j])^2)
-    })
-  }
-
-  mse_sparsesig_per_sig <- mse_per_signature(sparsesig_exp, process_exposures)
-  mse_sigprofiler_per_sig <- mse_per_signature(sigprofiler_exp, process_exposures)
-
-  return(list(
-    cosine_sparsesig = similarity_sparsesig,
-    cosine_sigprofiler = similarity_sigprofiler,
-    mse_sparsesig_overall = mse_sparsesig$overall,
-    mse_sigprofiler_overall = mse_sigprofiler$overall,
-    mse_sparsesig_per_signature = mse_sparsesig$per_signature,
-    mse_sigprofiler_per_signature = mse_sigprofiler$per_signature
-  ))
+  # Element-wise rowwise dot product = cosine similarity per sample
+  cos_sim <- rowSums(gt_norm * tool_norm)
+  cos_sim[is.na(cos_sim)] <- 0
+  cos_sim
 }
+
+
+mse_per_signature <- function(gt, tool) {
+  # Ensure same samples & signatures order
+  common_samples <- intersect(rownames(gt), rownames(tool))
+  gt <- gt[common_samples, , drop = FALSE]
+  tool <- tool[common_samples, , drop = FALSE]
+
+  # Align columns (signatures)
+  common_sigs <- intersect(colnames(gt), colnames(tool))
+  gt <- gt[, common_sigs, drop = FALSE]
+  tool <- tool[, common_sigs, drop = FALSE]
+
+  # Calculate column-wise MSE
+  mse_vec <- colMeans((gt - tool)^2, na.rm = TRUE)
+  return(mse_vec)
+}
+
 
 
 
