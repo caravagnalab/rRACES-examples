@@ -8,7 +8,26 @@ import time
 import subprocess
 import argparse
 
+
 ## This part is currently run sequentially
+
+
+write_tumour_type_file="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=tumour_type
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1G
+#SBATCH --time=01:00
+#SBATCH --output=tumour_type_%J.out 
+#SBATCH --error=tumour_type_%J.err
+#SBATCH -A {ACCOUNT}
+
+echo ${DIR}/../references/SCOUT_tumour_types.txt
+tumour_type=$(grep ${SPN} ${DIR}/../references/SCOUT_tumour_types.txt | cut -f 2)
+echo $tumour_type > "${BASEDIR}/tumour_type.txt"
+"""
 
 sarek_file_launcher="""#!/bin/bash
 #SBATCH --partition=EPYC
@@ -186,7 +205,7 @@ def get_sample_names_from_FASTQ(fastq_dir):
   
   
     
-def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
+def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type):
     variant_caller = combination[0]
     cna_caller = combination[1]
     
@@ -290,11 +309,28 @@ if (__name__ == '__main__'):
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-        
+    
     sarek_dir = os.path.join(args.output_dir, 'sarek')
     tumourevo_dir = os.path.join(args.output_dir, 'tumourevo')
-
     
+    tumour_type_file=os.path.join(os.path.dirname(args.phylogenetic_forest),"tumour_type.txt")
+
+    if not os.path.exists(tumour_type_file):
+
+        with open('ProCESS_tumour_type.sh', 'w') as outstream:
+            outstream.write(write_tumour_type_file)
+
+        cmd = ['sbatch', '--account={}'.format(account),
+            '--partition={}'.format(args.partition),
+            ('--export=DIR={},SPN={},BASEDIR={}').format(curr_dir,args.SPN,
+                                                os.path.dirname(args.phylogenetic_forest)),
+            './ProCESS_tumour_type.sh']
+
+        subprocess.run(cmd)
+
+    with open(tumour_type_file) as cancer_type_file:
+        cancer_type = cancer_type_file.read().strip()
+
     config_file = args.config
     if not os.path.exists(sarek_dir):
         os.mkdir(sarek_dir)
@@ -397,9 +433,8 @@ if (__name__ == '__main__'):
                                 tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
                             else:
                                 tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type,tumour_alignment,tumour_alignment_index')
-                                
                             for sample_name in sample_names:
-                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
+                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir,cancer_type)
                     
                         tumourevo_launcher_orig = tumourevo_launcher
                         job_id=f'{cohort_cov}x_{purity}p_{vc}_{cc}'
