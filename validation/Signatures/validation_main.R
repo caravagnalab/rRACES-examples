@@ -319,3 +319,17 @@ mse_df <- bind_rows(mse_results[1:(mse_idx-1)])
 saveRDS(cosine_df, file = "exposures_cosine.rds")
 saveRDS(mse_df, file = "exposures_mse.rds")
 
+
+### Generate final report plot ###
+p_cosine <- plot_cosine_similarity(cosine_df)
+p_mse <- plot_mse_per_signature(mse_df)
+
+bottom_plots <- p_cosine + p_mse +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "right")
+
+final_plots <- wrapped_sankey / bottom_plots +
+  plot_layout(heights = c(1, 1))
+
+ggsave("final_plot.pdf", plot = final_plots,
+       width = 20, height = 12, units = "in")
