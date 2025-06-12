@@ -30,3 +30,49 @@ get_tumourevo_driver <- function(
   return(output)
 }
 
+
+
+################################################################################
+# SUBCLONAL
+################################################################################
+get_tumourevo_subclonal <- function(
+    spn, 
+    coverage, 
+    purity, 
+    tool, 
+    vcf_caller, 
+    cna_caller, 
+    sample, 
+    base_path="/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+) {
+  
+  # quality control
+  tool_list <- c("mobster", "pyclone", "ctree", "viber")
+  if (!(tool %in% tool_list)) {
+    stop("ERROR: wrong tool name!")
+  }
+  
+  MAIN_PATH <- dir_getter(
+    spn, 
+    coverage, 
+    purity, 
+    vcf_caller, 
+    cna_caller, 
+    base_path
+  )
+  
+  MAIN_PATH <- file.path(MAIN_PATH, "subclonal_deconvolution", tool, "SCOUT", spn)
+  
+  if (tool=="ctree") {
+    MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+  } else if (tool=="mobster") {
+    MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+  }
+  
+  output <- get_named_file_list(MAIN_PATH)
+  
+  return(output)
+}
+
+
+
