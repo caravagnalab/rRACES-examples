@@ -117,3 +117,68 @@ get_tumourevo_qc <- function(
 }
 
 
+
+
+################################################################################
+# SIGNATURES
+################################################################################
+get_tumourevo_signatures <- function(
+    spn, 
+    coverage, 
+    purity, 
+    tool, 
+    context, 
+    vcf_caller, 
+    cna_caller, 
+    base_path="/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+) {
+  
+  # quality control
+  tool_list <- c("SigProfiler", "SparseSignatures")
+  if (!(tool %in% tool_list)) {
+    stop("ERROR: wrong tool name!")
+  }
+  
+  MAIN_PATH <- dir_getter(
+    spn, 
+    coverage, 
+    purity, 
+    vcf_caller, 
+    cna_caller, 
+    base_path
+  )
+  
+  MAIN_PATH <- file.path(MAIN_PATH, "signature_deconvolution")
+  
+  
+  
+  if (tool == "SigProfiler") {
+    
+    MAIN_PATH <- file.path(MAIN_PATH, tool, "SCOUT", "results", context, "Suggested_Solution")
+    
+    COSMIC <- file.path(MAIN_PATH, paste0("COSMIC_", context, "_Decomposed_Solution"))
+    COSMIC_exposure <- paste0("Activities/COSMIC_", context, "_Activities.txt")
+    COSMIC_signatures <- paste0("Signatures/COSMIC_", context, "_Signatures.txt")
+    
+    denovo <- file.path(MAIN_PATH, paste0(context, "_De-Novo_Solution"))
+    denovo_exposure <- paste0("Activities/", context, "_De-Novo_Activities_refit.txt")
+    denovo_signatures <- paste0("Signatures/", context, "_De-Novo_Signatures.txt")
+    
+    return(list(
+      COSMIC_exposure=COSMIC_exposure, 
+      COSMIC_signatures=COSMIC_signatures, 
+      denovo_exposure=denovo_exposure, 
+      denovo_signatures=denovo_signatures
+    ))
+    
+  } else if (tool == "SparseSignatures") {
+    
+    MAIN_PATH <- file.path(MAIN_PATH, tool, "SCOUT")
+    output <- file.path(MAIN_PATH, "SCOUT_nmf_Lasso_out.rds")
+    return(output)
+  } else {
+    stop("ERROR: wrong tool name!")
+  }
+  
+}
+
