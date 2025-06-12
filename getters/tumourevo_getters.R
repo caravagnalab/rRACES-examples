@@ -76,3 +76,44 @@ get_tumourevo_subclonal <- function(
 
 
 
+################################################################################
+# QC
+################################################################################
+get_tumourevo_qc <- function(
+    spn, 
+    coverage, 
+    purity, 
+    tool, 
+    vcf_caller, 
+    cna_caller, 
+    sample, 
+    base_path="/orfeo/cephfs/scratch/cdslab/shared/SCOUT"
+) {
+  
+  # quality control
+  tool_list <- c("CNAqc", "join_CNAqc", "tinc")
+  if (!(tool %in% tool_list)) {
+    stop("ERROR: wrong tool name!")
+  }
+  
+  MAIN_PATH <- dir_getter(
+    spn, 
+    coverage, 
+    purity, 
+    vcf_caller, 
+    cna_caller, 
+    base_path
+  )
+  
+  MAIN_PATH <- file.path(MAIN_PATH, "QC", tool, "SCOUT", spn)
+  
+  all_entries <- list.dirs(MAIN_PATH, full.names = FALSE, recursive = FALSE)
+  matching_dir <- all_entries[grepl(sample, all_entries)]
+  MAIN_PATH <- file.path(MAIN_PATH, matching_dir)
+  output <- get_named_file_list(MAIN_PATH)
+  
+  return(output)
+  
+}
+
+
