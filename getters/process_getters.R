@@ -66,3 +66,33 @@ get_sample_forest <- function(spn, base_path="/orfeo/cephfs/scratch/cdslab/share
     stop("Error: sample_forest file not found.")
   }
 }
+
+get_mutations <- function(spn = NA, 
+                          base_path = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/",
+                          coverage = NA,
+                          purity = NA,
+                          type = NA ){
+  if (is.na(spn)){
+    stop('spn name is required')
+  }
+  
+  if (is.na(type)){
+    stop('type is required: normal or tumour')
+  }
+  
+  if (type == 'tumour'){
+    if (is.na(coverage)){
+      stop('coverage is required')
+    }
+    if (is.na(purity)){
+        stop('purity is required')
+    }
+    path <- file.path(base_path, spn, paste0('sequencing/tumour/purity_', purity), paste0('data/mutations/seq_results_muts_merged_coverage_',coverage, 'x.rds'))
+  } else{
+    path <- file.path(base_path, spn, 'sequencing/normal/purity_1/data/mutations/seq_results_muts_merged_coverage_30x.rds')
+  }
+  if (!file.exists(path)){
+    stop('The required file do not exist, check purity and coverage values')
+  }
+  return(path)
+}
