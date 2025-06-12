@@ -35,7 +35,6 @@ comb = list(PI = purity, COV = coverage)
 path_to_cna <- paste0(data_dir,spn_id,"/process/cna_data/")
 samples = gsub(pattern="_cna.rds",replacement="",x=list.files(path_to_cna,pattern="_cna.rds"))
 
-
 path_to_seq <- paste0(data_dir,spn_id,"/sequencing/tumour/purity_",purity,"/data/mutations/seq_results_muts_merged_coverage_",coverage,"x.rds")
 input_dir <-  paste0(data_dir,spn_id,"/validation/somatic/")
 outdir <- paste0(data_dir,spn_id,"/validation/somatic/report")
@@ -43,7 +42,6 @@ dir.create(outdir, recursive = T, showWarnings = F)
 
 # Preparing report
 message("Parsing combination: purity=", purity, ", cov=", coverage)
-
 for (caller in callers) {
   message("  Using caller: ", caller)
   for (sample_id in samples) {
@@ -73,7 +71,10 @@ for (caller in callers) {
         dplyr::filter(!is.na(VAF))
       
       sample_info = list(caller_name=caller, sample_id=sample_id, mut_type=mut_type, spn=spn, purity=purity, coverage=coverage)
-      report = get_report(gt_res, caller_res, sample_info, min_vaf)
+      report = get_report(seq_res_long = gt_res, 
+                          caller_res = caller_res, 
+                          sample_info = sample_info, 
+                          min_vaf = min_vaf)
       
       report_path = file.path(caller_folder_path, "report.png")
       metrics_path = file.path(caller_folder_path, "metrics.rds")

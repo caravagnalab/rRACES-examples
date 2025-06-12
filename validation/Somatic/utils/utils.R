@@ -156,8 +156,8 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   vaf_comparison <- merged_df_pass %>% 
     dplyr::ungroup() %>% 
     dplyr::filter(true_positive) %>% 
-    dplyr::mutate(VAF_difference = VAF_caller - VAF_truth) %>% 
-    dplyr::select(VAF_difference, VAF_truth)
+    dplyr::group_by(chr_caller) %>% 
+    dplyr::summarise(cor_coeff = cor.test(VAF_caller, VAF_truth)$estimate, RMSE = RMSE(VAF_caller, VAF_truth))
   
   # Design layout for combined report
   design <- "
