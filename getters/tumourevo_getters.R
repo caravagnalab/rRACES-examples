@@ -65,17 +65,27 @@ get_tumourevo_subclonal <- function(
   
   if (tool=="ctree") {
     MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+    output <- get_named_file_list(MAIN_PATH)
+    output <- ctree_named_list(output)
   } else if (tool=="mobster") {
     MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+    output <- get_named_file_list(MAIN_PATH)
+    output <- mobster_named_list(output)
+  } else if (tool=="pyclone") {
+    output <- get_named_file_list(MAIN_PATH)
+    output <- pyclone_input_list(output)
+  } else if (tool=="viber") {
+    output <- get_named_file_list(MAIN_PATH)
+    output <- viber_input_list(output)
   }
-  
-  output <- get_named_file_list(MAIN_PATH)
-  
   return(output)
 }
 
 
-
+#TODO:
+# - join_CNAqc : no output
+# - CNAqc : format the output
+# - tinc : format the output
 ################################################################################
 # QC
 ################################################################################
@@ -111,6 +121,8 @@ get_tumourevo_qc <- function(
   matching_dir <- all_entries[grepl(sample, all_entries)]
   MAIN_PATH <- file.path(MAIN_PATH, matching_dir)
   output <- get_named_file_list(MAIN_PATH)
+  
+  
   
   return(output)
   

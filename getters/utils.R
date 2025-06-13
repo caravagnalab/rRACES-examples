@@ -48,5 +48,101 @@ get_named_file_list <- function(dir_path) {
 
 
 
+mobster_named_list <- function(input_list) {
+  output_list <- list()
+  
+  for (i in seq_along(input_list)) {
+    file_path <- input_list[[i]]
+    file_name <- basename(file_path)
+    
+    # Extract extension
+    file_ext <- tools::file_ext(file_name)
+    
+    # Get base name without extension
+    name_without_ext <- tools::file_path_sans_ext(file_name)
+    
+    # Strip everything before "mobsterh" or "REPORT"
+    simplified_key <- sub(".*?(mobsterh.*|REPORT.*)", "\\1", name_without_ext)
+    
+    # Make key unique if already present
+    #if (simplified_key %in% names(output_list)) {
+    simplified_key <- paste0(simplified_key, "_", file_ext)
+    #}
+    
+    output_list[[simplified_key]] <- file_path
+  }
+  
+  return(output_list)
+}
+
+
+ctree_named_list <- function(input_list) {
+  output_list <- list()
+  
+  for (i in seq_along(input_list)) {
+    file_path <- input_list[[i]]
+    file_name <- basename(file_path)
+    
+    # Extract extension
+    file_ext <- tools::file_ext(file_name)
+    
+    # Get base name without extension
+    name_without_ext <- tools::file_path_sans_ext(file_name)
+    
+    # Strip everything before "mobsterh" or "REPORT"
+    simplified_key <- sub(".*?(ctree*|REPORT.*)", "\\1", name_without_ext)
+    
+    # Make key unique if already present
+    #if (simplified_key %in% names(output_list)) {
+    simplified_key <- paste0(simplified_key, "_", file_ext)
+    #}
+    
+    output_list[[simplified_key]] <- file_path
+  }
+  
+  return(output_list)
+}
+
+
+
+pyclone_input_list <- function(input_list) {
+  output_list <- list()
+  
+  for (i in seq_along(input_list)) {
+    file_path <- input_list[[i]]
+    file_name <- basename(file_path)
+    
+    # Remove "SCOUT_SPNxx_" prefix (xx can be any number)
+    name_without_prefix <- sub("^SCOUT_SPN\\d+_", "", file_name)
+    
+    # Replace dots in extensions with underscores
+    name_cleaned <- gsub("\\.", "_", name_without_prefix)
+    
+    output_list[[name_cleaned]] <- file_path
+  }
+  
+  return(output_list)
+}
+
+
+viber_input_list <- function(input_list) {
+  output_list <- list()
+  
+  for (i in seq_along(input_list)) {
+    file_path <- input_list[[i]]
+    file_name <- basename(file_path)
+    
+    # Remove "SCOUT_SPNxx_" prefix (xx can be any number)
+    name_without_prefix <- sub("^SCOUT_SPN\\d+_", "", file_name)
+    
+    # Replace dots in extensions with underscores
+    name_cleaned <- gsub("\\.", "_", name_without_prefix)
+    
+    output_list[[name_cleaned]] <- file_path
+  }
+  
+  return(output_list)
+}
+
 
 
