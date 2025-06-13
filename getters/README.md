@@ -166,4 +166,65 @@ $snvs_tbi
 ```
 
 ## tumourevo_getters.R
-TBD
+```
+## Driver ####
+> get_tumourevo_driver(spn = 'SPN03', 
++                      coverage = 50, 
++                      purity = 0.3, 
++                      vcf_caller = 'mutect2', 
++                      cna_caller = 'ascat',
++                      sample = 'SPN03_1.1')
+[1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/SPN03/tumourevo/50x_0.3p_mutect2_ascat/driver_annotation/annotate_driver/SCOUT/SPN03/SPN03_SPN03_1.1/SCOUT_SPN03_SPN03_SPN03_1.1_driver.rds"
+
+
+## Subclonal ####
+## tool: mobster, pyclonevi, viber, ctree
+get_tumourevo_subclonal(spn = 'SPN03', 
+                     coverage = 50, 
+                     purity = 0.3, 
+                     vcf_caller = 'mutect2', 
+                     cna_caller = 'ascat',
+                     sample = 'SPN03_1.1', 
+                     tool = 'mobster')
+
+get_tumourevo_subclonal(spn = 'SPN03', 
+                        coverage = 50, 
+                        purity = 0.3, 
+                        vcf_caller = 'mutect2', 
+                        cna_caller = 'ascat',
+                        sample = 'SPN03_1.1', 
+                        tool = 'pyclonevi')
+
+get_tumourevo_subclonal(spn = 'SPN03', 
+                        coverage = 50, 
+                        purity = 0.3, 
+                        vcf_caller = 'mutect2', 
+                        cna_caller = 'ascat',
+                        sample = 'SPN03_1.1', 
+                        tool = 'viber')
+
+
+## QC ####
+## tool: CNAqc, tinc, join_CNAqc
+
+
+## Signature ##
+## tool: SparseSignatures, SigProfiler
+
+get_tumourevo_signatures(spn = 'SPN03', 
+                 coverage = 50, 
+                 purity = 0.3, 
+                 vcf_caller = 'mutect2', 
+                 cna_caller = 'ascat',
+                 tool = 'SparseSignatures')
+
+
+get_tumourevo_signatures(spn = 'SPN03', 
+                         coverage = 50, 
+                         purity = 0.3, 
+                         vcf_caller = 'mutect2', 
+                         cna_caller = 'ascat',
+                         tool = 'SigProfiler',
+                         context = 'SBS96') ## specify also the context
+
+```
