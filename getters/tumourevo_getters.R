@@ -47,7 +47,7 @@ get_tumourevo_subclonal <- function(
 ) {
   
   # quality control
-  tool_list <- c("mobster", "pyclone", "ctree", "viber")
+  tool_list <- c("mobster", "pyclonevi", "ctree", "viber")
   if (!(tool %in% tool_list)) {
     stop("ERROR: wrong tool name!")
   }
@@ -71,7 +71,7 @@ get_tumourevo_subclonal <- function(
     MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
     output <- get_named_file_list(MAIN_PATH)
     output <- mobster_named_list(output)
-  } else if (tool=="pyclone") {
+  } else if (tool=="pyclonevi") {
     output <- get_named_file_list(MAIN_PATH)
     output <- pyclone_input_list(output)
   } else if (tool=="viber") {
