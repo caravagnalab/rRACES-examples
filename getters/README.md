@@ -1,5 +1,10 @@
 # How getter works
-## process_getters.R
+
+- **[ProCESS](process_getters)**
+- **[sarek]()**
+- **[tumourevo]()**
+
+## process_getters
 `ProCESS` getters return the path to the specific file/infomation.
 ```
 > get_sample_names(spn = 'SPN04')
