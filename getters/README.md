@@ -1,8 +1,8 @@
 # How getter works
 
-- **[ProCESS](process_getters)**
-- **[sarek]()**
-- **[tumourevo]()**
+- [ProCESS](#process_getters)
+- [sarek](#sarek_getters)
+- [tumourevo](#tumourevo_getters)
 
 ## process_getters
 `ProCESS` getters return the path to the specific file/infomation.
@@ -36,7 +36,7 @@ $SPN04_1.2
 [1] "/orfeo/cephfs/scratch/cdslab/shared/SCOUT//SPN01/sequencing/tumour/purity_0.3/data/mutations/seq_results_muts_merged_coverage_100x.rds"
 ```
 
-## sarek_getters.R
+## sarek_getters
 `sarek` getters return a list of files corresponding to the results of a combination of: 
 - SPN 
 - coverage
@@ -170,7 +170,7 @@ $snvs_tbi
 
 ```
 
-## tumourevo_getters.R
+## tumourevo_getters
 ```
 ## Driver ####
 > get_tumourevo_driver(spn = 'SPN03', 
