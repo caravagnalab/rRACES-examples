@@ -208,10 +208,49 @@ get_tumourevo_subclonal(spn = 'SPN03',
                         sample = 'SPN03_1.1', 
                         tool = 'viber')
 
+# sample specific ctree result
+get_tumourevo_subclonal(spn = 'SPN03', 
+                        coverage = 50, 
+                        purity = 0.3, 
+                        vcf_caller = 'mutect2', 
+                        cna_caller = 'ascat',
+                        sample = 'SPN03_1.1', 
+                        tool = 'ctree')
+
+# patient specific ctree result
+get_tumourevo_subclonal(spn = 'SPN03', 
+                        coverage = 50, 
+                        purity = 0.3, 
+                        vcf_caller = 'mutect2', 
+                        cna_caller = 'ascat',
+                        sample = 'SPN03', 
+                        tool = 'ctree')
 
 ## QC ####
 ## tool: CNAqc, tinc, join_CNAqc
+get_tumourevo_qc(spn = 'SPN03', 
+                 coverage = 50, 
+                 purity = 0.3, 
+                 vcf_caller = 'mutect2', 
+                 cna_caller = 'ascat',
+                 sample = 'SPN03_1.1',
+                 tool = 'CNAqc')
 
+get_tumourevo_qc(spn = 'SPN03', 
+                 coverage = 50, 
+                 purity = 0.3, 
+                 vcf_caller = 'mutect2', 
+                 cna_caller = 'ascat',
+                 sample = 'SPN03_1.1',
+                 tool = 'tinc')
+
+get_tumourevo_qc(spn = 'SPN03', 
+                 coverage = 50, 
+                 purity = 0.3, 
+                 vcf_caller = 'mutect2', 
+                 cna_caller = 'ascat',
+                 sample = 'SPN03_1.1',
+                 tool = 'join_CNAqc')
 
 ## Signature ##
 ## tool: SparseSignatures, SigProfiler
