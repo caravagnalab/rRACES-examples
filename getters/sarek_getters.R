@@ -162,11 +162,10 @@ parse_sarek_variant_called_files <- function(list_of_output_files) {
         named_files[["mutations"]] <- list_of_output_files[i]
       }
     }
-    return(named_files)
   }  else{
     stop('Error: combination does not exist')
   }
-  
+  return(named_files)
 }
 
 
