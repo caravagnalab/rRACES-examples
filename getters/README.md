@@ -4,6 +4,14 @@
 - [sarek](#sarek_getters)
 - [tumourevo](#tumourevo_getters)
 
+> [!IMPORTANT]
+> If you need some files than are not returned please let us know (open a pull request or write on slack)!
+
+
+> [!IMPORTANT]
+> Please do not modify the functions but let us know if there are problems or improvement to be done!
+
+
 ## process_getters
 `ProCESS` getters return the path to the specific file/infomation.
 ```
@@ -44,9 +52,6 @@ $SPN04_1.2
 - caller
 - type - when available
 - sampleID - when available
-
-> [!IMPORTANT]
-> If you some files than are not returned yet please let us know (open a pull request or write on slack)!
 
 ### get_sarek_cna_file
 
@@ -171,6 +176,15 @@ $snvs_tbi
 ```
 
 ## tumourevo_getters
+`tumourevo` getters return a list of files corresponding to the results of a combination of: 
+- spn 
+- coverage
+- purity
+- vcf_caller
+- cna_caller
+- sample
+
+
 ```
 ## Driver ####
 > get_tumourevo_driver(spn = 'SPN03', 
