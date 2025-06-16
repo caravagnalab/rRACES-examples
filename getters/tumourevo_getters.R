@@ -64,7 +64,9 @@ get_tumourevo_subclonal <- function(
   MAIN_PATH <- file.path(MAIN_PATH, "subclonal_deconvolution", tool, "SCOUT", spn)
   
   if (tool=="ctree") {
-    MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+    if (sample != spn) {
+      MAIN_PATH <- file.path(MAIN_PATH, paste0(spn, "_", sample))
+    }
     output <- get_named_file_list(MAIN_PATH)
     output <- ctree_named_list(output)
   } else if (tool=="mobster") {
@@ -117,12 +119,14 @@ get_tumourevo_qc <- function(
   
   MAIN_PATH <- file.path(MAIN_PATH, "QC", tool, "SCOUT", spn)
   
-  all_entries <- list.dirs(MAIN_PATH, full.names = FALSE, recursive = FALSE)
-  matching_dir <- all_entries[grepl(sample, all_entries)]
-  MAIN_PATH <- file.path(MAIN_PATH, matching_dir)
+  if (tool != "join_CNAqc") {
+    all_entries <- list.dirs(MAIN_PATH, full.names = FALSE, recursive = FALSE)
+    matching_dir <- all_entries[grepl(sample, all_entries)]
+    MAIN_PATH <- file.path(MAIN_PATH, matching_dir)
+  }
   output <- get_named_file_list(MAIN_PATH)
   
-  
+  output <- viber_input_list(output)
   
   return(output)
   
