@@ -4,6 +4,8 @@ library(ProCESS)
 library(optparse)
 library(tidyr)
 library(ggplot2)
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/getters/sarek_getters.R")
+source("/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/getters/process_getters.R")
 
 ############ Parse command-line arguments
 option_list <- list(make_option(c("--sample_id"), type = "character", default = 'SPN03_1.1'),
@@ -15,19 +17,19 @@ option_list <- list(make_option(c("--sample_id"), type = "character", default = 
 		                make_option(c("--caller"), type = "character", default = 'ascat'))
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
-data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/' # "/Users/aliceantonello/dati_Orfeo/shared/SCOUT/" 
+data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
 
 sample_id = opt$sample_id
 spn_id = opt$spn_id
-coverage = paste0(opt$coverage,"x")
-purity = paste0(opt$purity,"p")
+coverage = paste0(opt$coverage)
+purity = paste0(opt$purity)
 purity_th = opt$purity_th
 correct_th = opt$correct_th
-caller = opt$caller #"ascat"
+caller = opt$caller
 
 
-gender_file <- read.table(file = paste0(data_dir,spn_id,"/process/subject_gender.txt"),header = FALSE,col.names = "gender")
-gender <- gender_file$gender
+#gender_file <- read.table(file = paste0(data_dir,spn_id,"/process/subject_gender.txt"),header = FALSE,col.names = "gender")
+gender <- get_process_gender(spn = spn_id)
 
 if (gender=="XX"){
   chromosomes = c(paste0('chr',1:22), 'chrX')
@@ -38,15 +40,13 @@ if (gender=="XX"){
 ############ Load data
 #### ProCESS data
 # CNA calls
-CNA_races = readRDS(paste0(data_dir,spn_id,'/process/cna_data/',sample_id,'_cna.rds')) %>%
+CNA_races = readRDS(get_process_cna(spn = spn_id,sample = sample_id)) %>%
   mutate(chr = paste0('chr',chr)) %>% dplyr::rename(from=begin,to=end) %>% as_tibble()
 
 # SNP data from which compute BAF and DR
-mutations = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/tumour/purity_',strsplit(purity,'p')[[1]],
-                           '/data/mutations/seq_results_muts_merged_coverage_',coverage,'.rds'))
+mutations = readRDS(get_mutations(spn = spn_id, type = 'tumour', coverage =coverage, purity = purity))
 
-normal = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/normal/purity_1', 
-                        '/data/mutations/seq_results_muts_merged_coverage_30x.rds')) %>% 
+normal = readRDS(get_mutations(spn = spn_id, type = 'normal')) %>% 
   mutate(chr = paste0('chr', chr)) %>% 
   mutate(mut_id = paste(chr, chr_pos, ':')) %>% 
   filter(causes != 'pre-neoplastic')
@@ -54,23 +54,32 @@ normal = readRDS(paste0(data_dir, '/',spn_id,'/sequencing/normal/purity_1',
 message("Reading ProCESS data")
 #### ascat data
 # CNA calls
-CNA_ascat = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
-                      '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
-                      sample_id,'_vs_normal_sample.cnvs.txt'), sep='\t') %>%
+ascat_results <- get_sarek_cna_file(spn = spn_id,
+                                    coverage = coverage,
+                                    purity = purity,
+                                    caller = caller,
+                                    type = "tumour",
+                                    sampleID = sample_id)
+
+CNA_ascat = read.csv(ascat_results$cnvs, sep='\t') %>%
   mutate(chr = paste0('chr',chr)) %>% rename(from=startpos,to=endpos,major=nMajor,minor=nMinor) %>% as_tibble()
 # BAF and DR ascat
-BAF_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
-                      '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
-                      sample_id,'_vs_normal_sample.tumour_tumourBAF.txt'), sep='\t')
+BAF_file = data.table::fread(ascat_results$tumourBAF, sep='\t')
 colnames(BAF_file) = c('id', 'Chromosome', 'Position', 'BAF')
-DR_file = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
-                  '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
-                  sample_id,'_vs_normal_sample.tumour_tumourLogR.txt'), sep='\t')
+DR_file = data.table::fread(ascat_results$tumourLogR, sep='\t')
 colnames(DR_file) = c('id', 'Chromosome', 'Position', 'LogR')
-purity_ploidy = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity, 
-                                '/variant_calling/ascat/',sample_id,'_vs_normal_sample/',
-                                sample_id,'_vs_normal_sample.purityploidy.txt'), sep='\t')
+purity_ploidy = read.csv(ascat_results$purityploidy, sep='\t')
 message("Reading ASCAT data")
+
+
+######## ADD SEQUENZA ##########
+sequenza_results <- get_sarek_cna_file(spn = spn_id,
+                                    coverage = coverage,
+                                    purity = purity,
+                                    caller = caller,
+                                    type = "tumour",
+                                    sampleID = sample_id)
+purity_ploidy_sequenza = read.csv(sequenza_results$confints_CP, sep='\t')
 
 #### CNVkit data
 # CNA calls
@@ -83,13 +92,16 @@ message("Reading ASCAT data")
 # fix_field = CNA_cnvkit@fix %>% as_tibble()
 # CNA_cnvkit = cbind(fix_field, gt_field)
 
-CNA_cnvkit = read.csv(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity,
-                            '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
-                            sample_id,'.somatic.call.cns'),sep='\t')
+cnvkit_results <- get_sarek_cna_file(spn = spn_id,
+                                    coverage = coverage,
+                                    purity = purity,
+                                    caller = caller,
+                                    type = "tumour",
+                                    sampleID = sample_id)
+
+CNA_cnvkit = read.csv(cnvkit_results$somatic.call,sep='\t')
 # DR cnvkit
-DR_file_cnvkit = data.table::fread(paste0(data_dir, spn_id, '/sarek/', coverage, '_', purity,
-                                          '/variant_calling/cnvkit/',sample_id,'_vs_normal_sample/',
-                                          sample_id,'.cnr'), sep='\t') %>% as_tibble()
+DR_file_cnvkit = data.table::fread(cnvkit_results$cnr, sep='\t') %>% as_tibble()
 
 ## inspect CNVkit calls
 CNA_cnvkit_shifted =lapply(chromosomes, function(c){
@@ -144,7 +156,7 @@ colnames(normal)=c("chr", "pos", "NV_normal", "DP_normal", "VAF_normal", "mut_id
 
 joint_table_snps = left_join(snps, normal, by=c('chr', 'pos'))
 coverage_normal = 30
-coverage_tumor = as.integer(strsplit(coverage, 'x')[[1]])
+coverage_tumor = as.integer(coverage)
 norm_const = coverage_normal/coverage_tumor
 joint_table_snps = joint_table_snps %>% 
   rename(BAF = VAF) %>% 
@@ -340,7 +352,7 @@ ascat_correctness =  1-( (joint_segmentation_shifted_longer %>% filter(is_match 
 cnvkit_correctness =  1-( (joint_segmentation_cnvkit_shifted_longer %>% filter(is_match == 'no match') %>% mutate(len=to-from) %>%
                             pull(len) %>% unique() %>% sum()) / (joint_segmentation_cnvkit_shifted_longer %>% mutate(len=to-from) %>%
                                                                    pull(len) %>% unique() %>% sum()))
-purity_correctness = purity_ploidy$AberrantCellFraction - as.double(strsplit(purity, 'p')[[1]])
+purity_correctness = purity_ploidy$AberrantCellFraction - as.double(purity)
 if (purity_th < purity_correctness & correct_th < ascat_correctness & correct_th < cnvkit_correctness){state = 'PASS'}else{state='FAIL'}
 
 ## BAF and DR ascat
@@ -383,7 +395,7 @@ genome_len =CNA_races$len %>% unique() %>% sum()
 CNA_races = CNA_races %>% mutate(seg_id = paste0(chr, ':', from,':',to))
 segments = CNA_races$seg_id %>% unique()
 ploidy = 0
-purity_number = as.double(strsplit(purity, 'p')[[1]])
+purity_number = as.double(purity)
 for (s in segments){
   seg = CNA_races %>% filter(seg_id == s)
   nA1 = seg[1,]$major
