@@ -25,7 +25,7 @@ write_tumour_type_file="""#!/bin/bash
 #SBATCH -A {ACCOUNT}
 
 echo ${DIR}/../references/SCOUT_tumour_types.txt
-tumour_type=$(grep ${SPN} ${DIR}/../references/SCOUT_tumour_types.txt | cut -f 2)
+tumour_type=$(grep ${SPN} ${DIR}/../references/SCOUT_tumour_types.txt | cut -f 3)
 echo $tumour_type > "${BASEDIR}/tumour_type.txt"
 """
 
