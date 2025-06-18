@@ -13,8 +13,7 @@ option_list <- list(make_option(c("--sample_id"), type = "character", default = 
                     make_option(c("--purity"), type = "character", default = '0.9'),
                     make_option(c("--coverage"), type = "character", default = '50'),
                     make_option(c("--purity_th"), type = "character", default = '.1'),
-                    make_option(c("--correct_th"), type = "character", default = '.6'),
-		                make_option(c("--caller"), type = "character", default = 'ascat'))
+                    make_option(c("--correct_th"), type = "character", default = '.6'))
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
 data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
@@ -57,12 +56,13 @@ message("Reading ProCESS data")
 ascat_results <- get_sarek_cna_file(spn = spn_id,
                                     coverage = coverage,
                                     purity = purity,
-                                    caller = caller,
+                                    caller = "ascat",
                                     type = "tumour",
                                     sampleID = sample_id)
 
 CNA_ascat = read.csv(ascat_results$cnvs, sep='\t') %>%
   mutate(chr = paste0('chr',chr)) %>% rename(from=startpos,to=endpos,major=nMajor,minor=nMinor) %>% as_tibble()
+
 # BAF and DR ascat
 BAF_file = data.table::fread(ascat_results$tumourBAF, sep='\t')
 colnames(BAF_file) = c('id', 'Chromosome', 'Position', 'BAF')
@@ -76,7 +76,7 @@ message("Reading ASCAT data")
 sequenza_results <- get_sarek_cna_file(spn = spn_id,
                                     coverage = coverage,
                                     purity = purity,
-                                    caller = caller,
+                                    caller = "sequenza",
                                     type = "tumour",
                                     sampleID = sample_id)
 purity_ploidy_sequenza = read.csv(sequenza_results$confints_CP, sep='\t')
@@ -95,7 +95,7 @@ purity_ploidy_sequenza = read.csv(sequenza_results$confints_CP, sep='\t')
 cnvkit_results <- get_sarek_cna_file(spn = spn_id,
                                     coverage = coverage,
                                     purity = purity,
-                                    caller = caller,
+                                    caller = "cnvkit",
                                     type = "tumour",
                                     sampleID = sample_id)
 

@@ -49,44 +49,6 @@ module load R/4.4.1
 Rscript ${DIRECTORY}/CNA/Validate_CNA_calls.R --spn_id ${SPN} --sample_id ${SAMPLE} --purity ${PURITY} --coverage ${COVERAGE}
 """
 
-germline_processing_shell_script="""#!/bin/bash
-#SBATCH --nodes=1
-#SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem 50g
-#SBATCH --time=4:00:00
-
-outdir="/orfeo/scratch/cdslab/shared/SCOUT/${SPN}/validation/germline/vcf"
-mkdir -p $outdir
-
-tool="haplotypecaller"
-vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/normal/variant_calling/${tool}/normal_sample/normal_sample.${tool}.filtered.vcf.gz"
-bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_normal_sample.${tool}.vcf.gz -Oz
-        
-tool="freebayes"
-vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/normal/variant_calling/${tool}/normal_sample/normal_sample.${tool}.vcf.gz"
-bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_normal_sample.${tool}.vcf.gz -Oz
-
-tool="strelka"
-vcf="/orfeo/cephfs/scratch/cdslab/shared/SCOUT/${SPN}/sarek/${COVERAGE}x_${PURITY}p/variant_calling/${tool}/normal_sample/normal_sample.${tool}.variants.vcf.gz"
-bcftools view ${vcf} --regions chr${CHROMOSOME} -o ${outdir}/chr${CHROMOSOME}_normal_sample.${tool}.vcf.gz -Oz
-"""
-
-germline_report_shell_script="""#!/bin/bash
-#SBATCH --nodes=1
-#SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem 50g
-#SBATCH --time=4:00:00
-
-module load R/4.4.1
-
-cd ${DIRECTORY}/Germline/
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'freebayes' 
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'haplotypecaller'
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'strelka'
-"""
-
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
                                      description=('Produces the cohorts of a SPN'))
@@ -99,10 +61,8 @@ if (__name__ == '__main__'):
                         help="The cluster partition")
     parser.add_argument('-A', '--account', type=str, required=True,
                         help="The cluster account")
-    parser.add_argument('-S', '--skip', type=str, required=False,
-                        help="Which step to skip, select among: cna, somatic, germline, none")
-
-    
+    parser.add_argument('-S', '--skip', type=str, default='',
+                        help="Which step to skip, select among: cna, somatic, none")
 
     args = parser.parse_args()
 
@@ -127,10 +87,9 @@ if (__name__ == '__main__'):
     
     #curr_dir = os.getcwd()
     base_dir = args.directory
-    log_dir = '{}/validation/out/'.format(base_dir)
+    log_dir = '{}/out/'.format(base_dir)
 
 
-    
     if "somatic" not in args.skip.split(","):
         with open('run_processing.sh', 'w') as outstream:
             outstream.write(somatic_processing_shell_script)
@@ -190,42 +149,3 @@ if (__name__ == '__main__'):
                 '--output={}/cna_report_{}_{}_{}.log'.format(log_dir, sample,args.coverage,args.purity),
                 './validate_cna.sh']
             subprocess.run(cmd)
-
-    if "germline" not in args.skip.split(","):
-
-        os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf', exist_ok = True)
-        os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report', exist_ok = True)
-        if len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf')) != 72 and len(os.listdir(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report')) != 6:
-        
-            ## Run processing for germline
-            with open('run_processing_germline.sh', 'w') as outstream:
-                outstream.write(germline_processing_shell_script)
-            chr_job_ids_germline = []
-            
-            for chr in chromosomes:
-                cmd_germline = ['sbatch', '--parsable','--account={}'.format(account),
-                    '--partition={}'.format(args.partition),
-                    '--job-name=split_chr_{}_{}_{}_{}'.format(args.SPN, args.coverage,args.purity,chr),
-                    ('--export=SPN={},COVERAGE={},PURITY={},CHROMOSOME={},DIRECTORY={}').format(args.SPN,
-                                                        args.coverage, args.purity,chr,args.directory),
-                    '--output={}/split_chr{}.log'.format(log_dir, chr),
-                    './run_processing_germline.sh'] 
-                result_germline = subprocess.run(cmd_germline, stdout=subprocess.PIPE)
-                job_id_germline = result_germline.stdout.decode().strip()
-                chr_job_ids_germline.append(job_id_germline)
-                
-            ## Run germline report
-            with open('run_reports_germline.sh', 'w') as outstream:
-                outstream.write(germline_report_shell_script)
-            dependency_str_germline = ':'.join(chr_job_ids_germline)
-            cmd = ['sbatch', '--account={}'.format(account),
-                '--partition={}'.format(args.partition),
-                '--job-name=germline_report_{}'.format(args.SPN),
-                '--dependency=afterok:{}'.format(dependency_str_germline),
-                ('--export=SPN={},DIRECTORY={}').format(args.SPN,args.directory),
-                '--output={}/germline_report_{}.log'.format(log_dir, args.SPN),
-                './run_reports_germline.sh']
-            subprocess.run(cmd)
-        
-        else:
-            print('Germline validation already exist!')
