@@ -315,18 +315,18 @@ if (__name__ == '__main__'):
     
     tumour_type_file=os.path.join(os.path.dirname(args.phylogenetic_forest),"tumour_type.txt")
 
-    if not os.path.exists(tumour_type_file):
+    #if not os.path.exists(tumour_type_file):
 
-        with open('ProCESS_tumour_type.sh', 'w') as outstream:
-            outstream.write(write_tumour_type_file)
+    with open('ProCESS_tumour_type.sh', 'w') as outstream:
+        outstream.write(write_tumour_type_file)
 
-        cmd = ['sbatch', '--account={}'.format(account),
-            '--partition={}'.format(args.partition),
-            ('--export=DIR={},SPN={},BASEDIR={}').format(curr_dir,args.SPN,
+    cmd = ['sbatch', '--account={}'.format(account),
+          '--partition={}'.format(args.partition),
+          ('--export=DIR={},SPN={},BASEDIR={}').format(curr_dir,args.SPN,
                                                 os.path.dirname(args.phylogenetic_forest)),
-            './ProCESS_tumour_type.sh']
+          './ProCESS_tumour_type.sh']
 
-        subprocess.run(cmd)
+    subprocess.run(cmd)
 
     with open(tumour_type_file) as cancer_type_file:
         cancer_type = cancer_type_file.read().strip()
