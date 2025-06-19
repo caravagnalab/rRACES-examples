@@ -52,28 +52,29 @@ dir.create(outdir, recursive = T, showWarnings = F)
 
 # Preparing report
 message("Parsing combination: purity=", purity, ", cov=", coverage)
-caller = "mutect2"
 sample_id = samples[1]
-mut_type = "SNV"
-for (caller in callers) {
-  message("  Using caller: ", caller)
-  for (sample_id in samples) {
-    message("    Working with sample : ", sample_id)
-    for (mut_type in mut_types) {
-      message("      Considering only ", mut_type)
-      
-      # spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", path_to_seq)
-      # purity <- gsub(".*purity_([0-9.]+).*", "\\1", path_to_seq)
-      # coverage <- gsub(".*coverage_([0-9]+).*", "\\1", path_to_seq)
-      combination = paste0(coverage, "x_", purity, "p")
-      process_folder_path <- file.path(input_dir, spn_id, combination, "process", sample_id, mut_type)
-      caller_folder_path = file.path(input_dir, spn_id, combination, caller, sample_id, mut_type)
-      
-      # Get ground truth
-      gt_res = lapply(chromosomes, function(chromosome){
-        gt_path = file.path(process_folder_path, paste0(chromosome,".rds"))
-        readRDS(gt_path)
-      }) %>% do.call("bind_rows", .)
+mut_type = "INDEL"
+
+for (sample_id in samples) {
+  message("    Working with sample : ", sample_id)
+  for (mut_type in mut_types) {
+    message("      Considering only ", mut_type)
+    
+    # spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", path_to_seq)
+    # purity <- gsub(".*purity_([0-9.]+).*", "\\1", path_to_seq)
+    # coverage <- gsub(".*coverage_([0-9]+).*", "\\1", path_to_seq)
+    combination = paste0(coverage, "x_", purity, "p")
+    process_folder_path <- file.path(input_dir, spn_id, combination, "process", sample_id, mut_type)
+    
+    # Get ground truth
+    gt_res = lapply(chromosomes, function(chromosome){
+      gt_path = file.path(process_folder_path, paste0(chromosome,".rds"))
+      readRDS(gt_path)
+    }) %>% do.call("bind_rows", .)
+    
+    # Get Callers list
+    caller_res_list = lapply(callers, function(caller) {
+      caller_folder_path = file.path(input_dir, spn_id, combination, caller, sample_id, mut_type)  
       
       # Get caller res
       caller_res = lapply(chromosomes, function(chromosome) {
@@ -82,22 +83,26 @@ for (caller in callers) {
       }) %>% do.call("bind_rows", .) %>% 
         dplyr::filter(!is.na(VAF))
       
-      sample_info = list(caller_name=caller, sample_id=sample_id, mut_type=mut_type, spn=spn_id, purity=purity, coverage=coverage)
-      report = get_report(seq_res_long = gt_res, 
-                          caller_res = caller_res, 
-                          sample_info = sample_info, 
-                          min_vaf = min_vaf)
-      
-      report_path = file.path(caller_folder_path, "report.png")
-      metrics_path = file.path(caller_folder_path, "metrics.rds")
-      ggsave(report_path, plot = report$report_plot, width = 15, height = 20, units = "in", dpi = 400)
-      saveRDS(list(report_metrics=report$report_metrics, vaf_comparison=report$vaf_comparison), metrics_path)
-      
-      filename = paste(spn_id, combination, caller, sample_id, mut_type, sep = '_')
-      file_path = file.path(outdir, filename)
-      ggsave(paste0(file_path, '.png'), plot = report$report_plot, width = 15, height = 20, units = "in", dpi = 400)
-      
-      message("        Report done!")
-    }
+      caller_res
+    })
+    names(caller_res_list) = callers
+    
+    sample_info = list(sample_id=sample_id, mut_type=mut_type, spn=spn_id, purity=purity, coverage=coverage)
+    report = get_multi_caller_report(seq_res_long = gt_res, 
+                                     caller_res_list = caller_res_list, 
+                                     sample_info = sample_info, 
+                                     min_vaf = min_vaf, 
+                                     only_pass = TRUE)
+    
+    # report_path = file.path(caller_folder_path, "report.png")
+    # metrics_path = file.path(caller_folder_path, "metrics.rds")
+    #ggsave(report_path, plot = report$report_plot, width = 15, height = 20, units = "in", dpi = 400)
+    #saveRDS(list(report_metrics=report$report_metrics, vaf_comparison=report$vaf_comparison), metrics_path)
+    
+    filename = paste(spn_id, combination, "allCaller", sample_id, mut_type, sep = '_')
+    file_path = file.path(outdir, filename)
+    ggsave(paste0(file_path, '.png'), plot = report, width = 15, height = 20, units = "in", dpi = 400)
+    
+    message("        Report done!")
   }
 }

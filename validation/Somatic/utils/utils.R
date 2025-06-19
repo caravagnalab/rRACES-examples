@@ -5,6 +5,49 @@ require(ggVennDiagram)
 require(ggalluvial)
 require(ggplotify)
 
+
+
+safe_cor_test <- function(x, y, min_points = 3) {
+  # Remove NA values
+  valid_idx <- !is.na(x) & !is.na(y) & is.finite(x) & is.finite(y)
+  x_clean <- x[valid_idx]
+  y_clean <- y[valid_idx]
+  
+  # Check if we have enough data points
+  if (length(x_clean) < min_points) {
+    return(NA_real_)
+  }
+  
+  # Check for zero variance (constant values)
+  if (var(x_clean) == 0 || var(y_clean) == 0) {
+    return(NA_real_)
+  }
+  
+  # Try correlation test with error handling
+  tryCatch({
+    cor_result <- cor.test(x_clean, y_clean)
+    return(cor_result$estimate)
+  }, error = function(e) {
+    return(NA_real_)
+  })
+}
+
+# Function to safely calculate RMSE
+safe_rmse <- function(actual, predicted) {
+  # Remove NA values
+  valid_idx <- !is.na(actual) & !is.na(predicted) & is.finite(actual) & is.finite(predicted)
+  actual_clean <- actual[valid_idx]
+  predicted_clean <- predicted[valid_idx]
+  
+  # Check if we have data points
+  if (length(actual_clean) == 0) {
+    return(NA_real_)
+  }
+  
+  # Calculate RMSE
+  sqrt(mean((actual_clean - predicted_clean)^2))
+}
+
 string_difference <- function(str1, str2) {
   str1_chars <- unlist(strsplit(str1, ""))
   str2_chars <- unlist(strsplit(str2, ""))
@@ -22,18 +65,18 @@ string_difference <- function(str1, str2) {
 merge_datasets <- function(snp_caller, ground_truth, min_vaf) {
   df <- snp_caller %>%
     full_join(ground_truth, by = c("mutationID"), suffix = c("_caller", "_truth")) %>%
-      dplyr::mutate(
-        positive_truth = !is.na(VAF_truth) & VAF_truth > min_vaf,
-        positive_call = !is.na(VAF_caller) & VAF_caller > min_vaf,
-        true_positive = positive_truth & positive_call,
-        false_positive = !positive_truth & positive_call,
-        false_negative = positive_truth & !positive_call,
-        true_negative = !positive_truth & !positive_call
-      ) %>% 
-      dplyr::mutate(VAF_truth = ifelse(is.na(VAF_truth), 0, VAF_truth)) %>% 
-      dplyr::mutate(VAF_caller = ifelse(is.na(VAF_caller), 0, VAF_caller)) %>% 
-      dplyr::mutate(DP_truth = ifelse(is.na(DP_truth), 0, DP_truth)) %>% 
-      dplyr::mutate(DP_caller = ifelse(is.na(DP_caller), 0, DP_caller))
+    dplyr::mutate(
+      positive_truth = !is.na(VAF_truth) & VAF_truth > min_vaf,
+      positive_call = !is.na(VAF_caller) & VAF_caller > min_vaf,
+      true_positive = positive_truth & positive_call,
+      false_positive = !positive_truth & positive_call,
+      false_negative = positive_truth & !positive_call,
+      true_negative = !positive_truth & !positive_call
+    ) %>% 
+    dplyr::mutate(VAF_truth = ifelse(is.na(VAF_truth), 0, VAF_truth)) %>% 
+    dplyr::mutate(VAF_caller = ifelse(is.na(VAF_caller), 0, VAF_caller)) %>% 
+    dplyr::mutate(DP_truth = ifelse(is.na(DP_truth), 0, DP_truth)) %>% 
+    dplyr::mutate(DP_caller = ifelse(is.na(DP_caller), 0, DP_caller))
   
   return(df)
 }
@@ -68,78 +111,150 @@ get_sample_info <- function(vcf_path) {
   list(sample_name = sample_name, caller_name = caller_name)
 }
 
+#' Generate Comprehensive Variant Calling Performance Report
+#'
+#' This function creates a detailed report comparing variant calling results
+#' between a caller and ground truth data (ProCESS). It generates visualizations
+#' and performance metrics for both all mutations and PASS-only mutations.
+#'
+#' @param seq_res_long Ground truth sequencing results (ProCESS data)
+#' @param caller_res Variant caller results 
+#' @param sample_info List containing sample metadata (spn, sample_id, caller_name, etc.)
+#' @param min_vaf Minimum VAF threshold for considering mutations as true positives
+#'
+#' @return List containing report_plot, report_metrics, and vaf_comparison
 get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
-  # Group filter categories for better visualization
+  
+  ###
+  # DATA PREPROCESSING
+  ###
+  
+  # NOTE: Filtering zero VAF mutations is commented out - may be needed for some callers
+  # Remove 0 VAF mutations from caller
+  #caller_res = caller_res %>% dplyr::filter(VAF != 0)
+  
+  # Group rare filter categories together for better visualization
+  # Filters with frequency < 5% are grouped as "Other"
   caller_res <- caller_res %>% 
     dplyr::group_by(FILTER) %>% 
-    dplyr::mutate(f = n() / nrow(caller_res)) %>% 
+    dplyr::mutate(f = n() / nrow(caller_res)) %>%  # Calculate filter frequency
     dplyr::mutate(FILTER = ifelse(FILTER == "PASS" | f > .05, FILTER, "Other"))
   
-  # Create merged dataset for all mutations
+  ###
+  # DATASET MERGING
+  ###
+  
+  # Create merged dataset for all mutations (with VAF threshold)
   merged_df <- merge_datasets(caller_res, seq_res_long, min_vaf)
   
-  # Keep only PASS mutations
+  # Filter to only PASS mutations for high-quality analysis
   caller_res_pass <- caller_res %>% 
     dplyr::filter(FILTER == "PASS" & !is.na(FILTER))
   
-  # Create merged dataset with 0 threshold for PASS mutations
+  # Create merged dataset with 0 threshold for PASS mutations (includes all VAFs)
   merged_df0 <- merge_datasets(caller_res_pass, seq_res_long, 0)
   
-  # Plot false negative VAF distribution
+  ###
+  # PLOT GENERATION - FALSE NEGATIVE ANALYSIS
+  ###
+  
+  # Analyze VAF distribution of false negative mutations
   p_false_negative_VAF_dist <- plot_false_negative_vaf_dist(merged_df0)
   
-  # Plot basic histograms
-  races_coverage <- plot_races_coverage(seq_res_long)
-  races_VAF <- plot_races_vaf(seq_res_long)
-  caller_coverage <- plot_caller_coverage(caller_res_pass, sample_info)
-  caller_VAF <- plot_caller_vaf(caller_res_pass, sample_info)
+  ###
+  # PLOT GENERATION - BASIC DISTRIBUTIONS
+  ###
   
-  # Plot VAF and coverage differences
-  vaf_differences <- plot_vaf_difference(merged_df)
-  cov_differences <- plot_cov_difference(merged_df)
+  # Prepare data lists for comparison plots
+  DP_list = list(seq_res_long$DP, caller_res_pass$DP, caller_res$DP)
+  VAF_list = list(seq_res_long$VAF, caller_res_pass$VAF, caller_res$VAF)
+  labels = c("ProCESS", sample_info$caller_name, paste0(sample_info$caller_name, " (all)"))
+  colors = method_colors[labels]
   
-  # Get color palette for FILTER categories
+  # Generate distribution comparison plots
+  DP_density = plot_density_comparison_multi(DP_list, labels, colors, x_label = "Read Depth")
+  DP_ecdf = plot_ecdf_comparison_multi(DP_list, labels, colors, x_label = "Read Depth")
+  
+  VAF_density = plot_density_comparison_multi(VAF_list, labels, colors, x_label = "VAF")
+  VAF_ecdf = plot_ecdf_comparison_multi(VAF_list, labels, colors, x_label = "VAF")
+  
+  ###
+  # UNUSED CODE - INDIVIDUAL COVERAGE AND VAF PLOTS
+  ###
+  # The following plots were replaced by the multi-comparison plots above
+  # Kept for potential future use if individual plots are needed
+  
+  # races_coverage <- plot_races_coverage(seq_res_long)
+  # races_VAF <- plot_races_vaf(seq_res_long)
+  # caller_coverage <- plot_caller_coverage(caller_res_pass, sample_info)
+  # caller_VAF <- plot_caller_vaf(caller_res_pass, sample_info)
+  
+  ###
+  # PLOT GENERATION - DIFFERENCE ANALYSIS
+  ###
+  
+  # Analyze differences between caller and ground truth
+  vaf_differences <- plot_vaf_difference(merged_df)      # VAF difference plots
+  cov_differences <- plot_cov_difference(merged_df)      # Coverage difference plots
+  
+  ###
+  # PLOT GENERATION - FILTER AND SCATTER ANALYSIS
+  ###
+  
+  # Get consistent color palette for FILTER categories
+  
+  # Plot distribution of filter categories
   colors <- get_colors(merged_df)
-  
-  # Plot filter distribution
   p_filter_dist <- plot_filter_distribution(merged_df, colors)
   
-  # --- All mutations ---
-  # Plot scatter plots for all mutations
+  # --- ALL MUTATIONS ANALYSIS ---
+  # Generate scatter plots comparing caller vs ground truth for all mutations
   p_scatter_VAF_all <- plot_vaf_scatter_all(merged_df, colors, sample_info)
   p_scatter_DP_all <- plot_dp_scatter_all(merged_df, colors, sample_info)
   
-  # Calculate performance metrics for all mutations
+  ###
+  # PERFORMANCE METRICS - ALL MUTATIONS
+  ###
+  
+  # Prepare binary classification vectors for performance calculation
+  # Convert to 0/1 based on VAF threshold
   y_true <- as.numeric(factor((merged_df$VAF_truth > min_vaf), levels=c(FALSE, TRUE))) - 1
   y_pred <- as.numeric(factor((merged_df$VAF_caller > min_vaf), levels=c(FALSE, TRUE))) - 1
   
-  # Plot Venn diagram for all mutations
+  # Generate Venn diagram showing overlap between caller and ground truth
   p_venn_all <- plot_venn_diagram(merged_df, sample_info$caller_name) +
     ggtitle("All called mutations")
   
-  # Calculate metrics for all mutations
+  # Calculate comprehensive performance metrics (precision, recall, F1, etc.)
   metrics_all <- compute_metrics_from_vectors(y_true, y_pred)
   
-  # --- PASS mutations ---
-  # Create merged dataset for PASS mutations
+  ###
+  # PERFORMANCE METRICS - PASS MUTATIONS ONLY
+  ###
+  
+  # Create merged dataset specifically for PASS mutations
   merged_df_pass <- merge_datasets(caller_res_pass, seq_res_long, min_vaf)
   
-  # Plot scatter plots for PASS mutations
+  # Generate scatter plots for high-quality (PASS) mutations only
   p_scatter_VAF_pass <- plot_vaf_scatter_pass(merged_df_pass, colors, sample_info)
   p_scatter_DP_pass <- plot_dp_scatter_pass(merged_df_pass, colors, sample_info)
   
-  # Calculate performance metrics for PASS mutations
+  # Prepare binary classification vectors for PASS mutations
   y_true_pass <- as.numeric(factor((merged_df_pass$VAF_truth > min_vaf), levels=c(FALSE, TRUE))) - 1
   y_pred_pass <- as.numeric(factor((merged_df_pass$VAF_caller > min_vaf), levels=c(FALSE, TRUE))) - 1
   
-  # Plot Venn diagram for PASS mutations
+  # Generate Venn diagram for PASS mutations only
   p_venn_pass <- plot_venn_diagram(merged_df_pass, sample_info$caller_name) +
     ggtitle("Only PASS mutations")
   
-  # Calculate metrics for PASS mutations
+  # Calculate performance metrics for PASS mutations
   metrics_pass <- compute_metrics_from_vectors(y_true_pass, y_pred_pass)
   
-  # Combine metrics for both sets
+  ###
+  # METRICS COMBINATION AND ADVANCED ANALYSIS
+  ###
+  
+  # Combine metrics from both all mutations and PASS-only analysis
   metrics <- dplyr::bind_rows(
     metrics_all %>% tidyr::pivot_longer(cols = colnames(metrics_all)) %>% 
       dplyr::mutate(Mutations = "All"),
@@ -147,19 +262,49 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
       dplyr::mutate(Mutations = "Only Pass")  
   )
   
-  # Plot metrics comparison
+  # Perform detailed VAF performance analysis with tolerance
+  metrics_results = analyze_vaf_performance(seq_res_long, 
+                                            caller_res, 
+                                            only_pass = TRUE, 
+                                            min_vaf_threshold = min_vaf, 
+                                            vaf_tolerance_pct = 5)  # 5% VAF tolerance
+  
+  # Generate precision-recall curve
+  precision_recall_plot = plot_precision_recall_vaf(vaf_analysis_results = metrics_results)
+  
+  ###
+  # ADDITIONAL VISUALIZATIONS
+  ###
+  
+  # Plot metrics comparison between all and PASS mutations
   p_metrics <- plot_metrics_comparison(metrics)
   
-  metrics_over_VAF = plot_metric_over_VAF_threshold(seq_res_long, caller_res, only_pass = TRUE)
+  # Show how metrics change across different VAF thresholds
+  metrics_over_VAF = plot_metric_over_VAF_threshold(seq_res_long, caller_res, only_pass = TRUE) +
+    geom_vline(xintercept = min_vaf, linetype = "dashed")  # Mark current threshold
   
-  # VAF comparison for true positives
+  ###
+  # CORRELATION ANALYSIS FOR TRUE POSITIVES
+  ###
+  
+  # Analyze VAF correlation between caller and ground truth for correctly identified variants
   vaf_comparison <- merged_df_pass %>% 
     dplyr::ungroup() %>% 
-    dplyr::filter(true_positive) %>% 
-    dplyr::group_by(chr_caller) %>% 
-    dplyr::summarise(cor_coeff = cor.test(VAF_caller, VAF_truth)$estimate, RMSE = RMSE(VAF_caller, VAF_truth))
+    dplyr::filter(true_positive) %>%  # Only analyze true positive variants
+    dplyr::group_by(chr_caller) %>%   # Group by chromosome
+    dplyr::summarise(
+      n_variants = n(),                                    # Count of variants per chromosome
+      cor_coeff = safe_cor_test(VAF_caller, VAF_truth),   # Correlation coefficient
+      RMSE = safe_rmse(VAF_truth, VAF_caller),            # Root mean square error
+      .groups = 'drop'
+    )
   
-  # Design layout for combined report
+  ###
+  # REPORT LAYOUT DESIGN
+  ###
+  
+  # Define grid layout for comprehensive report visualization
+  # Each letter represents a plot position in the grid
   design <- "
   AABBCC
   AABBCC
@@ -175,27 +320,318 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   OOOPPP
   "
   
-  # Generate title and subtitle for the report
+  # Generate descriptive title and subtitle for the report
   title <- paste0(sample_info$spn, ", sample ", sample_info$sample_id, 
                   ", calls by ", sample_info$caller_name)
   subtitle <- paste0("Only ", sample_info$mut_type, " mutations, purity = ", 
                      sample_info$purity, ", coverage = ", sample_info$coverage, "x")
   
-  # Combine all plots into a single report
-  report_plot <- free(races_coverage) + free(caller_coverage) + free(p_filter_dist) +
-    free(races_VAF) + free(caller_VAF) + free(p_false_negative_VAF_dist) +
+  ###
+  # UNUSED REPORT LAYOUT - ORIGINAL VERSION
+  ###
+  # This layout used individual coverage/VAF plots instead of comparison plots
+  # Kept for reference in case the original layout is needed
+  
+  # report_plot <- free(races_coverage) + free(caller_coverage) + free(p_filter_dist) +
+  #   free(races_VAF) + free(caller_VAF) + free(p_false_negative_VAF_dist) +
+  #   free(p_scatter_DP_all) + free(p_scatter_VAF_all) + free(p_venn_all) +
+  #   free(p_scatter_DP_pass) + free(p_scatter_VAF_pass) + free(p_venn_pass) +
+  #   free(p_metrics) + free(metrics_over_VAF) +
+  #   plot_layout(design = design) +
+  #   plot_annotation(title, subtitle) & 
+  #   theme(text = element_text(size = 12))
+  
+  ###
+  # FINAL REPORT ASSEMBLY
+  ###
+  
+  # Combine all plots into a comprehensive report using patchwork
+  # free() function allows each plot to maintain its own scales
+  report_plot <- free(DP_density) + free(DP_ecdf) + free(p_filter_dist) +
+    free(VAF_density) + free(VAF_ecdf) + free(p_false_negative_VAF_dist) +
     free(p_scatter_DP_all) + free(p_scatter_VAF_all) + free(p_venn_all) +
     free(p_scatter_DP_pass) + free(p_scatter_VAF_pass) + free(p_venn_pass) +
-    free(p_metrics) + free(metrics_over_VAF) +
+    free(precision_recall_plot) + free(metrics_over_VAF) +
     plot_layout(design = design) +
     plot_annotation(title, subtitle) & 
     theme(text = element_text(size = 12))
   
-  # Return results
+  ###
+  # RETURN RESULTS
+  ###
+  
+  # Return comprehensive results including:
+  # - Complete visualization report
+  # - Performance metrics table  
+  # - VAF correlation analysis by chromosome
   list(
-    report_plot = report_plot, 
-    report_metrics = metrics, 
-    vaf_comparison = vaf_comparison
+    report_plot = report_plot,                           # Combined visualization report
+    report_metrics = metrics_results$performance_table,  # Detailed performance metrics
+    vaf_comparison = vaf_comparison                      # Correlation analysis results
   )
 }
 
+# Function to perform VAF-stratified performance analysis
+analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass, 
+                                    vaf_bins = c(0, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0), 
+                                    vaf_tolerance_pct = 5, 
+                                    min_vaf_threshold = 0.02) {
+  
+  # Group filter categories for better visualization
+  caller_res <- caller_res %>% 
+    dplyr::group_by(FILTER) %>% 
+    dplyr::mutate(f = n() / nrow(caller_res)) %>% 
+    dplyr::mutate(FILTER = ifelse(FILTER == "PASS" | f > .05, FILTER, "Other"))
+  
+  if (only_pass) {
+    caller_res = caller_res %>% dplyr::filter(FILTER == "PASS")
+  }
+  
+  merged_df = merge_datasets(caller_res, seq_res_long, 0)
+  merged_df = merged_df %>% dplyr::select(mutationID, VAF_caller, VAF_truth)
+  
+  # Create VAF bins based on truth VAF
+  merged_df$VAF_bin <- cut(merged_df$VAF_truth, 
+                           breaks = vaf_bins, 
+                           include.lowest = TRUE,
+                           right = FALSE,
+                           labels = paste0(vaf_bins[-length(vaf_bins)]*100, "-", vaf_bins[-1]*100, "%"))
+  
+  # Calculate VAF difference (absolute and relative)
+  merged_df$vaf_abs_diff <- abs(merged_df$VAF_truth - merged_df$VAF_caller)
+  merged_df$vaf_rel_diff_pct <- abs(merged_df$VAF_truth - merged_df$VAF_caller) / merged_df$VAF_truth * 100
+  
+  # Classify variants based on detection and VAF accuracy
+  merged_df$detection_status <- case_when(
+    # True Positives: Both must have VAF > threshold AND VAF difference within tolerance
+    !is.na(merged_df$VAF_truth) & !is.na(merged_df$VAF_caller) & 
+      merged_df$VAF_truth > min_vaf_threshold & merged_df$VAF_caller > min_vaf_threshold &
+      merged_df$vaf_rel_diff_pct <= vaf_tolerance_pct ~ "True Positive",
+    
+    # False Negatives: Truth exists but caller missed it OR VAF difference too large
+    !is.na(merged_df$VAF_truth) & merged_df$VAF_truth > min_vaf_threshold & 
+      (is.na(merged_df$VAF_caller) | merged_df$VAF_caller <= min_vaf_threshold |
+         (!is.na(merged_df$VAF_caller) & merged_df$vaf_rel_diff_pct > vaf_tolerance_pct)) ~ "False Negative",
+    
+    # False Positives: Caller detected but no truth OR truth VAF too low
+    !is.na(merged_df$VAF_caller) & merged_df$VAF_caller > min_vaf_threshold &
+      (is.na(merged_df$VAF_truth) | merged_df$VAF_truth <= min_vaf_threshold) ~ "False Positive",
+    
+    # TRUE NEGATIVES: Truth exists but VAF is below threshold AND caller correctly didn't call it (or called below threshold)
+    !is.na(merged_df$VAF_truth) & merged_df$VAF_truth <= min_vaf_threshold &
+      (is.na(merged_df$VAF_caller) | merged_df$VAF_caller <= min_vaf_threshold) ~ "True Negative",
+    
+    TRUE ~ "Unknown"
+  )
+  
+  # Create VAF bins for True Negatives based on their truth VAF (even though below threshold)
+  merged_df$VAF_bin_tn <- cut(merged_df$VAF_truth, 
+                              breaks = vaf_bins, 
+                              include.lowest = TRUE,
+                              right = FALSE,
+                              labels = paste0(vaf_bins[-length(vaf_bins)]*100, "-", vaf_bins[-1]*100, "%"))
+  
+  # Calculate performance metrics by VAF bin
+  performance_by_bin <- merged_df %>%
+    filter(!is.na(VAF_bin) & VAF_truth > min_vaf_threshold) %>%  # Only consider variants above threshold for main analysis
+    group_by(VAF_bin) %>%
+    summarise(
+      total_truth = n(),
+      true_positives = sum(detection_status == "True Positive"),
+      false_negatives = sum(detection_status == "False Negative"),
+      vaf_discordant = sum(!is.na(VAF_caller) & VAF_caller > min_vaf_threshold & 
+                             vaf_rel_diff_pct > vaf_tolerance_pct, na.rm = TRUE),
+      .groups = 'drop'
+    ) %>%
+    mutate(
+      sensitivity = true_positives / (true_positives + false_negatives),
+      sensitivity_pct = round(sensitivity * 100, 1)
+    )
+  
+  # Calculate True Negatives and False Positives by VAF bin
+  # For TN: group by the truth VAF bin (even though below threshold)
+  tn_by_bin <- merged_df %>%
+    filter(detection_status == "True Negative") %>%
+    group_by(VAF_bin_tn) %>%
+    summarise(true_negatives = n(), .groups = 'drop') %>%
+    rename(VAF_bin = VAF_bin_tn)
+  
+  # For FP: assign to VAF bins based on their called VAF
+  fp_by_bin <- merged_df %>%
+    filter(detection_status == "False Positive") %>%
+    mutate(VAF_bin_fp = cut(VAF_caller, 
+                            breaks = vaf_bins, 
+                            include.lowest = TRUE,
+                            right = FALSE,
+                            labels = paste0(vaf_bins[-length(vaf_bins)]*100, "-", vaf_bins[-1]*100, "%"))) %>%
+    group_by(VAF_bin_fp) %>%
+    summarise(false_positives = n(), .groups = 'drop') %>%
+    rename(VAF_bin = VAF_bin_fp)
+  
+  # Merge TN and FP counts with performance metrics
+  performance_by_bin <- performance_by_bin %>%
+    left_join(tn_by_bin, by = "VAF_bin") %>%
+    left_join(fp_by_bin, by = "VAF_bin") %>%
+    mutate(
+      true_negatives = ifelse(is.na(true_negatives), 0, true_negatives),
+      false_positives = ifelse(is.na(false_positives), 0, false_positives),
+      # Calculate FPR and Precision per bin
+      fpr = false_positives / (false_positives + true_negatives),
+      fpr_pct = round(fpr * 100, 3),
+      precision = true_positives / (true_positives + false_positives),
+      precision_pct = round(precision * 100, 1),
+      # Calculate Specificity as well
+      specificity = true_negatives / (true_negatives + false_positives),
+      specificity_pct = round(specificity * 100, 1)
+    )
+  
+  # Handle cases where denominator is 0 (no TN + FP in a bin)
+  performance_by_bin <- performance_by_bin %>%
+    mutate(
+      fpr = ifelse((false_positives + true_negatives) == 0, NA, fpr),
+      fpr_pct = ifelse(is.na(fpr), NA, fpr_pct),
+      specificity = ifelse((false_positives + true_negatives) == 0, NA, specificity),
+      specificity_pct = ifelse(is.na(specificity), NA, specificity_pct),
+      precision = ifelse((true_positives + false_positives) == 0, NA, precision),
+      precision_pct = ifelse(is.na(precision), NA, precision_pct)
+    )
+  
+  # Calculate overall metrics
+  total_tp <- sum(merged_df$detection_status == "True Positive", na.rm = TRUE)
+  total_fp <- sum(merged_df$detection_status == "False Positive", na.rm = TRUE)
+  total_tn <- sum(merged_df$detection_status == "True Negative", na.rm = TRUE)
+  total_fn <- sum(merged_df$detection_status == "False Negative", na.rm = TRUE)
+  
+  overall_precision <- ifelse((total_tp + total_fp) > 0, total_tp / (total_tp + total_fp), NA)
+  overall_sensitivity <- ifelse((total_tp + total_fn) > 0, total_tp / (total_tp + total_fn), NA)
+  overall_specificity <- ifelse((total_tn + total_fp) > 0, total_tn / (total_tn + total_fp), NA)
+  overall_fpr <- ifelse((total_tn + total_fp) > 0, total_fp / (total_tn + total_fp), NA)
+  
+  # Calculate VAF accuracy for true positives
+  vaf_accuracy_by_bin <- merged_df %>%
+    filter(detection_status == "True Positive") %>%
+    group_by(VAF_bin) %>%
+    summarise(
+      n_variants = n(),
+      vaf_correlation = ifelse(n() > 1, cor(VAF_truth, VAF_caller, use = "complete.obs"), NA),
+      mean_abs_error = mean(abs(VAF_truth - VAF_caller), na.rm = TRUE),
+      median_abs_error = median(abs(VAF_truth - VAF_caller), na.rm = TRUE),
+      rmse = sqrt(mean((VAF_truth - VAF_caller)^2, na.rm = TRUE)),
+      .groups = 'drop'
+    )
+  
+  # Combine results
+  results <- performance_by_bin %>%
+    left_join(vaf_accuracy_by_bin, by = "VAF_bin")
+  
+  return(list(
+    performance_table = results,
+    overall_metrics = list(
+      precision = overall_precision,
+      sensitivity = overall_sensitivity,
+      specificity = overall_specificity,
+      fpr = overall_fpr
+    ),
+    detection_summary = table(merged_df$detection_status),
+    confusion_matrix = list(
+      TP = total_tp,
+      FP = total_fp,
+      TN = total_tn,
+      FN = total_fn
+    ),
+    raw_data = merged_df,
+    vaf_tolerance_pct = vaf_tolerance_pct,
+    min_vaf_threshold = min_vaf_threshold
+  ))
+}
+
+get_multi_caller_report <- function(seq_res_long, caller_res_list, sample_info, min_vaf, only_pass) {
+  if (only_pass) {
+    names_to_keep = names(caller_res_list)
+    caller_res_list = lapply(caller_res_list, function(cr) {
+      cr %>% dplyr::filter(FILTER == "PASS")
+    })
+    names(caller_res_list) = names_to_keep
+  }
+  
+  ###
+  # PLOT GENERATION - BASIC DISTRIBUTIONS
+  ###
+  
+  # Prepare data lists for comparison plots
+  DP_list = list(seq_res_long$DP, caller_res_list$mutect2$DP, caller_res_list$strelka$DP, caller_res_list$freebayes$DP)
+  VAF_list = list(seq_res_long$VAF, caller_res_list$mutect2$VAF, caller_res_list$strelka$VAF, caller_res_list$freebayes$VAF)
+  labels = c("ProCESS", "mutect2", "strelka", "freebayes")
+  colors <- method_colors[labels]
+  
+  # Generate distribution comparison plots
+  DP_density = plot_density_comparison_multi(DP_list, labels, colors, x_label = "Read Depth")
+  DP_ecdf = plot_ecdf_comparison_multi(DP_list, labels, colors, x_label = "Read Depth")
+  
+  VAF_density = plot_density_comparison_multi(VAF_list, labels, colors, x_label = "VAF")
+  VAF_ecdf = plot_ecdf_comparison_multi(VAF_list, labels, colors, x_label = "VAF")
+  
+  # Generate Venn diagram showing overlap between caller and ground truth
+  x = list(
+    "ProCESS" = seq_res_long %>% dplyr::filter(VAF >= min_vaf) %>% dplyr::pull(mutationID),
+    "mutect2" = caller_res_list$mutect2 %>% dplyr::filter(VAF >= min_vaf) %>% dplyr::pull(mutationID),
+    "strelka" = caller_res_list$strelka %>% dplyr::filter(VAF >= min_vaf) %>% dplyr::pull(mutationID),
+    "freebayes" = caller_res_list$freebayes %>% dplyr::filter(VAF >= min_vaf) %>% dplyr::pull(mutationID)
+  )
+  upset_plot = ggVennDiagram(x, force_upset = TRUE)
+  upset_plot = ggplotify::as.ggplot(upset_plot)
+  
+  ###
+  # METRICS COMBINATION AND ADVANCED ANALYSIS
+  ###
+  
+  # Perform detailed VAF performance analysis with tolerance
+  vaf_analysis_results_across_callers = lapply(names(caller_res_list), function(nc) {
+    caller_res = caller_res_list[[nc]]
+    metrics_results = analyze_vaf_performance(seq_res_long, 
+                                              caller_res, 
+                                              only_pass = TRUE, 
+                                              min_vaf_threshold = min_vaf, 
+                                              vaf_tolerance_pct = 5)  # 5% VAF tolerance
+    metrics_results$performance_table %>% dplyr::mutate(caller = nc)
+  }) %>% do.call("bind_rows", .)
+  
+  
+  # Generate precision-recall curve
+  precision_recall_plot = plot_multicaller_precision_recall_vaf(vaf_analysis_results_across_callers)
+  rmse_plot = plot_multicaller_rmse_vaf(vaf_analysis_results_across_callers)
+  
+  ###
+  # REPORT LAYOUT DESIGN
+  ###
+  
+  # Define grid layout for comprehensive report visualization
+  # Each letter represents a plot position in the grid
+  
+  design <- "
+  AAABBB
+  AAABBB
+  CCCDDD
+  CCCDDD
+  EEEEEE
+  EEEEEE
+  FFFGGG
+  FFFGGG
+  "
+  
+  # Generate descriptive title and subtitle for the report
+  title <- paste0(sample_info$spn, ", sample ", sample_info$sample_id)
+  subtitle <- paste0(sample_info$mut_type, " mutations, purity = ", 
+                     sample_info$purity, ", coverage = ", sample_info$coverage, "x")
+  
+  # Combine all plots into a comprehensive report using patchwork
+  # free() function allows each plot to maintain its own scales
+  report_plot <- free(DP_density) + free(DP_ecdf) +
+    free(VAF_density) + free(VAF_ecdf) + 
+    free(precision_recall_plot) + free(upset_plot) + free(rmse_plot) +
+    plot_layout(design = design) +
+    plot_annotation(title, subtitle) & 
+    theme(text = element_text(size = 12))
+  
+  report_plot
+}

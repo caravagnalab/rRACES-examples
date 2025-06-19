@@ -1,5 +1,15 @@
 library(caret)
 
+method_colors = c(
+  "ProCESS" = "gray80",
+  "mutect2" = "lightsteelblue",
+  "mutect2 (all)" = "steelblue4",  # darker steelblue
+  "strelka" = "coral",
+  "strelka (all)" = "coral4",     # darker coral
+  "freebayes" = "#8FBC8B",
+  "freebayes (all)" = "#228B22"   # darker green (ForestGreen)
+)
+
 # Function to compute confusion matrix and performance metrics
 compute_metrics <- function(actual, predicted) {
   cm <- table(Actual = actual, Predicted = predicted)
@@ -457,12 +467,21 @@ plot_metric_over_VAF_threshold = function(seq_res_long, caller_res, only_pass, V
     dplyr::tibble(min_vaf=min_vaf, value = as.numeric(metrics), metric = colnames(metrics))  
   }) %>% do.call("bind_rows", .)
   
+  metric_colors = c(
+    "#1f77b4",    # Blue
+    "#ff7f0e",       # Orange
+    "#2ca02c",     # Green
+    "#d62728",  # Red
+    "#9467bd"      # Purple
+  )
+  
   dfm %>% 
     ggplot(mapping = aes(x=min_vaf, y=value, col=metric)) +
     geom_point() +
     geom_line() +
     theme_bw() +
     labs(x = "VAF threshold", y="Value") +
+    scale_color_manual(values = metric_colors) +
     #theme(legend.position = "none") +
     ylim(c(0,1))
 }
@@ -540,3 +559,446 @@ plot_flow_of_calls = function(merged_df) {
 }
 
 
+plot_ecdf_comparison <- function(vec1, vec2, label1, label2, x_label) {
+  library(ggplot2)
+  library(dplyr)
+  
+  # Combine vectors into a data frame
+  df <- bind_rows(
+    data.frame(value = vec1, group = label1),
+    data.frame(value = vec2, group = label2)
+  )
+  
+  # Perform the KS test
+  ks_result <- ks.test(vec1, vec2)
+  
+  # Plot ECDF
+  p <- ggplot(df, aes(x = value, color = group)) +
+    stat_ecdf() +
+    labs(
+      title = "ECDF Comparison",
+      subtitle = sprintf("KS test p-value: %.4g", ks_result$p.value),
+      x = x_label,
+      y = "ECDF",
+      color = ""
+    ) +
+    theme_minimal()
+  
+  return(p)
+}
+
+plot_density_comparison <- function(vec1, vec2, label1, label2, x_label) {
+  library(ggplot2)
+  library(dplyr)
+  
+  # Combine vectors into a data frame
+  df <- bind_rows(
+    data.frame(value = vec1, group = label1),
+    data.frame(value = vec2, group = label2)
+  )
+  
+  # Perform the KS test
+  ks_result <- ks.test(vec1, vec2)
+  
+  # Sample sizes
+  # Format sample sizes with apostrophes
+  n1 <- format(length(vec1), big.mark = "'")
+  n2 <- format(length(vec2), big.mark = "'")
+  
+  # Build subtitle with formatted sample sizes
+  subtitle_text <- sprintf(
+    "%s (n = %s), %s (n = %s)\nKS test p-value: %.4g",
+    label1, n1, label2, n2, ks_result$p.value
+  )
+  
+  # Plot densities
+  p <- ggplot(df, aes(x = value, fill = group)) +
+    geom_density(alpha = 0.5) +
+    labs(
+      title = paste0(x_label, " comparison"),
+      subtitle = subtitle_text,
+      x = x_label,
+      y = "Density",
+      fill = ""
+    ) +
+    theme_bw()
+  
+  p
+}
+
+
+
+plot_density_comparison_multi <- function(vec_list, labels, colors, x_label) {
+  library(ggplot2)
+  library(dplyr)
+  library(purrr)
+  
+  if (length(vec_list) != length(labels) || length(labels) != length(colors)) {
+    stop("vec_list, labels, and colors must have the same length.")
+  }
+  
+  # Combine into one data frame
+  df <- map2_dfr(vec_list, labels, ~ data.frame(value = .x, group = .y))
+  
+  # Pairwise KS test (just first vs. rest)
+  ks_tests <- map2(vec_list[-1], labels[-1], ~ {
+    ks.test(vec_list[[1]], .x)
+  })
+  p_values <- map_chr(ks_tests, ~ sprintf("%.4g", .x$p.value))
+  comp_labels <- paste0(labels[1], " vs ", labels[-1], ": p = ", p_values)
+  
+  # Build subtitle with n values and p-values
+  ns <- map_chr(vec_list, ~ format(length(.x), big.mark = "'"))
+  group_info <- paste0(labels, " (n = ", ns, ")")
+  subtitle_text <- paste(
+    paste(group_info, collapse = ", "),
+    paste(comp_labels, collapse = " | "),
+    sep = "\n"
+  )
+  
+  subtitle_text <- paste(
+    paste(group_info, collapse = ", ")
+  )
+  
+  # Plot
+  p <- ggplot(df, aes(x = value, fill = group)) +
+    geom_density(alpha = 0.5) +
+    scale_fill_manual(values = colors) +
+    labs(
+      title = paste0(x_label, " Comparison"),
+      subtitle = subtitle_text,
+      x = x_label,
+      y = "Density",
+      fill = ""
+    ) +
+    theme_bw()
+  
+  p
+}
+
+
+plot_ecdf_comparison_multi <- function(vec_list, labels, colors, x_label) {
+  library(ggplot2)
+  library(dplyr)
+  library(purrr)
+  
+  if (length(vec_list) != length(labels) || length(labels) != length(colors)) {
+    stop("vec_list, labels, and colors must have the same length.")
+  }
+  
+  # Combine into one data frame
+  df <- map2_dfr(vec_list, labels, ~ data.frame(value = .x, group = .y))
+  
+  # Pairwise KS test (first vs rest)
+  ks_tests <- map2(vec_list[-1], labels[-1], ~ {
+    ks.test(vec_list[[1]], .x)
+  })
+  p_values <- map_chr(ks_tests, ~ sprintf("%.4g", .x$p.value))
+  comp_labels <- paste0(labels[1], " vs ", labels[-1], ": p = ", p_values)
+  
+  # Subtitle with sample sizes and p-values
+  ns <- map_chr(vec_list, ~ format(length(.x), big.mark = "'"))
+  group_info <- paste0(labels, " (n = ", ns, ")")
+  subtitle_text <- paste(
+    paste(group_info, collapse = ", "),
+    paste(comp_labels, collapse = " | "),
+    sep = "\n"
+  )
+  
+  subtitle_text <- paste(
+    paste(group_info, collapse = ", ")
+  )
+  
+  # Plot
+  p <- ggplot(df, aes(x = value, color = group)) +
+    stat_ecdf(geom = "step", size = 1) +
+    scale_color_manual(values = colors) +
+    labs(
+      title = paste0(x_label, " ECDF Comparison"),
+      subtitle = subtitle_text,
+      x = x_label,
+      y = "ECDF",
+      color = ""
+    ) +
+    theme_bw()
+  
+  p
+}
+
+
+plot_precision_recall_vaf <- function(vaf_analysis_results, 
+                                      title = "Precision and Recall Across VAF Bins",
+                                      text_size = 3.5,
+                                      point_size = 1.5,
+                                      line_size = 1) {
+  
+  # Extract performance table from analysis results
+  performance_data <- vaf_analysis_results$performance_table
+  
+  # Check if required columns exist
+  required_cols <- c("VAF_bin", "precision", "sensitivity")
+  if (!all(required_cols %in% colnames(performance_data))) {
+    stop("Required columns missing from performance table: ", 
+         paste(setdiff(required_cols, colnames(performance_data)), collapse = ", "))
+  }
+  
+  # Prepare data for plotting (rename sensitivity to recall for clarity)
+  plot_data <- performance_data %>%
+    dplyr::select(VAF_bin, precision, recall = sensitivity) %>%
+    dplyr::filter(!is.na(VAF_bin)) %>%
+    tidyr::pivot_longer(cols = c(precision, recall), 
+                        names_to = "metric", 
+                        values_to = "value") %>%
+    dplyr::mutate(
+      metric = factor(metric, levels = c("precision", "recall"), 
+                      labels = c("Precision", "Recall")),
+      value_pct = round(value * 100, 1),
+      label_text = paste0(value_pct, "%")
+    )
+  
+  # Create the plot
+  p <- ggplot(plot_data, aes(x = VAF_bin, y = value, color = metric, group = metric)) +
+    # Add lines connecting points
+    geom_line(size = line_size, alpha = 0.8) +
+    # Add points
+    geom_point(size = point_size, alpha = 0.9) +
+    # Add text labels showing percentages
+    geom_text(aes(label = label_text), 
+              vjust = -0.5, 
+              size = text_size, 
+              show.legend = FALSE,
+              fontface = "bold") +
+    # Set y-axis to 0-1 range
+    scale_y_continuous(limits = c(0, 1.05), 
+                       breaks = seq(0, 1, 0.25),
+                       labels = scales::percent_format(accuracy = 1)) +
+    # Color scheme
+    scale_color_manual(values = c("Precision" = "#E31A1C", "Recall" = "#1F78B4"),
+                       name = "Metric") +
+    # Labels and title
+    labs(
+      title = title,
+      x = "VAF Bin",
+      y = "Performance",
+      caption = paste0("VAF tolerance: ", vaf_analysis_results$vaf_tolerance_pct, "%; ",
+                       "Min VAF threshold: ", vaf_analysis_results$min_vaf_threshold)
+    ) +
+    # Theme
+    theme_bw()
+  p
+  
+  # Add overall metrics as annotation if available
+  if (!is.null(vaf_analysis_results$overall_metrics)) {
+    overall <- vaf_analysis_results$overall_metrics
+    if (!is.na(overall$precision) && !is.na(overall$sensitivity)) {
+      annotation_text <- paste0(
+        "Overall: Precision = ", round(overall$precision * 100, 1), "%, ",
+        "Recall = ", round(overall$sensitivity * 100, 1), "%"
+      )
+      
+      p <- p + labs(subtitle = annotation_text)
+    }
+  }
+  
+  return(p)
+}
+
+# Create combined sensitivity and FPR plot
+plot_across_vaf <- function(results) {
+  plot_data <- results$performance_table %>%
+    select(VAF_bin, sensitivity_pct, precision_pct) %>%
+    #filter(!is.na(sensitivity_pct) | !is.na(fpr_pct)) %>%  # Remove bins with no data
+    tidyr::pivot_longer(cols = c(sensitivity_pct, precision_pct), 
+                        names_to = "metric", values_to = "percentage")
+  
+  ggplot(plot_data, aes(x = VAF_bin, y = percentage, fill = metric)) +
+    geom_col(position = "dodge", alpha = 0.7) +
+    geom_text(aes(label = ifelse(!is.na(percentage), paste0(round(percentage, 1), "%"), "NA")), 
+              position = position_dodge(width = 0.9), vjust = -0.5, size = 3) +
+    labs(
+      title = "Variant Caller Performance by VAF Range",
+      x = "VAF Range (Truth)",
+      y = "Percentage (%)",
+      fill = "Metric"
+    ) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_manual(values = c("sensitivity_pct" = "steelblue", "precision_pct" = "coral"),
+                      labels = c("Recall", "Precision")) +
+    ylim(0, max(plot_data$percentage, na.rm = TRUE) * 1.1) +
+    scale_y_continuous(breaks = c(0, 25, 50, 75, 100))
+}
+
+# Create separate FPR plot with improved TN definition
+plot_fpr_by_vaf <- function(results) {
+  plot_data <- results$performance_table %>%
+    filter(!is.na(fpr_pct))
+  
+  ggplot(plot_data, aes(x = VAF_bin, y = fpr_pct)) +
+    geom_col(fill = "coral", alpha = 0.7) +
+    geom_text(aes(label = paste0(round(fpr_pct, 2), "%")), vjust = -0.5) +
+    labs(
+      title = "False Positive Rate by VAF Range",
+      x = "VAF Range",
+      y = "False Positive Rate (%)",
+      subtitle = "True Negatives = Ground truth variants below minimum VAF threshold"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ylim(0, max(plot_data$fpr_pct, na.rm = TRUE) * 1.1)
+}
+
+# Create specificity plot (complement of FPR)
+plot_specificity_by_vaf <- function(results) {
+  plot_data <- results$performance_table %>%
+    filter(!is.na(specificity_pct))
+  
+  ggplot(plot_data, aes(x = VAF_bin, y = specificity_pct)) +
+    geom_col(fill = "lightgreen", alpha = 0.7) +
+    geom_text(aes(label = paste0(round(specificity_pct, 1), "%")), vjust = -0.5) +
+    labs(
+      title = "Specificity by VAF Range",
+      x = "VAF Range",
+      y = "Specificity (%)",
+      subtitle = "Ability to correctly identify true negatives (low VAF variants)"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    ylim(0, 100)
+}
+
+# Create VAF accuracy plot
+plot_vaf_accuracy <- function(results) {
+  accuracy_data <- results$performance_table %>%
+    select(VAF_bin, mean_abs_error, median_abs_error, n_variants) %>%
+    filter(!is.na(mean_abs_error) & n_variants > 0) %>%
+    tidyr::pivot_longer(cols = c(mean_abs_error, median_abs_error), 
+                        names_to = "metric", values_to = "error")
+  
+  ggplot(accuracy_data, aes(x = VAF_bin, y = error, fill = metric)) +
+    geom_col(position = "dodge", alpha = 0.7) +
+    labs(
+      title = "VAF Calling Accuracy by VAF Range (True Positives Only)",
+      x = "VAF Range (Truth)", 
+      y = "Absolute Error",
+      fill = "Error Metric"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_manual(values = c("mean_abs_error" = "coral", "median_abs_error" = "lightblue"),
+                      labels = c("Mean Abs Error", "Median Abs Error"))
+}
+
+
+
+plot_multicaller_precision_recall_vaf <- function(performance_data, 
+                                                  title = "Precision and Recall Across VAF Bins",
+                                                  text_size = 3.5,
+                                                  point_size = 1.5,
+                                                  line_size = 1) {
+  
+  # Check if required columns exist
+  required_cols <- c("VAF_bin", "precision", "sensitivity", "caller")
+  if (!all(required_cols %in% colnames(performance_data))) {
+    stop("Required columns missing from performance table: ", 
+         paste(setdiff(required_cols, colnames(performance_data)), collapse = ", "))
+  }
+  
+  # Prepare data for plotting (rename sensitivity to recall for clarity)
+  plot_data <- performance_data %>%
+    dplyr::select(VAF_bin, precision, recall = sensitivity, caller) %>%
+    dplyr::filter(!is.na(VAF_bin)) %>%
+    tidyr::pivot_longer(cols = c(precision, recall), 
+                        names_to = "metric", 
+                        values_to = "value") %>%
+    dplyr::mutate(
+      metric = factor(metric, levels = c("precision", "recall"), 
+                      labels = c("Precision", "Recall")),
+      value_pct = round(value * 100, 1),
+      label_text = paste0(value_pct, "%")
+    )
+  
+  # Create the plot
+  p <- ggplot(plot_data, aes(x = VAF_bin, y = value, color = caller, linetype = metric, group = interaction(caller, metric))) +
+    # Add lines connecting points
+    geom_line(size = line_size, alpha = 0.8) +
+    # Add points
+    geom_point(size = point_size, alpha = 0.9) +
+    # Add text labels showing percentages
+    geom_text(aes(label = label_text), 
+              vjust = -0.5, 
+              size = text_size, 
+              show.legend = FALSE,
+              fontface = "bold") +
+    # Set y-axis to 0-1 range
+    scale_y_continuous(limits = c(0, 1.05), 
+                       breaks = seq(0, 1, 0.25),
+                       labels = scales::percent_format(accuracy = 1)) +
+    # Linetype for metrics
+    scale_linetype_manual(values = c("Precision" = "solid", "Recall" = "dashed"),
+                          name = "Metric") +
+    # Color scheme for callers (you may want to adjust these colors based on your callers)
+    scale_color_manual(name = "Caller", values = method_colors) +
+    # Labels and title
+    labs(
+      title = title,
+      x = "VAF Bin",
+      y = "Performance"
+    ) +
+    # Theme
+    theme_bw()
+  p
+  
+  return(p)
+}
+
+
+plot_multicaller_rmse_vaf <- function(performance_data, 
+                                      title = "RMSE Across VAF Bins",
+                                      text_size = 3.5,
+                                      point_size = 1.5,
+                                      line_size = 1) {
+  
+  # Check if required columns exist
+  required_cols <- c("VAF_bin", "rmse", "caller")
+  if (!all(required_cols %in% colnames(performance_data))) {
+    stop("Required columns missing from performance table: ", 
+         paste(setdiff(required_cols, colnames(performance_data)), collapse = ", "))
+  }
+  
+  # Prepare data for plotting
+  plot_data <- performance_data %>%
+    dplyr::select(VAF_bin, rmse, caller) %>%
+    dplyr::filter(!is.na(VAF_bin), !is.na(rmse)) %>%
+    dplyr::mutate(
+      rmse_rounded = round(rmse, 3),
+      label_text = as.character(rmse_rounded)
+    )
+  
+  # Create the plot
+  p <- ggplot(plot_data, aes(x = VAF_bin, y = rmse, color = caller, group = caller)) +
+    # Add lines connecting points
+    geom_line(size = line_size, alpha = 0.8) +
+    # Add points
+    geom_point(size = point_size, alpha = 0.9) +
+    # Add text labels showing RMSE values
+    # geom_text(aes(label = label_text), 
+    #           vjust = -0.5, 
+    #           size = text_size, 
+    #           show.legend = FALSE,
+    #           fontface = "bold") +
+    # Set y-axis to start from 0
+    scale_y_continuous(limits = c(0, max(plot_data$rmse, na.rm = TRUE) * 1.1)) +
+    # Color scheme for callers
+    scale_color_manual(name = "Caller", values = method_colors) +
+    # Labels and title
+    labs(
+      title = title,
+      x = "VAF Bin",
+      y = "RMSE"
+    ) +
+    # Theme
+    theme_bw()
+  
+  p
+}

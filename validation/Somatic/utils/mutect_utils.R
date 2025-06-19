@@ -100,15 +100,15 @@ parse_mutect2 = function(vcf, sample_id, filter_mutations = FALSE, chromosome = 
   calls[[sample_id_vcf]]$mutations[,c(COLS_TO_KEEP)]
 }
 
-process_mutect2_results = function(gt_path, chromosome, outdir, vcf_path_mutect) {
+process_mutect2_results = function(gt_path, spn, purity, coverage, chromosome, base_path, outdir) {
   # Extract purity and coverage values from the file path
-  spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
-  purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
-  coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
+  # spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
+  # purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
+  # coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
   combination = paste0(coverage, "x_", purity, "p")
-  folder_path <- file.path(outdir, spn, combination, "process")
   
-  sample_names = list.files(folder_path, full.names = F)
+  sample_names = list.files(file.path(outdir, spn, combination, "process"), full.names = F)
+  
   folder_path <- file.path(outdir, spn, combination, "mutect2")
   dir.create(folder_path, recursive = T, showWarnings = T)
   
@@ -118,11 +118,13 @@ process_mutect2_results = function(gt_path, chromosome, outdir, vcf_path_mutect)
     sample_path <- file.path(folder_path, sample)
     dir.create(sample_path, recursive = TRUE, showWarnings = FALSE)
     
-    vcf_path = file.path(mutect_vcfs_dir, paste0(spn, ".mutect2.filtered.vcf.gz"))
+    vcf_path = get_sarek_vcf_file(spn, sample, coverage, purity, caller = "mutect2", type = "tumour", basedir = base_path)$vcf
+    
+    #vcf_path = file.path(mutect_vcfs_dir, paste0(spn, ".mutect2.filtered.vcf.gz"))
     vcf = vcfR::read.vcfR(vcf_path)
     
     message(paste0("Parsing ", chromosome, "..."))
-    caller_res = parse_mutect2(vcf, sample_id = sample, chromosome = chromosome)
+    caller_res = parse_mutect2(vcf = vcf, sample_id = sample, chromosome = paste0("chr", chromosome))
     
     for (mutation in c("SNV", "INDEL")) {
       message(paste0("Parsing ", mutation, " mutations..."))
@@ -138,7 +140,7 @@ process_mutect2_results = function(gt_path, chromosome, outdir, vcf_path_mutect)
       }
       
       # Save the processed mutation data
-      file_name <- file.path(mut_path, paste0(chromosome, ".rds"))
+      file_name <- file.path(mut_path, paste0(paste0("chr", chromosome), ".rds"))
       saveRDS(mut_data, file_name)
     }
     

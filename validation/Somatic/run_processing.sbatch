@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=THIN
+#SBATCH --partition=EPYC
 #SBATCH --mem=30GB
 #SBATCH --time=4:00:00
 #SBATCH --nodes=1
@@ -9,11 +9,13 @@
 #SBATCH --array=1-24
 
 # Load R module
-module load R/4.4.1
+#source /u/cdslab/gsantacatterina/miniconda3/etc/profile.d/conda.sh
+conda activate process
 
-SPN='SPN03'
-COV='100'
-PUR='0.6'
+
+SPN='SPN04'
+COV='50'
+PUR='0.9'
 
 # Map SLURM_ARRAY_TASK_ID to chromosome names
 if [[ ${SLURM_ARRAY_TASK_ID} -le 22 ]]; then
