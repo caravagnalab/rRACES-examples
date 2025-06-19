@@ -53,7 +53,7 @@ dir.create(outdir, recursive = T, showWarnings = F)
 # Preparing report
 message("Parsing combination: purity=", purity, ", cov=", coverage)
 sample_id = samples[1]
-mut_type = "INDEL"
+mut_type = "SNV"
 
 for (sample_id in samples) {
   message("    Working with sample : ", sample_id)

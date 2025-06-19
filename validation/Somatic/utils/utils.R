@@ -5,8 +5,6 @@ require(ggVennDiagram)
 require(ggalluvial)
 require(ggplotify)
 
-
-
 safe_cor_test <- function(x, y, min_points = 3) {
   # Remove NA values
   valid_idx <- !is.na(x) & !is.na(y) & is.finite(x) & is.finite(y)
@@ -19,13 +17,13 @@ safe_cor_test <- function(x, y, min_points = 3) {
   }
   
   # Check for zero variance (constant values)
-  if (var(x_clean) == 0 || var(y_clean) == 0) {
+  if (stats::var(x_clean) == 0 || stats::var(y_clean) == 0) {
     return(NA_real_)
   }
   
   # Try correlation test with error handling
   tryCatch({
-    cor_result <- cor.test(x_clean, y_clean)
+    cor_result <- stats::cor.test(x_clean, y_clean)
     return(cor_result$estimate)
   }, error = function(e) {
     return(NA_real_)
@@ -64,7 +62,7 @@ string_difference <- function(str1, str2) {
 
 merge_datasets <- function(snp_caller, ground_truth, min_vaf) {
   df <- snp_caller %>%
-    full_join(ground_truth, by = c("mutationID"), suffix = c("_caller", "_truth")) %>%
+    dplyr::full_join(ground_truth, by = c("mutationID"), suffix = c("_caller", "_truth")) %>%
     dplyr::mutate(
       positive_truth = !is.na(VAF_truth) & VAF_truth > min_vaf,
       positive_call = !is.na(VAF_caller) & VAF_caller > min_vaf,
@@ -83,7 +81,7 @@ merge_datasets <- function(snp_caller, ground_truth, min_vaf) {
 
 get_colors = function(df) {
   all_levels <- levels(factor(df$FILTER))
-  full_colors <- setNames(RColorBrewer::brewer.pal(8, "Set2")[1:length(all_levels)], all_levels)  
+  full_colors <- stats::setNames(RColorBrewer::brewer.pal(8, "Set2")[1:length(all_levels)], all_levels)  
   
   original_names = names(full_colors)
   if ("PASS" %in% names(full_colors)) {
@@ -101,11 +99,11 @@ get_colors = function(df) {
 
 get_sample_info <- function(vcf_path) {
   # Extract caller name from vcf_path
-  caller_match <- regexpr("strelka|races|freebayes|mutect2|haplotypecaller", vcf_path)
-  caller_name <- ifelse(caller_match != -1, regmatches(vcf_path, caller_match), NA)
+  caller_match <- base::regexpr("strelka|races|freebayes|mutect2|haplotypecaller", vcf_path)
+  caller_name <- ifelse(caller_match != -1, base::regmatches(vcf_path, caller_match), NA)
   
   # Extract sample name from vcf_path
-  sample_match <- regmatches(vcf_path, regexpr("SPN[0-9]+_[0-9]+\\.[0-9]+", vcf_path))
+  sample_match <- base::regmatches(vcf_path, base::regexpr("SPN[0-9]+_[0-9]+\\.[0-9]+", vcf_path))
   sample_name <- ifelse(length(sample_match) > 0, sample_match, NA)
   
   list(sample_name = sample_name, caller_name = caller_name)
@@ -137,7 +135,7 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   # Filters with frequency < 5% are grouped as "Other"
   caller_res <- caller_res %>% 
     dplyr::group_by(FILTER) %>% 
-    dplyr::mutate(f = n() / nrow(caller_res)) %>%  # Calculate filter frequency
+    dplyr::mutate(f = dplyr::n() / nrow(caller_res)) %>%  # Calculate filter frequency
     dplyr::mutate(FILTER = ifelse(FILTER == "PASS" | f > .05, FILTER, "Other"))
   
   ###
@@ -223,7 +221,7 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Generate Venn diagram showing overlap between caller and ground truth
   p_venn_all <- plot_venn_diagram(merged_df, sample_info$caller_name) +
-    ggtitle("All called mutations")
+    ggplot2::ggtitle("All called mutations")
   
   # Calculate comprehensive performance metrics (precision, recall, F1, etc.)
   metrics_all <- compute_metrics_from_vectors(y_true, y_pred)
@@ -245,7 +243,7 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Generate Venn diagram for PASS mutations only
   p_venn_pass <- plot_venn_diagram(merged_df_pass, sample_info$caller_name) +
-    ggtitle("Only PASS mutations")
+    ggplot2::ggtitle("Only PASS mutations")
   
   # Calculate performance metrics for PASS mutations
   metrics_pass <- compute_metrics_from_vectors(y_true_pass, y_pred_pass)
@@ -281,7 +279,7 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Show how metrics change across different VAF thresholds
   metrics_over_VAF = plot_metric_over_VAF_threshold(seq_res_long, caller_res, only_pass = TRUE) +
-    geom_vline(xintercept = min_vaf, linetype = "dashed")  # Mark current threshold
+    ggplot2::geom_vline(xintercept = min_vaf, linetype = "dashed")  # Mark current threshold
   
   ###
   # CORRELATION ANALYSIS FOR TRUE POSITIVES
@@ -293,9 +291,9 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
     dplyr::filter(true_positive) %>%  # Only analyze true positive variants
     dplyr::group_by(chr_caller) %>%   # Group by chromosome
     dplyr::summarise(
-      n_variants = n(),                                    # Count of variants per chromosome
-      cor_coeff = safe_cor_test(VAF_caller, VAF_truth),   # Correlation coefficient
-      RMSE = safe_rmse(VAF_truth, VAF_caller),            # Root mean square error
+      n_variants = dplyr::n(),                             # Count of variants per chromosome
+      cor_coeff = safe_cor_test(VAF_caller, VAF_truth),    # Correlation coefficient
+      RMSE = safe_rmse(VAF_truth, VAF_caller),             # Root mean square error
       .groups = 'drop'
     )
   
@@ -332,14 +330,14 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   # This layout used individual coverage/VAF plots instead of comparison plots
   # Kept for reference in case the original layout is needed
   
-  # report_plot <- free(races_coverage) + free(caller_coverage) + free(p_filter_dist) +
-  #   free(races_VAF) + free(caller_VAF) + free(p_false_negative_VAF_dist) +
-  #   free(p_scatter_DP_all) + free(p_scatter_VAF_all) + free(p_venn_all) +
-  #   free(p_scatter_DP_pass) + free(p_scatter_VAF_pass) + free(p_venn_pass) +
-  #   free(p_metrics) + free(metrics_over_VAF) +
-  #   plot_layout(design = design) +
-  #   plot_annotation(title, subtitle) & 
-  #   theme(text = element_text(size = 12))
+  # report_plot <- patchwork::free(races_coverage) + patchwork::free(caller_coverage) + patchwork::free(p_filter_dist) +
+  #   patchwork::free(races_VAF) + patchwork::free(caller_VAF) + patchwork::free(p_false_negative_VAF_dist) +
+  #   patchwork::free(p_scatter_DP_all) + patchwork::free(p_scatter_VAF_all) + patchwork::free(p_venn_all) +
+  #   patchwork::free(p_scatter_DP_pass) + patchwork::free(p_scatter_VAF_pass) + patchwork::free(p_venn_pass) +
+  #   patchwork::free(p_metrics) + patchwork::free(metrics_over_VAF) +
+  #   patchwork::plot_layout(design = design) +
+  #   patchwork::plot_annotation(title, subtitle) & 
+  #   ggplot2::theme(text = ggplot2::element_text(size = 12))
   
   ###
   # FINAL REPORT ASSEMBLY
@@ -347,14 +345,14 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Combine all plots into a comprehensive report using patchwork
   # free() function allows each plot to maintain its own scales
-  report_plot <- free(DP_density) + free(DP_ecdf) + free(p_filter_dist) +
-    free(VAF_density) + free(VAF_ecdf) + free(p_false_negative_VAF_dist) +
-    free(p_scatter_DP_all) + free(p_scatter_VAF_all) + free(p_venn_all) +
-    free(p_scatter_DP_pass) + free(p_scatter_VAF_pass) + free(p_venn_pass) +
-    free(precision_recall_plot) + free(metrics_over_VAF) +
-    plot_layout(design = design) +
-    plot_annotation(title, subtitle) & 
-    theme(text = element_text(size = 12))
+  report_plot <- patchwork::free(DP_density) + patchwork::free(DP_ecdf) + patchwork::free(p_filter_dist) +
+    patchwork::free(VAF_density) + patchwork::free(VAF_ecdf) + patchwork::free(p_false_negative_VAF_dist) +
+    patchwork::free(p_scatter_DP_all) + patchwork::free(p_scatter_VAF_all) + patchwork::free(p_venn_all) +
+    patchwork::free(p_scatter_DP_pass) + patchwork::free(p_scatter_VAF_pass) + patchwork::free(p_venn_pass) +
+    patchwork::free(precision_recall_plot) + patchwork::free(metrics_over_VAF) +
+    patchwork::plot_layout(design = design) +
+    patchwork::plot_annotation(title, subtitle) & 
+    ggplot2::theme(text = ggplot2::element_text(size = 12))
   
   ###
   # RETURN RESULTS
@@ -380,7 +378,7 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   # Group filter categories for better visualization
   caller_res <- caller_res %>% 
     dplyr::group_by(FILTER) %>% 
-    dplyr::mutate(f = n() / nrow(caller_res)) %>% 
+    dplyr::mutate(f = dplyr::n() / nrow(caller_res)) %>% 
     dplyr::mutate(FILTER = ifelse(FILTER == "PASS" | f > .05, FILTER, "Other"))
   
   if (only_pass) {
@@ -402,7 +400,7 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   merged_df$vaf_rel_diff_pct <- abs(merged_df$VAF_truth - merged_df$VAF_caller) / merged_df$VAF_truth * 100
   
   # Classify variants based on detection and VAF accuracy
-  merged_df$detection_status <- case_when(
+  merged_df$detection_status <- dplyr::case_when(
     # True Positives: Both must have VAF > threshold AND VAF difference within tolerance
     !is.na(merged_df$VAF_truth) & !is.na(merged_df$VAF_caller) & 
       merged_df$VAF_truth > min_vaf_threshold & merged_df$VAF_caller > min_vaf_threshold &
@@ -433,17 +431,17 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   
   # Calculate performance metrics by VAF bin
   performance_by_bin <- merged_df %>%
-    filter(!is.na(VAF_bin) & VAF_truth > min_vaf_threshold) %>%  # Only consider variants above threshold for main analysis
-    group_by(VAF_bin) %>%
-    summarise(
-      total_truth = n(),
+    dplyr::filter(!is.na(VAF_bin) & VAF_truth > min_vaf_threshold) %>%  # Only consider variants above threshold for main analysis
+    dplyr::group_by(VAF_bin) %>%
+    dplyr::summarise(
+      total_truth = dplyr::n(),
       true_positives = sum(detection_status == "True Positive"),
       false_negatives = sum(detection_status == "False Negative"),
       vaf_discordant = sum(!is.na(VAF_caller) & VAF_caller > min_vaf_threshold & 
                              vaf_rel_diff_pct > vaf_tolerance_pct, na.rm = TRUE),
       .groups = 'drop'
     ) %>%
-    mutate(
+    dplyr::mutate(
       sensitivity = true_positives / (true_positives + false_negatives),
       sensitivity_pct = round(sensitivity * 100, 1)
     )
@@ -451,28 +449,28 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   # Calculate True Negatives and False Positives by VAF bin
   # For TN: group by the truth VAF bin (even though below threshold)
   tn_by_bin <- merged_df %>%
-    filter(detection_status == "True Negative") %>%
-    group_by(VAF_bin_tn) %>%
-    summarise(true_negatives = n(), .groups = 'drop') %>%
-    rename(VAF_bin = VAF_bin_tn)
+    dplyr::filter(detection_status == "True Negative") %>%
+    dplyr::group_by(VAF_bin_tn) %>%
+    dplyr::summarise(true_negatives = dplyr::n(), .groups = 'drop') %>%
+    dplyr::rename(VAF_bin = VAF_bin_tn)
   
   # For FP: assign to VAF bins based on their called VAF
   fp_by_bin <- merged_df %>%
-    filter(detection_status == "False Positive") %>%
-    mutate(VAF_bin_fp = cut(VAF_caller, 
-                            breaks = vaf_bins, 
-                            include.lowest = TRUE,
-                            right = FALSE,
-                            labels = paste0(vaf_bins[-length(vaf_bins)]*100, "-", vaf_bins[-1]*100, "%"))) %>%
-    group_by(VAF_bin_fp) %>%
-    summarise(false_positives = n(), .groups = 'drop') %>%
-    rename(VAF_bin = VAF_bin_fp)
+    dplyr::filter(detection_status == "False Positive") %>%
+    dplyr::mutate(VAF_bin_fp = cut(VAF_caller, 
+                                   breaks = vaf_bins, 
+                                   include.lowest = TRUE,
+                                   right = FALSE,
+                                   labels = paste0(vaf_bins[-length(vaf_bins)]*100, "-", vaf_bins[-1]*100, "%"))) %>%
+    dplyr::group_by(VAF_bin_fp) %>%
+    dplyr::summarise(false_positives = dplyr::n(), .groups = 'drop') %>%
+    dplyr::rename(VAF_bin = VAF_bin_fp)
   
   # Merge TN and FP counts with performance metrics
   performance_by_bin <- performance_by_bin %>%
-    left_join(tn_by_bin, by = "VAF_bin") %>%
-    left_join(fp_by_bin, by = "VAF_bin") %>%
-    mutate(
+    dplyr::left_join(tn_by_bin, by = "VAF_bin") %>%
+    dplyr::left_join(fp_by_bin, by = "VAF_bin") %>%
+    dplyr::mutate(
       true_negatives = ifelse(is.na(true_negatives), 0, true_negatives),
       false_positives = ifelse(is.na(false_positives), 0, false_positives),
       # Calculate FPR and Precision per bin
@@ -487,7 +485,7 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   
   # Handle cases where denominator is 0 (no TN + FP in a bin)
   performance_by_bin <- performance_by_bin %>%
-    mutate(
+    dplyr::mutate(
       fpr = ifelse((false_positives + true_negatives) == 0, NA, fpr),
       fpr_pct = ifelse(is.na(fpr), NA, fpr_pct),
       specificity = ifelse((false_positives + true_negatives) == 0, NA, specificity),
@@ -509,20 +507,20 @@ analyze_vaf_performance <- function(seq_res_long, caller_res, only_pass,
   
   # Calculate VAF accuracy for true positives
   vaf_accuracy_by_bin <- merged_df %>%
-    filter(detection_status == "True Positive") %>%
-    group_by(VAF_bin) %>%
-    summarise(
-      n_variants = n(),
-      vaf_correlation = ifelse(n() > 1, cor(VAF_truth, VAF_caller, use = "complete.obs"), NA),
+    dplyr::filter(detection_status == "True Positive") %>%
+    dplyr::group_by(VAF_bin) %>%
+    dplyr::summarise(
+      n_variants = dplyr::n(),
+      vaf_correlation = ifelse(dplyr::n() > 1, stats::cor(VAF_truth, VAF_caller, use = "complete.obs"), NA),
       mean_abs_error = mean(abs(VAF_truth - VAF_caller), na.rm = TRUE),
-      median_abs_error = median(abs(VAF_truth - VAF_caller), na.rm = TRUE),
+      median_abs_error = stats::median(abs(VAF_truth - VAF_caller), na.rm = TRUE),
       rmse = sqrt(mean((VAF_truth - VAF_caller)^2, na.rm = TRUE)),
       .groups = 'drop'
     )
   
   # Combine results
   results <- performance_by_bin %>%
-    left_join(vaf_accuracy_by_bin, by = "VAF_bin")
+    dplyr::left_join(vaf_accuracy_by_bin, by = "VAF_bin")
   
   return(list(
     performance_table = results,

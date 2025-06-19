@@ -9,7 +9,7 @@ source("utils/utils.R")
 source("utils/plot_utils.R")
 
 option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN04'),
-                    make_option(c("--purity"), type = "character", default = '0.6'),
+                    make_option(c("--purity"), type = "character", default = '0.3'),
                     make_option(c("--coverage"), type = "character", default = '50'))
 
 opt_parser <- OptionParser(option_list = option_list)
