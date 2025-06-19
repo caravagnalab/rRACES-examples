@@ -339,6 +339,7 @@ get_tumourevo_signatures <- function(
     output[['nmf_Lasso_out']] <- file.path(MAIN_PATH, "SCOUT_nmf_Lasso_out.rds")
     output[['cv_means_mse']] <- file.path(MAIN_PATH, "SCOUT_cv_means_mse.rds")
     output[['best_params_config']] <- file.path(MAIN_PATH, "SCOUT_best_params_config.rds")
+    output[['mut_counts']] <- file.path(MAIN_PATH, "SCOUT_mut_counts.rds")
     
     return(output)
   } else {
