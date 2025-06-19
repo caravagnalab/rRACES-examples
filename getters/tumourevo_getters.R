@@ -146,6 +146,25 @@ viber_input_list <- function(input_list) {
   return(output_list)
 }
 
+qc_input_list <- function(input_list) {
+  output_list <- list()
+  
+  for (i in seq_along(input_list)) {
+    file_path <- input_list[[i]]
+    file_name <- basename(file_path)
+    
+    # Remove "SCOUT_SPNxx_" prefix (xx can be any number)
+    name_without_prefix <- sub("^SCOUT_SPN\\d+_SPN\\d+_SPN\\d+_\\d+\\.\\d+_", "", file_name)
+    
+    # Replace dots in extensions with underscores
+    name_cleaned <- gsub("\\.", "_", name_without_prefix)
+    
+    output_list[[name_cleaned]] <- file_path
+  }
+  
+  return(output_list)
+}
+
 
 ################################################################################
 
@@ -268,10 +287,13 @@ get_tumourevo_qc <- function(
     all_entries <- list.dirs(MAIN_PATH, full.names = FALSE, recursive = FALSE)
     matching_dir <- all_entries[grepl(sample, all_entries)]
     MAIN_PATH <- file.path(MAIN_PATH, matching_dir)
+    output <- get_named_file_list(MAIN_PATH)
+    output <- qc_input_list(output)
+  } else {
+    output <- get_named_file_list(MAIN_PATH)
+    output <- viber_input_list(output)
   }
-  output <- get_named_file_list(MAIN_PATH)
-  
-  output <- viber_input_list(output)
+
   
   return(output)
   
