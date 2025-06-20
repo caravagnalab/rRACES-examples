@@ -1,11 +1,5 @@
 
-
-process_seq_results <- function(gt_path, chromosome, outdir) {
-  # Extract purity and coverage values from the file path
-  spn <- gsub(".*SCOUT/(SPN[0-9]+).*", "\\1", gt_path)
-  purity <- gsub(".*purity_([0-9.]+).*", "\\1", gt_path)
-  coverage <- gsub(".*coverage_([0-9]+).*", "\\1", gt_path)
-  
+process_seq_results <- function(gt_path, spn, purity, coverage, chromosome, base_path, outdir) {
   # Construct the output folder path
   combination = paste0(coverage, "x_", purity, "p")
   #combination <- paste0("purity_", purity, "_coverage_", coverage, "x")

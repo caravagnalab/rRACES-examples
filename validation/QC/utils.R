@@ -59,10 +59,10 @@ plot_qc <- function(cnaqc_list, type = 'simple_clonal'){
 get_statistics_qc <- function(cnaqc_list, purity) {
   tt <- lapply(names(cnaqc_list), function(sample) {
     x <- cnaqc_list[[sample]]
-    s <- stringr::str_split(sample, '_') %>% unlist()
+    s <- sample
     
     tt = dplyr::tibble(
-      sample = paste0(s[2], '_', s[3]),
+      sample = s,
       n_muts = x$n_mutations, 
       passed_muts = paste0(x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(), ' (', (round(x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow() / x$mutations %>% nrow(), digits = 2))*100, '%)'), 
       passed_muts0 = x$mutations %>% dplyr::filter(QC_PASS == TRUE) %>% nrow(),
@@ -84,7 +84,7 @@ get_statistics_qc <- function(cnaqc_list, purity) {
                                           str_ends(info, "muts") ~ "mutations", 
                                           str_ends(info, "cnas") ~ "cnas", 
                                           str_detect(info, "purity") ~ "purity")) %>% 
-      dplyr::mutate(sample = paste0(s[2], '_', s[3]))
+      dplyr::mutate(sample = s)
     
     return(tt)
   }) %>% dplyr::bind_rows() 

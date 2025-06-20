@@ -8,13 +8,30 @@ import time
 import subprocess
 import argparse
 
+write_tumour_type_file="""#!/bin/bash
+#SBATCH --partition={PARTITION}
+#SBATCH --job-name=tumour_type
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1G
+#SBATCH --time=01:00
+#SBATCH --output=tumour_type_%J.out 
+#SBATCH --error=tumour_type_%J.err
+#SBATCH -A {ACCOUNT}
+
+echo ${DIR}/../references/SCOUT_tumour_types.txt
+tumour_type=$(grep ${SPN} ${DIR}/../references/SCOUT_tumour_types.txt | cut -f 3)
+echo $tumour_type > "${BASEDIR}/tumour_type.txt"
+"""
+
 ## This part is currently run sequentially
 
 merging_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=5
-#SBATCH --time=2:00:00
+#SBATCH --time=6:00:00
 #SBATCH --mem=80GB
 
 module load singularity
@@ -29,7 +46,7 @@ do
 done
 """
 
-merging_R_script="""rm(list = ls())
+merging_R_script=merging_R_script="""rm(list = ls())
 library(dplyr)
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -50,8 +67,8 @@ initial_cpu <- ps::ps_cpu_times(p_info)
 initial_mem <- ps::ps_memory_info(p_info)["rss"] / 1024^3
 if (type=="tumour"){
   muts_dir <- paste0(input_dir,"/tumour/purity_",purity,"/data/mutations/")
-  max_coverage <- as.double(args[6])
-  num_of_lots <- as.double(args[7])
+  max_coverage <- as.double(args[6]) #200 ## this is hard-coded now
+  num_of_lots <- as.double(args[7]) #40 ## this is hard-coded now
   coverage<-(max_coverage*lot_end)/num_of_lots
   data <- list()
  
@@ -168,7 +185,6 @@ gender_shell_script="""#!/bin/bash
 #SBATCH --mem=40GB
 
 module load singularity
-echo "singularity exec --bind ${SINGULARITY_BIND} --no-home ${IMAGE} Rscript ${DIR}/ProCESS_subject_gender.R ${PHYLO_FOREST}"
 singularity exec --bind ${SINGULARITY_BIND} --no-home ${IMAGE} Rscript ${DIR}/ProCESS_subject_gender.R ${PHYLO_FOREST}
 """
 
@@ -582,8 +598,8 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-nextlow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination -profile singularity --igenomes_base {IGENOMES_BASE} -c $config
+nextflow run nf-core/sarek -r 3.5.1 --input $input \
+    --outdir $output_dir_combination -profile singularity -c $config
 """
 
 sarek_file_normal_launcher="""#!/bin/bash
@@ -608,8 +624,8 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-nextlow run nf-core/sarek -r 3.5.1 --input $input \
-    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity --igenomes_base {IGENOMES_BASE} -c $config
+nextflow run nf-core/sarek -r 3.5.1 --input $input \
+    --outdir $output_dir_combination --tools haplotypecaller,freebayes -profile singularity -c $config
 """
 
 
@@ -635,10 +651,39 @@ output_base_dir={SAREK_OUT}
 output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
-nextlow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
+nextflow run nf-core/sarek -r 3.5.1 --genome GATK.GRCh38 --input $input \
     --step variant_calling --tools cnvkit,freebayes,strelka,haplotypecaller,ascat,mutect2 --joint_mutect2 true \
-    --outdir $output_dir_combination -profile singularity --igenomes_base {IGENOMES_BASE} -c $config
+    --outdir $output_dir_combination -profile singularity -c $config
 """
+
+sequenza_launcher="""#!/bin/bash
+#SBATCH --partition={PARTITION}
+#SBATCH --job-name=sequenza_{JOB_NAME}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=20G
+#SBATCH --time=24:00:00
+#SBATCH --output=sequenza_{JOB_NAME}_%J.out 
+#SBATCH --error=sequenza_{JOB_NAME}_%J.err
+#SBATCH -A {ACCOUNT}
+
+module load java
+module load singularity
+
+input_dir={INPUT_DIR}
+input="${input_dir}/sarek_variant_calling_{JOB_NAME}.csv"
+
+output_base_dir={SAREK_OUT}
+output_dir_combination="${output_base_dir}/{JOB_NAME}"
+
+config={CONFIG}
+base={PROCESS_DIR}
+
+nextflow run $base/main.nf -profile singularity --input $input --outdir $output_dir_combination -c $config
+"""
+
+
 
 tumourevo_launcher="""#!/bin/bash
 #SBATCH --partition={PARTITION}
@@ -663,7 +708,7 @@ output_dir_combination="${output_base_dir}/{JOB_NAME}"
 
 config={CONFIG}
 
-nextlow run {TUMOUREVO_BASEDIR}/main.nf --input $input \
+nextflow run {TUMOUREVO_BASEDIR}/main.nf --input $input \
     --tools mobster,viber,pyclone-vi,sparsesignatures,sigprofiler \
     --genome GRCh38 \
     --fasta {FASTA_PATH} \
@@ -764,7 +809,10 @@ def write_sarek_sample_variant_calling_lines(sarek_file, SPN, seq_type, sample_n
     
 def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverage, purity, sarek_output_dir, cancer_type = 'PANCANCER'):
     variant_caller = combination[0]
-    path = f'{sarek_output_dir}/{coverage}x_{purity}p/variant_calling'
+    cna_caller = combination[1]
+    
+    base_path = f'{sarek_output_dir}/{coverage}x_{purity}p'
+    path = f'{base_path}/variant_calling'
     
     if variant_caller == 'mutect2':
         rel_path = f'{path}/{variant_caller}/{SPN}'
@@ -776,15 +824,29 @@ def write_tumourevo_lines(tumourevo_file, SPN, sample_name, combination, coverag
         rel_path = f'{path}/{variant_caller}/{sample_name}_vs_normal_sample'
         name = f'{sample_name}_vs_normal_sample.freebayes.vcf.gz'
     
-    path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
-    segment = f'{sample_name}_vs_normal_sample.segments.txt'
-    purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
-    cn_caller = 'ASCAT'
-    tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
+    if cna_caller == 'ascat':
+        path_cn = f'{path}/ascat/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample.segments.txt'
+        purity = f'{sample_name}_vs_normal_sample.purityploidy.txt'
+        cn_caller = 'ASCAT'
+        
+    elif cna_caller == 'sequenza':
+        path_cn = f'{path}/sequenza/{sample_name}_vs_normal_sample'
+        segment = f'{sample_name}_vs_normal_sample_segments.txt'
+        purity = f'{sample_name}_vs_normal_sample_confints_CP.txt'
+        cn_caller = 'sequenza'
+    
+    if  variant_caller == 'mutect2':
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type}')
+    else:
+        cram_tumour = f'{base_path}/preprocessing/recalibrated/{sample_name}/{sample_name}.recal.cram'
+        tumourevo_file.write(f'\nSCOUT,{SPN},{SPN}_{sample_name},{SPN}_normal_sample,{rel_path}/{name},{rel_path}/{name}.tbi,{path_cn}/{segment},{path_cn}/{purity},{cn_caller},{cancer_type},{cram_tumour},{cram_tumour}.crai')
+
+
 
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
-                                     description=('Produces 12 combiantions of purity and coverages for a SPN, toghter with nf-core/sarek and nf-core/tumourevo launcher and samplesheet files.'))
+                                     description=('Produces the cohorts of a SPN'))
     parser.add_argument('SPN', type=str, help='The SPN name (e.g., SPN01)')
     parser.add_argument('phylogenetic_forest', type=str,
                         help = ('A ProCESS phylogenetic forest'))
@@ -799,7 +861,7 @@ if (__name__ == '__main__'):
                         help="The nodes' scratch directory")
     parser.add_argument('-j', '--parallel_jobs', type=int, default=40,
                         help="The number of parallel jobs")
-    parser.add_argument('-x', '--exclude', type=str, default="",
+    parser.add_argument('-x', '--exclude', type=str, default="genoa011,genoa008",
                         help=("A list of nodes to exclude from the "
                               + "computation"))
     parser.add_argument('-F', '--force_completed_jobs', action='store_true',
@@ -813,11 +875,11 @@ if (__name__ == '__main__'):
     parser.add_argument('-I', '--image_path', type=str, default="",
                         help="Path to singularity image")
     parser.add_argument('-C', '--config', type=str, default="",
-                        help="Path to nextflow config file",required=True)
+                        help="Path to nextflow config file")
     parser.add_argument('-SD', '--sarek_output_dir', type=str, default="",
-                       help="Path to sarek launching dir",required=True)
+                       help="Path to sarek launching dir")
     parser.add_argument('-TD', '--tumourevo_output_dir', type=str, default="",
-                       help="Path to tumourevo result path",required=True)
+                       help="Path to tumourevo result path")
     parser.add_argument('-b', '--singularity_binding', type=str, default="",
                        help="The singularity binding in the form /path:/path",required=True)
     parser.add_argument('-TB', '--tumourevo_base_dir', type=str, default="",
@@ -828,8 +890,7 @@ if (__name__ == '__main__'):
                        help="The version of VEP cache",required=True)
     parser.add_argument('-FP', '--fasta_path', type=str, default="",
                        help="The full path to fasta reference genome",required=True)
-    parser.add_argument('-IB', '--igenomes_base', type=str, default="",
-                       help="The full path to igenome base directory",required=True)
+   
 
     cohorts = { 'normal': {
                     'max_coverage': 30,
@@ -867,8 +928,8 @@ if (__name__ == '__main__'):
 
         cmd = ['sbatch', '--account={}'.format(account),
             '--partition={}'.format(args.partition),
-            ('--export=PHYLO_FOREST={},IMAGE={},DIR={},SINGULARITY_BIND={}').format(args.phylogenetic_forest,
-                                                args.image_path, curr_dir,args.singularity_binding),
+            ('--export=PHYLO_FOREST={},IMAGE={},DIR={}').format(args.phylogenetic_forest,
+                                                args.image_path, curr_dir),
             './ProCESS_subject_gender.sh']
 
         subprocess.run(cmd)
@@ -890,6 +951,23 @@ if (__name__ == '__main__'):
     
     sarek_dir = os.path.join(args.output_dir, 'sarek')
     tumourevo_dir = os.path.join(args.output_dir, 'tumourevo')
+
+    tumour_type_file=os.path.join(os.path.dirname(args.phylogenetic_forest),"tumour_type.txt")
+
+    with open('ProCESS_tumour_type.sh', 'w') as outstream:
+        outstream.write(write_tumour_type_file)
+
+    cmd = ['sbatch', '--account={}'.format(account),
+          '--partition={}'.format(args.partition),
+          ('--export=DIR={},SPN={},BASEDIR={},PARTITION={}').format(curr_dir,args.SPN,
+                                                os.path.dirname(args.phylogenetic_forest),partition),
+          './ProCESS_tumour_type.sh']
+
+    subprocess.run(cmd)
+
+    with open(tumour_type_file) as cancer_type_file:
+        cancer_type = cancer_type_file.read().strip()
+
     
     config_file = args.config
     if not os.path.exists(sarek_dir):
@@ -975,7 +1053,7 @@ if (__name__ == '__main__'):
             while (len(completed_ids) != len(submitted)):
                 time.sleep(60)
                 completed_ids = get_completed_jobs(output_dir, lot_prefix)
-            print(seq_type) 
+
             if seq_type == 'normal':
                 with open(gender_filename, "r") as gender_file:
                     subject_gender = gender_file.read().strip('\n')
@@ -994,8 +1072,6 @@ if (__name__ == '__main__'):
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{CONFIG}', str(config_file))
                 sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
-		sarek_file_normal_launcher = sarek_file_normal_launcher.replace('{IGENOMES_BASE}', str(args.igenomes_base))
-		    
 
                 with open(f'{sarek_dir}/sarek_mapping_vc_normal.sh', 'w') as outstream:
                     outstream.write(sarek_file_normal_launcher)
@@ -1047,12 +1123,11 @@ if (__name__ == '__main__'):
                     job_id=f'{cohort_cov}x_{purity}p'
 
                     sarek_file_launcher = sarek_file_launcher.replace('{ACCOUNT}', str(account))
-                    sarek_file_launcher = sarek_file_launcher.replace('{PARTITION}', str(args.partition))
+                    sarek_file_launcher = sarek_file_launcher.replace('{PARTITION}', str(partition))
                     sarek_file_launcher = sarek_file_launcher.replace('{JOB_NAME}', str(job_id))
                     sarek_file_launcher = sarek_file_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                     sarek_file_launcher = sarek_file_launcher.replace('{CONFIG}', str(config_file))
-                    sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
-		    sarek_file_launcher = sarek_file_launcher.replace('{IGENOMES_BASE}', str(args.IGENOMES_BASE))
+                    sarek_file_launcher = sarek_file_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir)) 
 
                     with open(f'{sarek_dir}/sarek_mapping_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_file_launcher)
@@ -1063,36 +1138,58 @@ if (__name__ == '__main__'):
                     job_id=f'{cohort_cov}x_{purity}p'
                     
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{ACCOUNT}', str(account))
-                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{PARTITION}', str(args.partition))
+                    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{PARTITION}', str(partition))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{JOB_NAME}', str(job_id))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{INPUT_DIR}', str(sarek_dir))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{CONFIG}', str(config_file))
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
-		    sarek_variant_calling_launcher = sarek_variant_calling_launcher.replace('{IGENOMES_BASE}', str(args.IGENOMES_BASE))
                     
                     with open(f'{sarek_dir}/sarek_variant_calling_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
                         outstream.write(sarek_variant_calling_launcher)
                     sarek_variant_calling_launcher = sarek_variant_calling_launcher_orig
                     
+                    #sequenza sh file
+                    sequenza_launcher_orig = sequenza_launcher
+                    job_id=f'{cohort_cov}x_{purity}p'
+                    process_path = '/'.join(str(config_file).split('/')[:-2]) + '/sequenza'
+                    
+                    sequenza_launcher = sequenza_launcher.replace('{ACCOUNT}', str(account))
+                    sequenza_launcher = sequenza_launcher.replace('{PARTITION}', str(partition))
+                    sequenza_launcher = sequenza_launcher.replace('{JOB_NAME}', str(job_id))
+                    sequenza_launcher = sequenza_launcher.replace('{INPUT_DIR}', str(sarek_dir))
+                    sequenza_launcher = sequenza_launcher.replace('{CONFIG}', str(config_file))
+                    sequenza_launcher = sequenza_launcher.replace('{SAREK_OUT}', str(args.sarek_output_dir))
+                    sequenza_launcher = sequenza_launcher.replace('{PROCESS_DIR}', str(process_path))
+
+                    
+                    with open(f'{sarek_dir}/sequenza_{cohort_cov}x_{purity}p.sh', 'w') as outstream:
+                        outstream.write(sequenza_launcher)
+                    sequenza_launcher = sequenza_launcher_orig
+                    
                     #tumourevo sh file and csv file
                     variant_callers = ['freebayes', 'strelka', 'mutect2']
-                    cn_caller = 'ascat'
+                    cn_caller = ['ascat', 'sequenza']
                     combinations = []
                     for vc in variant_callers:
-                            combinations.append([vc, cn_caller])
+                        for cnc in cn_caller:
+                            combinations.append([vc, cnc])
                     
                     for comb in combinations:
                         vc = comb[0]
                         cc = comb[1]
                         with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.csv', 'w') as tumourevo_file:
-                            tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            if comb[0] == 'mutect2':
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type')
+                            else:
+                                tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type,tumour_alignment,tumour_alignment_index')
+                                
                             for sample_name in sample_names:
-                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
+                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir,cancer_type)
                     
                         tumourevo_launcher_orig = tumourevo_launcher
                         job_id=f'{cohort_cov}x_{purity}p_{vc}_{cc}'
                         tumourevo_launcher = tumourevo_launcher.replace('{ACCOUNT}', str(account))
-                        tumourevo_launcher = tumourevo_launcher.replace('{PARTITION}', str(args.partition))
+                        tumourevo_launcher = tumourevo_launcher.replace('{PARTITION}', str(partition))
                         tumourevo_launcher = tumourevo_launcher.replace('{JOB_NAME}', str(job_id))
                         tumourevo_launcher = tumourevo_launcher.replace('{INPUT_DIR}', str(tumourevo_dir))
                         tumourevo_launcher = tumourevo_launcher.replace('{CONFIG}', str(config_file))
@@ -1101,6 +1198,7 @@ if (__name__ == '__main__'):
                         tumourevo_launcher = tumourevo_launcher.replace('{FASTA_PATH}', str(args.fasta_path))
                         tumourevo_launcher = tumourevo_launcher.replace('{VEP_CACHE}', str(args.vep_cache))
                         tumourevo_launcher = tumourevo_launcher.replace('{VEP_CACHE_VERSION}', str(args.vep_cache_version))
+
 
 
                         with open(f'{tumourevo_dir}/tumourevo_{cohort_cov}x_{purity}p_{vc}_{cc}.sh', 'w') as outstream:

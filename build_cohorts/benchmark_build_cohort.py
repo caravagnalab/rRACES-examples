@@ -8,6 +8,23 @@ import time
 import subprocess
 import argparse
 
+write_tumour_type_file="""#!/bin/bash
+#SBATCH --partition=EPYC
+#SBATCH --job-name=tumour_type
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=1G
+#SBATCH --time=01:00
+#SBATCH --output=tumour_type_%J.out 
+#SBATCH --error=tumour_type_%J.err
+#SBATCH -A {ACCOUNT}
+
+echo ${DIR}/../references/SCOUT_tumour_types.txt
+tumour_type=$(grep ${SPN} ${DIR}/../references/SCOUT_tumour_types.txt | cut -f 3)
+echo $tumour_type > "${BASEDIR}/tumour_type.txt"
+"""
+
 ## This part is currently run sequentially
 
 merging_shell_script="""#!/bin/bash
@@ -927,6 +944,23 @@ if (__name__ == '__main__'):
     
     sarek_dir = os.path.join(args.output_dir, 'sarek')
     tumourevo_dir = os.path.join(args.output_dir, 'tumourevo')
+
+    tumour_type_file=os.path.join(os.path.dirname(args.phylogenetic_forest),"tumour_type.txt")
+
+    with open('ProCESS_tumour_type.sh', 'w') as outstream:
+        outstream.write(write_tumour_type_file)
+
+    cmd = ['sbatch', '--account={}'.format(account),
+          '--partition={}'.format(args.partition),
+          ('--export=DIR={},SPN={},BASEDIR={}').format(curr_dir,args.SPN,
+                                                os.path.dirname(args.phylogenetic_forest)),
+          './ProCESS_tumour_type.sh']
+
+    subprocess.run(cmd)
+
+    with open(tumour_type_file) as cancer_type_file:
+        cancer_type = cancer_type_file.read().strip()
+
     
     config_file = args.config
     if not os.path.exists(sarek_dir):
@@ -1139,7 +1173,7 @@ if (__name__ == '__main__'):
                                 tumourevo_file.write('dataset,patient,tumour_sample,normal_sample,vcf,tbi,cna_segments,cna_extra,cna_caller,cancer_type,tumour_alignment,tumour_alignment_index')
                                 
                             for sample_name in sample_names:
-                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir)
+                                write_tumourevo_lines(tumourevo_file, args.SPN, sample_name, comb, cohort_cov, purity, args.sarek_output_dir,cancer_type)
                     
                         tumourevo_launcher_orig = tumourevo_launcher
                         job_id=f'{cohort_cov}x_{purity}p_{vc}_{cc}'

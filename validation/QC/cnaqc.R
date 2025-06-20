@@ -5,41 +5,49 @@ library(tidyverse)
 
 source('utils.R')
 
+source('../../getters/process_getters.R')
+source('../../getters/tumourevo_getters.R')
+
 option_list <- list( 
-  make_option(c("-v", "--variantcaller"), type="character", default='mutect2', help="variantcaller")
+  make_option(c("-v", "--variantcaller"), type="character", default='mutect2', help="variantcaller"),
+  make_option(c("-c", "--cnacaller"), type="character", default='ascat', help="cna caller")
 )
 
 param <- parse_args(OptionParser(option_list=option_list))
 
-SPN <- paste0('SPN0', seq(1,7))
+SPN <- paste0('SPN0', seq(1,4))
 COV <- c(50, 100, 150, 200)
 PUR <- c(0.3, 0.6, 0.9)
 
 full_table <- tibble()
 for (spn in SPN){
+  out <- paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/validation/tumourevo/CNAqc/')
+  dir.create(out, showWarnings = F, recursive = T)
+  print(spn)
+  
+  samples <- get_sample_names(spn)
   for (cov in COV){
+    print(cov)
     for (pur in PUR){
-      base <- paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/',spn, '/tumourevo/',cov,'x_',pur,'p_',param$variantcaller,'_ascat/QC/CNAqc/SCOUT/',spn, '/')
-      if (file.exists(base)){
-      print(base)
-      samples <- list.dirs(base, full.names = F, recursive = F)
-      
-      #out <- paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/', spn, '/validation/tumourevo/CNAqc/')
-      #dir.create(out, showWarnings = F, recursive = T)
-      
+      print(pur)
+    
       cnaqc_obj <- lapply(samples, FUN = function(sample){
-        files <- list.files(paste0(base, sample))
-        readRDS(paste0(base, sample, '/', files[grepl('qc.rds', files)]))
+        file <- get_tumourevo_qc(spn = spn, coverage = cov, purity = pur, tool = 'CNAqc', vcf_caller = param$variantcaller, cna_caller = param$cnacaller, sample = sample)
+        if (length(file) > 0){
+          if (file.exists(file$qc_rds)){
+          readRDS(file$qc_rds)
+          }
+        }
       })
       names(cnaqc_obj) <- samples
       
-      stats_table <- get_statistics_qc(cnaqc_obj, purity = pur)
-      table <- stats_table$table %>% tibble() %>% select(-gg) %>% filter(info != 'sample') %>% tidyr::pivot_wider(values_from = values, names_from = info, names_repair = 'minimal')
-      full_table <- bind_rows(full_table, table %>% mutate(spn = spn, coverage = cov))
-      
+      if (!is.null(cnaqc_obj[[1]])){
+        stats_table <- get_statistics_qc(cnaqc_obj, purity = pur)
+        table <- stats_table$table %>% tibble() %>% select(-gg) %>% filter(info != 'sample') %>% tidyr::pivot_wider(values_from = values, names_from = info, names_repair = 'minimal')
+        full_table <- bind_rows(full_table, table %>% mutate(spn = spn, coverage = cov, vcf_caller = param$variantcaller, cna_caller = param$cnacaller))
+      }
       #plot_simple <- plot_qc(cnaqc_obj, type = 'simple_clonal')
       #plot_complex <- plot_qc(cnaqc_obj, type = 'complex_clonal')
-      }
     }
   }
 }

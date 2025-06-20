@@ -6,8 +6,12 @@ library(caret)
 library(dplyr)
 library(patchwork)
 
+source('../../getters/process_getters.R')
+source('../../getters/tumourevo_getters.R')
+
 option_list <- list( 
-  make_option(c("-v", "--variantcaller"), type="character", default='mutect2', help="variantcaller")
+  make_option(c("-v", "--variantcaller"), type="character", default='mutect2', help="variant caller"),
+  make_option(c("-c", "--cnacaller"), type="character", default='ascat', help="cna caller")
 )
 param <- parse_args(OptionParser(option_list=option_list))
 
@@ -19,19 +23,21 @@ final_table <- tibble()
 for (spn in SPN){
   for (cov in COV){
     for (pur in PUR){
-      base <- paste0('/orfeo/cephfs/scratch/cdslab/shared/SCOUT/',spn, '/tumourevo/',cov,'x_',pur,'p_',param$variantcaller,'_ascat/QC/tinc/SCOUT/',spn, '/')
-      if (file.exists(base)){
-        print(base)
-        
-        samples <- list.dirs(base, full.names = F, recursive = F)
-        table <- lapply(samples, FUN = function(sample){
-          files <- list.files(paste0(base, sample))
-          data <- readRDS(paste0(base, sample, '/', files[grepl('fit', files)]))
-          s <- str_split(sample, '_') %>% unlist()
-          tmp <- tibble(TIT = data$TIT, TIN = data$TIN, sample = paste0(s[2], '_', s[3]))
-          return(tmp)
-        }) %>% bind_rows()
-        
+      samples <- get_sample_names(spn)
+      
+      table <- lapply(samples, FUN = function(sample){
+        file <- get_tumourevo_qc(spn = spn, coverage = cov, purity = pur, tool = 'tinc', vcf_caller = param$variantcaller, cna_caller = param$cnacaller, sample = sample)
+
+        if (length(file) > 0){
+          if (file.exists(file$fit_rds)){
+            data <- readRDS(file$fit_rds)
+            tmp <- tibble(TIT = data$TIT, TIN = data$TIN, sample = sample)
+            return(tmp)
+          }
+        }
+      }) %>% bind_rows()
+      
+      if (nrow(table) > 1){
         table$coverage = as.numeric(cov)
         table$purity = as.numeric(pur)
         table$vc = param$variantcaller
@@ -39,13 +45,13 @@ for (spn in SPN){
         table$SPN = spn
         table$N = length(samples)
         table <- table %>% mutate(error = abs(purity-TIT))
-        #saveRDS(object = table, file = paste0(out, param$cov,'x_',param$pur,'p_',param$variantcaller,'_ascat.rds'))
-        
-        final_table <- bind_rows(final_table, table)
       }
+      final_table <- bind_rows(final_table, table)
     }
   }
 }
+#saveRDS(object = table, file = paste0(out, param$cov,'x_',param$pur,'p_',param$variantcaller,'_ascat.rds'))
+
 
 tit <- final_table %>% 
   ggplot() +
@@ -57,7 +63,6 @@ tit <- final_table %>%
   ylab('purity (ProCESS)') + 
   scale_color_manual(values = c('steelblue', 'seagreen', 'goldenrod')) +
   xlim(0,1) +
-  ylim(0,1) +
-  theme_minimal()
+  ylim(0,1)
 
-ggsave(filename = 'validation_TINC.png', plot = tit, width = 7, height = 3, units = 'in', dpi = 600)
+ggsave(filename = 'validation_TINC.png', plot = tit, width = 7, height = 4, units = 'in', dpi = 600)

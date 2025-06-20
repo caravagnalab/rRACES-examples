@@ -8,10 +8,10 @@
 #SBATCH --job-name=report
 
 # Load R module
-module load R/4.4.1
+conda activate process
 
-SPN='SPN03'
-COV='100'
-PUR='0.6'
+SPN='SPN04'
+COV='50'
+PUR='0.9'
 
 Rscript prepare_report.R --spn_id $SPN --purity $PUR --coverage $COV
