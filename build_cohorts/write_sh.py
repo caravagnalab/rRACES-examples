@@ -328,8 +328,8 @@ if (__name__ == '__main__'):
 
     subprocess.run(cmd)
 
-    with open(tumour_type_file) as cancer_type_file:
-        cancer_type = cancer_type_file.read().strip()
+    
+
 
     config_file = args.config
     if not os.path.exists(sarek_dir):
@@ -417,6 +417,8 @@ if (__name__ == '__main__'):
                         outstream.write(sequenza_launcher)
                     sequenza_launcher = sequenza_launcher_orig
                     
+                    with open(tumour_type_file) as cancer_type_file:
+                        cancer_type = cancer_type_file.read().strip()
                     #tumourevo sh file and csv file
                     variant_callers = ['freebayes', 'strelka', 'mutect2']
                     cn_caller = ['ascat', 'sequenza']
@@ -424,6 +426,8 @@ if (__name__ == '__main__'):
                     for vc in variant_callers:
                         for cnc in cn_caller:
                             combinations.append([vc, cnc])
+
+
                     
                     for comb in combinations:
                         vc = comb[0]
