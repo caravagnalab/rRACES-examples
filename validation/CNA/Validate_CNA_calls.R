@@ -120,6 +120,17 @@ inferred_baf_dr_ascat = th_vs_inf_BAF_DR[["inferred_baf_dr_ascat"]]
 # breakpoints:
 #     - find matching BP and compute distance 
 #     - find missed/addes BP
+segmentation_ascat = segmentation_analysis(CNA_ProCESS, CNA_ascat, chromosomes, th=2e7)
+segmentation_sequenza = segmentation_analysis(CNA_ProCESS, CNA_sequenza, chromosomes, th=2e7)
+segmentation_cnvkit = segmentation_analysis(CNA_ProCESS, CNA_cnvkit, chromosomes, th=2e7)
+
+breakpoints_ascat = segmentation_ascat[["breakpoints"]]
+seg_summary_ascat = segmentation_ascat[["summary"]]
+breakpoints_sequenza = segmentation_sequenza[["breakpoints"]]
+seg_summary_sequenza = segmentation_sequenza[["summary"]]
+breakpoints_cnvkit = segmentation_cnvkit[["breakpoints"]]
+seg_summary_cnvkit = segmentation_cnvkit[["summary"]]
+  
 
 ########### Plots
 message("Generate plots")
@@ -204,16 +215,27 @@ cna_calls_comparison = CNAqc:::blank_genome() +
   guides(fill = guide_legend(override.aes = list(alpha = 1))) +
   theme(legend.text=element_text(size=12))
 
-segmentation_comparison = CNAqc:::blank_genome()+
-  geom_rect(data = shift_segments(matching_segs_ascat) %>% 
-              mutate(p = as.factor(round(p))), 
-            aes(xmin = from, xmax = to,ymin = -Inf, ymax = Inf, fill = p), alpha = .2)+
-  geom_segment(data = shift_segments(matching_segs_ascat), aes(x = from, xend = to, color = ids, y = 1.3, yend = 1.3), size=1)+
-  geom_segment(data = shift_segments(matching_segs_ascat), aes(x = original_from, xend = original_to, color = ids, y = 0.7, yend = 0.7), size=1)+
-  scale_fill_manual(values=fill_by_overlap)+
-  theme(legend.position = 'none')+
-  ylim(0,2)+
-  ylab("ASCAT segmentation | ProCESS segmentation")
+
+segmentation_comparison = my_blank_genome() +
+  geom_segment(data=joint_segmentation_ascat_long %>% 
+                 mutate(Value = case_when(
+                   Type == 'TRUE_Major1' ~ Value + .12,
+                   Type == 'TRUE_minor1' ~ Value - .12,
+                   Type == 'INFERRED_Major1' ~ Value + .06,
+                   Type == 'INFERRED_minor1' ~ Value - .06,
+                   Type == 'TRUE_Major2' ~ Value + .12,
+                   Type == 'TRUE_minor2' ~ Value - .12
+                 )), 
+               aes(x=from, xend=to, y=Value, color=Type), size=1)+
+  scale_color_manual(values=color_by_state)+
+  geom_vline(data = shift_segments(breakpoints_ascat %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='matching'),
+             aes(xintercept=og_coord), color='forestgreen', size=.3, linetype='dotted')+
+  geom_vline(data = shift_segments(breakpoints_ascat %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='missed'),
+             aes(xintercept=og_coord), color='indianred', size=.3, linetype='dotted')+
+  labs(fill = "", color = "")+
+  guides(fill = guide_legend(override.aes = list(alpha = 1))) +
+  theme(legend.text=element_text(size=12))+theme(legend.position = 'none')+ggtitle('Breakpoints')
+  
 
 
 st = 
@@ -221,10 +243,11 @@ st =
    BBBDDD
    EEEFFF
    GGGGGG
-   GGGGGG'
+   GGGGGG
+   HHHHHH'
 
 report_ascat = patchwork::wrap_plots(
-  baf_ascat, dr_ascat, baf_races, dr_races, baf_comparison, dr_comparison, cna_calls_comparison,
+  baf_ascat, dr_ascat, baf_races, dr_races, baf_comparison, dr_comparison, cna_calls_comparison,segmentation_comparison,
   design = st
 ) + patchwork::plot_annotation(
   title = element_text(paste0('ASCAT CNA validation of sample: ', sample_id)),
@@ -233,9 +256,9 @@ report_ascat = patchwork::wrap_plots(
     '\nTrue purity: ',purity,' Inferred purity: ', purity_ploidy_ascat$AberrantCellFraction,
     '\nTrue ploidy: ',round(ploidy,2),' Inferred ploidy: ', round(purity_ploidy_ascat$Ploidy,2),
     '\nNumber of subclonal segments: ', joint_segmentation_ascat[["joint_segmentation"]] %>% filter(!is.na(TRUE_Major1)) %>% 
-      filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow()),
-    '\nAverage breakpoint distance: ',mean(matching_segs_ascat$distance)
-)) 
+      filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow(),
+    '\nAverage breakpoint distance (matching inferred vs real): ',round(seg_summary_ascat$av_distance)
+))) 
 
 ### Plots Sequenza
 baf_sequenza = CNAqc:::blank_genome() + 
@@ -287,26 +310,47 @@ cna_calls_comparison_sequenza = CNAqc:::blank_genome() +
   guides(fill = guide_legend(override.aes = list(alpha = 1))) +
   theme(legend.text=element_text(size=12))
 
+segmentation_comparison_sequenza = my_blank_genome() +
+  geom_segment(data=joint_segmentation_sequenza_long %>% 
+                 mutate(Value = case_when(
+                   Type == 'TRUE_Major1' ~ Value + .12,
+                   Type == 'TRUE_minor1' ~ Value - .12,
+                   Type == 'INFERRED_Major1' ~ Value + .06,
+                   Type == 'INFERRED_minor1' ~ Value - .06,
+                   Type == 'TRUE_Major2' ~ Value + .12,
+                   Type == 'TRUE_minor2' ~ Value - .12
+                 )), 
+               aes(x=from, xend=to, y=Value, color=Type), size=1)+
+  scale_color_manual(values=color_by_state)+
+  geom_vline(data = shift_segments(breakpoints_sequenza %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='matching'),
+             aes(xintercept=og_coord), color='forestgreen', size=.3, linetype='dotted')+
+  geom_vline(data = shift_segments(breakpoints_sequenza %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='missed'),
+             aes(xintercept=og_coord), color='indianred', size=.3, linetype='dotted')+
+  labs(fill = "", color = "")+
+  guides(fill = guide_legend(override.aes = list(alpha = 1))) +
+  theme(legend.text=element_text(size=12))+theme(legend.position = 'none')+ggtitle('Breakpoints')
+
 
 st = 
   'AAACCC
    BBBDDD
    EEEFFF
    GGGGGG
-   GGGGGG'
+   GGGGGG
+   HHHHHH'
 
 report_sequenza = patchwork::wrap_plots(
-  baf_sequenza, dr_sequenza, baf_races, dr_races, baf_comparison_sequenza, dr_comparison_sequenza, cna_calls_comparison_sequenza,
+  baf_sequenza, dr_sequenza, baf_races, dr_races, baf_comparison_sequenza, dr_comparison_sequenza, cna_calls_comparison_sequenza,segmentation_comparison_sequenza,
   design = st
 ) + patchwork::plot_annotation(
   title = element_text(paste0('Sequenza CNA validation of sample: ', sample_id)),
   subtitle = element_text(paste0(
     'Proportion of genome inferred correctly: ', round(sequenza_correctness,2)*100,'%',
-    '\nTrue purity: ',purity,' Inferred purity: ', mean(purity_ploidy_sequenza$cellularity),
-    '\nTrue ploidy: ',round(ploidy,2),' Inferred ploidy: ', round(purity_ploidy_sequenza$ploidy.estimate,2),
-    '\nNumber of subclonal segments: ', joint_segmentation_sequenza[["joint_segmentation"]] %>% dplyr::filter(!is.na(TRUE_Major1)) %>% 
-      dplyr::filter(!is.na(TRUE_Major2) & ( TRUE_Major1!=TRUE_Major2 | TRUE_minor1!=TRUE_minor2 )) %>% nrow()),
-    '\nAverage breakpoint distance: ',mean(matching_segs_sequenza$distance)
+    '\nTrue purity: ',purity,' Inferred purity: ', round(mean(purity_ploidy_sequenza$cellularity),3),
+    '\nTrue ploidy: ',round(ploidy,2),' Inferred ploidy: ', mean(round(purity_ploidy_sequenza$ploidy.estimate,2)),
+    '\nNumber of subclonal segments: ', joint_segmentation_sequenza[["joint_segmentation"]] %>% filter(!is.na(TRUE_Major1)) %>% 
+      filter(!is.na(TRUE_Major2),TRUE_Major1!=TRUE_Major2,TRUE_minor1!=TRUE_minor2) %>% nrow(),
+    '\nAverage breakpoint distance (matching inferred vs real): ',round(seg_summary_ascat$av_distance))
   )) 
 
 
@@ -343,21 +387,42 @@ cna_calls_comparison_cnvkit = CNAqc:::blank_genome() +
   theme(legend.text=element_text(size=12))+
   ylab('Total CN')
 
+segmentation_comparison_cnvkit = my_blank_genome() +
+  geom_segment(data=joint_segmentation_sequenza_long %>% 
+                 mutate(Value = case_when(
+                   Type == 'TRUE_Major1' ~ Value + .12,
+                   Type == 'TRUE_minor1' ~ Value - .12,
+                   Type == 'INFERRED_Major1' ~ Value + .06,
+                   Type == 'INFERRED_minor1' ~ Value - .06,
+                   Type == 'TRUE_Major2' ~ Value + .12,
+                   Type == 'TRUE_minor2' ~ Value - .12
+                 )), 
+               aes(x=from, xend=to, y=Value, color=Type), size=1)+
+  scale_color_manual(values=color_by_state)+
+  geom_vline(data = shift_segments(breakpoints_cnvkit %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='matching'),
+             aes(xintercept=og_coord), color='forestgreen', size=.3, linetype='dotted')+
+  geom_vline(data = shift_segments(breakpoints_cnvkit %>% rename(from=og_coord, to=coord)) %>% rename(og_coord=from, coord=to) %>% filter(state=='missed'),
+             aes(xintercept=og_coord), color='indianred', size=.3, linetype='dotted')+
+  labs(fill = "", color = "")+
+  guides(fill = guide_legend(override.aes = list(alpha = 1))) +
+  theme(legend.text=element_text(size=12))+theme(legend.position = 'none')+ggtitle('Breakpoints')
+
 
 st = 
   'AAABBB
    CCC###
    DDDDDD
-   DDDDDD'
+   DDDDDD
+   EEEEEE'
 
 report_cnvkit = patchwork::wrap_plots(
-  dr_cnvkit, dr_races, dr_comparison_cnvkit, cna_calls_comparison_cnvkit,
+  dr_cnvkit, dr_races, dr_comparison_cnvkit, cna_calls_comparison_cnvkit,segmentation_comparison_cnvkit,
   design = st
 ) + patchwork::plot_annotation(
   title = element_text(paste0('CNVkit CNA validation of sample: ', sample_id)),
   subtitle = element_text(paste0(
     'Proportion of genome inferred correctly: ', round(cnvkit_correctness,2)*100,'%',
-    '\nAverage breakpoint distance: ',mean(matching_segs_cnvkit$distance)
+    '\nAverage breakpoint distance: ',round(seg_summary_cnvkit$av_distance)
   ))) 
 
 

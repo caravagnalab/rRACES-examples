@@ -411,64 +411,148 @@ covered_genome = function(CNA_target, chromosome){
 }
 breakpoint_analysis = function(CNA_ProCESS, CNA_target, chromosome, th=1e7){
   ProCESS_BP = CNA_ProCESS %>% filter(chr==chromosome) #%>% select(from, to)
-  BP_f = ProCESS_BP$from
-  BP_t = ProCESS_BP$to
+  
+  BP_f = ProCESS_BP$from %>% unique()
+  BP_t = ProCESS_BP$to %>% unique()
   
   CNA_target_c = CNA_target %>% filter(chr==chromosome)
   BP_target_f = CNA_target_c$from %>% unique()
   BP_target_t = CNA_target_c$to %>% unique()
   
-  missed_bp = 0
-  missed_bp_coord = c()
-  added_bp = 0
-  added_bp_coord = c()
-  distances = c()
-  matching_coord = c()
+  if (nrow(CNA_target_c)==0){
+    BP_df = data.frame(
+      'og_coord'=c(BP_f,BP_f),
+      'coord'=rep(NA, length(c(BP_f,BP_f))),
+      'dist'=rep(NA,length(c(BP_f,BP_f))),
+      'state'=rep('no bp',length(c(BP_f,BP_f)))
+    )
+  }else{
+  
+  BP_df = data.frame()
   
   for (bp in BP_f){
     dist = min(abs(bp - BP_target_f))
-    if (dist > th){
-      missed_bp = missed_bp+1
-      missed_bp_coord = c(missed_bp_coord,bp)
+    coord = BP_target_f[which.min(abs(bp - BP_target_f))]
+    if (dist < th){
+      df = data.frame(
+        'og_coord'=bp,
+        'coord'=coord,
+        'dist'=dist,
+        'state'='matching'
+      )
     }else{
-        distances=c(distances,dist)
-        matching_coord = c(matching_coord, bp)
-        }
+      df = data.frame(
+        'og_coord'=bp,
+        'coord'=NA,
+        'dist'=NA,
+        'state'='missed'
+      )
+    }
+    BP_df = rbind(BP_df, df)
   }
   
   for (bp in BP_t){
     dist = min(abs(bp - BP_target_t))
-    if (dist > th){
-      missed_bp = missed_bp+1
-      missed_bp_coord = c(missed_bp_coord,bp)
+    coord = BP_target_t[which.min(abs(bp - BP_target_t))]
+    if (dist < th){
+      df = data.frame(
+        'og_coord'=bp,
+        'coord'=coord,
+        'dist'=dist,
+        'state'='matching'
+      )
     }else{
-        distances=c(distances,dist)
-        matching_coord = c(matching_coord, bp)
-        }
+      df = data.frame(
+        'og_coord'=bp,
+        'coord'=NA,
+        'dist'=NA,
+        'state'='missed'
+      )
+    }
+    BP_df = rbind(BP_df, df)
   }
   
   for (bp in BP_target_f){
-    dist = min(abs(bp - BP_f))
-    if (dist > th){
-      added_bp = added_bp+1
-      added_bp_coord = c(added_bp_coord, bp)
-      }
+    if (!(bp %in% BP_df$coord)){
+      df = data.frame(
+        'og_coord'=NA,
+        'coord'=bp,
+        'dist'=NA,
+        'state'='added'
+      )
+      BP_df = rbind(BP_df, df)
+    }
   }
   
-  list(
-    'chromosome' = chromosome,
-    'missed_bp_coord' = missed_bp_coord %>% unique(),
-    'added_bp_coord' = added_bp_coord %>% unique(),
-    'n_missed' = missed_bp,
-    'n_added' = added_bp,
-    'distances_between_matching' = distances %>% unique(),
-    'matching_coord' = matching_coord %>% unique()
-  )
+  for (bp in BP_target_t){
+    if (!(bp %in% BP_df$coord)){
+      df = data.frame(
+        'og_coord'=NA,
+        'coord'=bp,
+        'dist'=NA,
+        'state'='added'
+      )
+      BP_df = rbind(BP_df, df)
+    }
+  }
+  }
+  return(BP_df)
 }
 segmentation_analysis = function(CNA_ProCESS, CNA_target, chromosomes, th=1e7){
-  bp_df = lapply(chromosomes, function(c){
-    breakpoint_analysis(CNA_ProCESS, CNA_target, c, th)
+  # Mean percentage of genome covered by segments
+  mean_covered_genome = lapply(chromosomes, function(c){
+    covered_genome(CNA_target,c)
+  }) %>% unlist() %>% mean()
+  
+  # Breakpoints
+  BP = lapply(chromosomes, function(chr){
+    #print(chr)
+    bp = breakpoint_analysis(CNA_ProCESS, CNA_target, chr, th=th)
+    bp$chromosome = chr
+    bp
   })
+  BP = Reduce(rbind, BP)
+  # % of missed breakpoints (on total)
+  missed_bp = (BP %>% filter(state == 'missed') %>% nrow()) / (BP %>% filter(state %in% c('missed','matching')) %>% nrow()) * 100
+  # % of added breakpoints (on total)
+  added_bp = (BP %>% filter(state == 'added') %>% nrow()) / (BP %>% filter(state %in% c('missed','matching')) %>% nrow()) * 100
+  # average distance
+  av_dist = mean(BP %>% filter(state == 'matching') %>% pull(dist))
+  
+  summary_df = data.frame(
+    'missed_bp'=missed_bp,
+    'added_bp'=added_bp,
+    'av_distance'=av_dist
+  )
+  
+  return(list('summary'=summary_df, 'breakpoints' = BP))
+}
+my_blank_genome = function (ref = "GRCh38", genomic_coords, chromosomes = paste0("chr", 
+                                                                                 c(1:22, "X", "Y")), label_chr = -0.5, cex = 1) 
+{
+  reference_coordinates = CNAqc:::get_reference(ref, genomic_coords) %>% 
+    filter(chr %in% chromosomes)
+  low = min(reference_coordinates$from)
+  upp = max(reference_coordinates$to)
+  p1 = ggplot2::ggplot(reference_coordinates) + CNAqc:::my_ggplot_theme(cex = cex) + 
+    ggplot2::geom_segment(ggplot2::aes(x = centromerStart, 
+                                       xend = centromerEnd, y = 0, yend = Inf), size = 0, 
+                          color = "black", linetype = 8)
+  p1 = p1 + ggplot2::geom_rect(data = reference_coordinates, 
+                               ggplot2::aes(xmin = from, xmax = from, ymin = 0, ymax = Inf), 
+                               alpha = 0, colour = "grey", size=0)
+  p1 = p1 + ggplot2::geom_hline(yintercept = 0, size = 1, colour = "gainsboro") + 
+    ggplot2::geom_hline(yintercept = 1, size = 0.3, colour = "black", 
+                        linetype = "dashed") + ggplot2::labs(x = "Chromosome", 
+                                                             y = "Major/ minor allele") + ggpubr::rotate_y_text() + 
+    ggplot2::scale_x_continuous(breaks = c(0, reference_coordinates$centromerStart, 
+                                           upp), labels = c("", gsub(pattern = "chr", replacement = "", 
+                                                                     reference_coordinates$chr), ""))+
+    theme(
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+    ) 
+  return(p1)
 }
 
 
