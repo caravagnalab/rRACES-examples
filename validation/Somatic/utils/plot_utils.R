@@ -86,7 +86,7 @@ plot_scatter_with_corr <- function(data, x_var, y_var, col_var = "FILTER", title
     p_text <- "NA"
     corr_coef <- NA
   } else {
-    p_text <- stats::format.pval(p_val, digits = 1)
+    p_text <- format.pval(p_val, digits = 1)
   }
   
   corr_text <- paste0("r = ", round(corr_coef, 2), ", ", p_text)
