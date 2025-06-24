@@ -1,3 +1,20 @@
+absolute_to_relative_coordinates <- function(muts, reference = CNAqc::chr_coordinates_GRCh38, centromere = F){
+  vfrom = reference$from
+  names(vfrom) = reference$chr
+  if (!centromere){
+    muts %>%
+      mutate(
+        start = start + vfrom[chr],
+        end = end + vfrom[chr])
+  } else if(centromere){
+    muts %>%
+      mutate(
+        start = start + vfrom[chr],
+        end = end + vfrom[chr],
+        centromere = centromere + vfrom[chr])
+  }
+}
+
 plot_qc <- function(cnaqc_list, type = 'simple_clonal'){
   if (type == 'simple_clonal'){
     table <- lapply(names(cnaqc_list), function(sample) {
