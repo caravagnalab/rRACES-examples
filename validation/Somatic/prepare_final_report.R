@@ -7,17 +7,25 @@ library(optparse)
 source("../../getters/process_getters.R")
 source("utils/plot_utils.R")
 
-option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN03'))
+option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN03'),
+	            make_option(c("--coverages"), type = "character", default = '50, 100'),
+		    make_option(c("--purities"), default = '0.3, 0.6, 0.9')
+)
 
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
 data_dir = '/orfeo/scratch/cdslab/shared/SCOUT/'
 spn_id = opt$spn_id
 
-spn_id = "SPN04"
+cleaned <- gsub('^"|"$', '', opt$purities)
+purity_list <- strsplit(cleaned, ",")[[1]]
+PURITY <- trimws(purity_list)
+cleaned <- gsub('^"|"$', '', opt$coverages)
+coverage_list <- strsplit(cleaned, ",")[[1]]
+COVERAGES <- trimws(coverage_list)
+print(COVERAGES)
+print(PURITY)
 
-COVERAGES = c("50", "100", "150", "200")
-PURITY = c("0.3", "0.6", "0.9")
 MUT_TYPES = c("INDEL", "SNV")
 
 params_grid = expand.grid(COVERAGES, PURITY, MUT_TYPES)
@@ -124,4 +132,4 @@ plot_rep = function(df) {
 }
 
 final_report = plot_rep(df)
-ggsave("example_report.pdf", plot = final_report, width = 18, height = 14)
+ggsave(paste0(input_dir,"example_report.pdf"), plot = final_report, width = 18, height = 14)

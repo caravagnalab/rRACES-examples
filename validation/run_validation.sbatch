@@ -14,7 +14,7 @@ SPN="SPN01"
 DIR="/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/validation"
 # combinations you want to validate
 COVERAGE=(50)
-PURITY=(0.3 0.6)
+PURITY=(0.3 0.6 0.9)
 
 # to keep as it is
 QUEUE="EPYC"
@@ -56,7 +56,7 @@ for COV in "${COVERAGE[@]}"; do
                    --time=4:00:00 \
                    --output=out/val_${COV}_${PUR}.out \
                    --error=out/val_${COV}_${PUR}.err \
-                   --wrap="$DIR/validate_combination_test.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUNT")
+                   --wrap="$DIR/validate_combination.py $SPN $COV $PUR $DIR -P $QUEUE -A $ACCOUNT")
     job_ids_single_combination+=("$JOBID") 
     if [ $? -eq 0 ]; then
         echo "Job submitted successfully: $JOBID"
@@ -70,9 +70,14 @@ done
 job_ids_all_combination=$(IFS=, ; echo "${job_ids_single_combination[*]}")
 echo "Submitting job for $SPN"
 
+COVERAGE_STR=$(IFS=, ; echo "${COVERAGE[*]}" | sed 's/,/,/g')
+PURITY_STR=$(IFS=, ; echo "${PURITY[*]}" | sed 's/,/,/g')
+
+CMD="$DIR/validate_SPN.py $SPN ${COVERAGE_STR} ${PURITY_STR} $DIR -P $QUEUE -A $ACCOUNT"
+echo $CMD
 JOBID=$(sbatch --parsable \
                --dependency=afterok:$job_ids_all_combination \
-               --job-name=validate_SPN_${COV}_${PUR} \
+               --job-name=validate_${SPN} \
                --partition=$QUEUE \
                --nodes=1 \
                --cpus-per-task=1 \
@@ -80,7 +85,7 @@ JOBID=$(sbatch --parsable \
                --time=4:00:00 \
                --output=out/val_${SPN}.out \
                --error=out/val_${SPN}.err \
-               # --wrap="$DIR/validate_SPN.py $SPN 50 0.3 $DIR -P $QUEUE -A $ACCOUNT")
+               --wrap="$CMD")
 
 
 if [ $? -eq 0 ]; then
