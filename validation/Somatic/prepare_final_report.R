@@ -7,7 +7,7 @@ library(optparse)
 source("../../getters/process_getters.R")
 source("utils/plot_utils.R")
 
-option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN03'),
+option_list <- list(make_option(c("--spn_id"), type = "character", default = 'SPN04'),
 	            make_option(c("--coverages"), type = "character", default = '50, 100'),
 		    make_option(c("--purities"), default = '0.3, 0.6, 0.9')
 )
@@ -34,6 +34,7 @@ colnames(params_grid) = c("coverage", "purity", "mut")
 input_dir <-  paste0(data_dir,spn_id,"/validation/somatic/")
 
 i = 1
+
 df = lapply(1:nrow(params_grid), function(i) {
   coverage = params_grid[i,]$coverage
   purity = params_grid[i,]$purity
@@ -42,21 +43,38 @@ df = lapply(1:nrow(params_grid), function(i) {
   
   results_folder_path = file.path(input_dir, spn_id, combination, "allCaller", mut_type)
   file_name = file.path(results_folder_path, "metrics.rds")
+  
   if (file.exists(file_name)) {
-    dplyr::bind_cols(readRDS(file_name), params_grid[i,])    
+    metrics = readRDS(file_name)
+    
+    parsed_metrics = lapply(names(metrics), function(caller_name) {
+      caller_metrics = metrics[[caller_name]]
+      sample_names = names(caller_metrics)
+      lapply(sample_names, function(sample_id) {
+        caller_metrics[[sample_id]]$performance_table %>% 
+          dplyr::mutate(sample_id = sample_id)
+      }) %>% do.call("bind_rows", .) %>% 
+        dplyr::mutate(caller = caller_name)
+    }) %>% do.call("bind_rows", .)
+    
+    dplyr::bind_cols(parsed_metrics, params_grid[i,])
   }
 }) %>% do.call("bind_rows", .)
 
 
 plot_rep = function(df) {
   # 1. Precision comparison with mut distinction via linetype
-  p1 <- ggplot(df, aes(x = VAF_bin, y = precision, color = caller, linetype = mut)) +
+  p1 = df %>% 
+    tidyr::replace_na(list(precision = 0)) %>% 
+    dplyr::group_by(VAF_bin, caller, mut, coverage, purity) %>% 
+    dplyr::summarise(mean = mean(precision), ylow = min(precision), ymax = max(precision)) %>%
+    ggplot(mapping = aes(x = VAF_bin, y = mean, ymin=ylow,ymax=ymax, color = caller, linetype = mut)) +
     geom_line(aes(group = interaction(caller, mut)), size = 1) +
     geom_point(size = 2) +
     facet_grid(coverage ~ purity, labeller = label_both) +
     labs(title = "Precision by VAF Bin Across Coverage and Purity",
          x = "VAF Bin", y = "Precision",
-         color = "Caller", linetype = "Mutation Type") +
+         color = "Caller", linetype = "Mutation Type", caption = "Each point represents average across samples") +
     theme_bw() +
     scale_linetype_manual(values = c("INDEL" = "dotdash", "SNV" = "solid")) +
     scale_color_manual(values = method_colors) +
@@ -65,7 +83,11 @@ plot_rep = function(df) {
     scale_y_continuous(limits = c(0, 1))
   
   # 2. Sensitivity/Recall comparison with mut distinction via linetype
-  p2 <- ggplot(df, aes(x = VAF_bin, y = sensitivity, color = caller, linetype = mut)) +
+  p2 = df %>% 
+    tidyr::replace_na(list(sensitivity = 0)) %>% 
+    dplyr::group_by(VAF_bin, caller, mut, coverage, purity) %>% 
+    dplyr::summarise(mean = mean(sensitivity), ylow = min(sensitivity), ymax = max(sensitivity)) %>%
+    ggplot(mapping = aes(x = VAF_bin, y = mean, ymin=ylow, color = caller, linetype = mut)) +
     geom_line(aes(group = interaction(caller, mut)), size = 1) +
     geom_point(size = 2) +
     facet_grid(coverage ~ purity, labeller = label_both) +
@@ -85,11 +107,95 @@ plot_rep = function(df) {
     facet_grid(coverage ~ purity, labeller = label_both) +
     labs(title = "Precision vs Sensitivity",
          x = "Sensitivity", y = "Precision",
-         color = "Caller", size = "VAF Corr", shape = "Mutation Type") +
+         color = "Caller", size = "VAF Corr", shape = "Mutation Type", caption = "Each point represents average across samples") +
     scale_color_manual(values = method_colors) +
     theme_bw() +
     scale_x_continuous(limits = c(0, 1)) +
     scale_y_continuous(limits = c(0, 1)) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.5)
+  
+  p3 = df %>% 
+    tidyr::replace_na(list(sensitivity = 0, precision = 0)) %>% 
+    dplyr::filter(mut == "SNV", !(VAF_bin %in% c("0-5%","5-10%"))) %>% 
+    dplyr::group_by(caller, mut, purity, sample_id, coverage) %>% 
+    dplyr::summarise(sensitivity = mean(sensitivity), precision = mean(precision), .groups = "drop") %>%
+    # Arrange by purity to ensure proper arrow direction
+    dplyr::arrange(caller, sample_id, coverage, purity) %>%
+    ggplot(mapping = aes(x = sensitivity, y = precision, color = caller, shape = sample_id)) +
+    geom_point(alpha = 1, size = 5) +
+    # Add arrows connecting points from low to high purity
+    geom_path(aes(group = interaction(caller, sample_id)), 
+              col = "gray30",
+              arrow = arrow(length = unit(0.15, "cm"), type = "closed"),
+              alpha = 0.6, size = 0.5) +
+    facet_wrap(~ coverage, labeller = label_both, scales = "free") +
+    labs(title = "Precision vs Sensitivity", subtitle = "SNV", caption = "Arrows show purity progression",
+         x = "Sensitivity", y = "Precision",
+         color = "Caller", shape = "Sample") +
+    scale_color_manual(values = method_colors) +
+    theme_bw() +
+    # Ensure square aspect ratio
+    scale_x_continuous(limits = c(NA, 1)) +
+    scale_y_continuous(limits = c(NA, 1)) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.5)
+  
+  # p3 = df %>% 
+  #   tidyr::replace_na(list(sensitivity = 0, precision = 0)) %>% 
+  #   dplyr::filter(mut == "SNV", !(VAF_bin %in% c("0-5%","5-10%"))) %>% 
+  #   dplyr::group_by(caller, mut, purity, sample_id, coverage) %>% 
+  #   dplyr::summarise(sensitivity = mean(sensitivity), precision = mean(precision)) %>%
+  #   ggplot(mapping = aes(x = sensitivity, y = precision, color = caller, shape = sample_id)) +
+  #   geom_point(alpha = 0.7, size = 3) +
+  #   facet_grid(coverage ~ purity, labeller = label_both) +
+  #   labs(title = "Precision vs Sensitivity", subtitle = "SNV",
+  #        x = "Sensitivity", y = "Precision",
+  #        color = "Caller", size = "VAF Corr", shape = "Sample") +
+  #   scale_color_manual(values = method_colors) +
+  #   theme_bw() +
+  #   scale_x_continuous(limits = c(0, 1)) +
+  #   scale_y_continuous(limits = c(0, 1)) +
+  #   geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.5)
+  
+  p4 = df %>% 
+    tidyr::replace_na(list(sensitivity = 0, precision = 0)) %>% 
+    dplyr::filter(mut == "INDEL", !(VAF_bin %in% c("0-5%","5-10%"))) %>% 
+    dplyr::group_by(caller, mut, purity, sample_id, coverage) %>% 
+    dplyr::summarise(sensitivity = mean(sensitivity), precision = mean(precision)) %>%
+    ggplot(mapping = aes(x = sensitivity, y = precision, color = caller, shape = sample_id)) +
+    geom_point(alpha = 0.7, size = 3) +
+    facet_grid(coverage ~ purity, labeller = label_both) +
+    labs(title = "Precision vs Sensitivity", subtitle = "INDEL",
+         x = "Sensitivity", y = "Precision",
+         color = "Caller", size = "VAF Corr", shape = "Sample") +
+    scale_color_manual(values = method_colors) +
+    theme_bw() +
+    scale_x_continuous(limits = c(0, 1)) +
+    scale_y_continuous(limits = c(0, 1)) +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.5)
+  
+  p4 = df %>% 
+    tidyr::replace_na(list(sensitivity = 0, precision = 0)) %>% 
+    dplyr::filter(mut == "INDEL", !(VAF_bin %in% c("0-5%","5-10%"))) %>% 
+    dplyr::group_by(caller, mut, purity, sample_id, coverage) %>% 
+    dplyr::summarise(sensitivity = mean(sensitivity), precision = mean(precision), .groups = "drop") %>%
+    # Arrange by purity to ensure proper arrow direction
+    dplyr::arrange(caller, sample_id, coverage, purity) %>%
+    ggplot(mapping = aes(x = sensitivity, y = precision, color = caller, shape = sample_id)) +
+    geom_point(alpha = 1, size = 5) +
+    # Add arrows connecting points from low to high purity
+    geom_path(aes(group = interaction(caller, sample_id)), 
+              col = "gray30",
+              arrow = arrow(length = unit(0.15, "cm"), type = "closed"),
+              alpha = 0.6, size = 0.5) +
+    facet_wrap(~ coverage, labeller = label_both, scales = "free") +
+    labs(title = "Precision vs Sensitivity", subtitle = "INDEL", caption = "Arrows show purity progression",
+         x = "Sensitivity", y = "Precision",
+         color = "Caller", shape = "Sample") +
+    scale_color_manual(values = method_colors) +
+    theme_bw() +
+    # Ensure square aspect ratio
+    scale_x_continuous(limits = c(NA, 1)) +
+    scale_y_continuous(limits = c(NA, 1)) +
     geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = 0.5)
   
   # 6. Performance summary with mut as additional faceting dimension
@@ -114,6 +220,9 @@ plot_rep = function(df) {
   
   design <- "
   AB
+  AB
+  AB
+  CD
   CD
   "
   
@@ -123,7 +232,7 @@ plot_rep = function(df) {
   # Combine all plots into a comprehensive report using patchwork
   # free() function allows each plot to maintain its own scales
   report_plot <- patchwork::free(p1) + patchwork::free(p2) +
-    patchwork::free(p5) + patchwork::free(p6) +
+    patchwork::free(p3) + patchwork::free(p4) +
     patchwork::plot_layout(design = design) +
     patchwork::plot_annotation(title) & 
     ggplot2::theme(text = ggplot2::element_text(size = 12))

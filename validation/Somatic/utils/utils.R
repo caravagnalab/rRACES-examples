@@ -639,5 +639,5 @@ get_multi_caller_report <- function(seq_res_long, caller_res_list, sample_info, 
     plot_annotation(title, subtitle) & 
     theme(text = element_text(size = 12))
   
-  list(plot = report_plot, metrics = vaf_analysis_results_across_callers)
+  report_plot
 }
