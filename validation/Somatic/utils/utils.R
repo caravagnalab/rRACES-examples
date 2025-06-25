@@ -303,23 +303,32 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Define grid layout for comprehensive report visualization
   # Each letter represents a plot position in the grid
+  # design <- "
+  # AABBCC
+  # AABBCC
+  # DDEEFF
+  # DDEEFF
+  # GGHHII
+  # GGHHII
+  # GGHHII
+  # LLMMNN
+  # LLMMNN
+  # LLMMNN
+  # OOOPPP
+  # OOOPPP
+  # "
   design <- "
   AABBCC
   AABBCC
   DDEEFF
   DDEEFF
-  GGHHII
-  GGHHII
-  GGHHII
-  LLMMNN
-  LLMMNN
-  LLMMNN
-  OOOPPP
-  OOOPPP
+  GGGHHH
+  IIILLL
+  IIILLL
   "
   
   # Generate descriptive title and subtitle for the report
-  title <- paste0(sample_info$spn, ", sample ", sample_info$sample_id, 
+  title <- paste0(sample_info$spn, 
                   ", calls by ", sample_info$caller_name)
   subtitle <- paste0("Only ", sample_info$mut_type, " mutations, purity = ", 
                      sample_info$purity, ", coverage = ", sample_info$coverage, "x")
@@ -345,10 +354,9 @@ get_report <- function(seq_res_long, caller_res, sample_info, min_vaf) {
   
   # Combine all plots into a comprehensive report using patchwork
   # free() function allows each plot to maintain its own scales
-  report_plot <- patchwork::free(DP_density) + patchwork::free(DP_ecdf) + patchwork::free(p_filter_dist) +
-    patchwork::free(VAF_density) + patchwork::free(VAF_ecdf) + patchwork::free(p_false_negative_VAF_dist) +
-    patchwork::free(p_scatter_DP_all) + patchwork::free(p_scatter_VAF_all) + patchwork::free(p_venn_all) +
-    patchwork::free(p_scatter_DP_pass) + patchwork::free(p_scatter_VAF_pass) + patchwork::free(p_venn_pass) +
+  report_plot <- patchwork::free(DP_density) + patchwork::free(DP_ecdf) + patchwork::free(p_scatter_DP_pass) +
+    patchwork::free(VAF_density) + patchwork::free(VAF_ecdf) + patchwork::free(p_scatter_VAF_pass) +
+    patchwork::free(p_false_negative_VAF_dist) +  patchwork::free(p_venn_pass) +
     patchwork::free(precision_recall_plot) + patchwork::free(metrics_over_VAF) +
     patchwork::plot_layout(design = design) +
     patchwork::plot_annotation(title, subtitle) & 
@@ -631,5 +639,5 @@ get_multi_caller_report <- function(seq_res_long, caller_res_list, sample_info, 
     plot_annotation(title, subtitle) & 
     theme(text = element_text(size = 12))
   
-  report_plot
+  list(plot = report_plot, metrics = vaf_analysis_results_across_callers)
 }
