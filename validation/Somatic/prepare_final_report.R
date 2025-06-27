@@ -23,6 +23,7 @@ PURITY <- trimws(purity_list)
 cleaned <- gsub('^"|"$', '', opt$coverages)
 coverage_list <- strsplit(cleaned, ",")[[1]]
 COVERAGES <- trimws(coverage_list)
+print(opt$coverages)
 print(COVERAGES)
 print(PURITY)
 
@@ -241,4 +242,4 @@ plot_rep = function(df) {
 }
 
 final_report = plot_rep(df)
-ggsave(paste0(input_dir,"example_report.pdf"), plot = final_report, width = 18, height = 14)
+ggsave(paste0(input_dir,"final_report.pdf"), plot = final_report, width = 18, height = 14)

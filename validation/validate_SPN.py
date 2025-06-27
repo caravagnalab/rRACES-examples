@@ -29,6 +29,22 @@ Rscript ${DIRECTORY}/Somatic/prepare_final_report.R --spn_id ${SPN} --coverages 
 """
 
 
+#prepare_final_cna_report="""#!/bin/bash
+##SBATCH --nodes=1
+##SBATCH --ntasks-per-node=1
+##SBATCH --cpus-per-task=1
+##SBATCH --time=4:00:00
+##SBATCH --mem=50GB
+#
+#module load R/4.4.1
+#
+#cd ${DIRECTORY}/Somatic/
+#
+#echo "Rscript ${DIRECTORY}/CNA/prepare_final_report.R --spn_id ${SPN} --coverages ${COVERAGES} --purities ${PURITIES}"
+#Rscript ${DIRECTORY}/CNA/prepare_final_report.R --spn_id ${SPN} --coverages ${COVERAGES} --purities ${PURITIES}
+#"""
+#
+
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(prog=sys.argv[0],
                                      description=('Produces the cohorts of a SPN'))
@@ -64,7 +80,7 @@ if (__name__ == '__main__'):
         '--account={}'.format(account),
         '--partition={}'.format(args.partition),
         '--job-name=somatic_final_{}'.format(args.SPN),
-        ('--export=SPN={},COVERAGES={},PURITIES="{}",DIRECTORY={}').format(args.SPN,
+        ('--export=SPN={},COVERAGES="{}",PURITIES="{}",DIRECTORY={}').format(args.SPN,
                                                 args.coverages,args.purities,
                                                 args.directory),
         '--output={}/somatic_final_report_{}.log'.format(log_dir, args.SPN),
