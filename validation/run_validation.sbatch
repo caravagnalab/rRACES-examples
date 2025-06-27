@@ -13,11 +13,11 @@ module load R/4.4.1
 SPN="SPN01"
 DIR="/orfeo/cephfs/scratch/cdslab/ggandolfi/Github/ProCESS-examples/validation"
 # combinations you want to validate
-COVERAGE=(50)
+COVERAGE=(50 100)
 PURITY=(0.3 0.6 0.9)
 
 # to keep as it is
-QUEUE="EPYC"
+QUEUE=$(sinfo -h -o "%P %a %D %t" | grep -w 'EPYC\|GENOA\|THIN' |awk '$2 == "up" && $4 ~ /idle|mix/ {print $1, $3}' | awk '{sum[$1] += $2} END {for (p in sum) print p, sum[p]}' | sort -k2 -nr | head -n1 | cut -f1 -d " ")
 ACCOUNT="cdslab"
 
 # validate normal

@@ -63,7 +63,8 @@ cna_report_shell_script="""#!/bin/bash
 
 module load R/4.4.1
 
-Rscript ${DIRECTORY}/CNA/Validate_CNA_calls.R --spn_id ${SPN} --sample_id ${SAMPLE} --purity ${PURITY} --coverage ${COVERAGE}
+cd ${DIRECTORY}/CNA/
+Rscript ${DIRECTORY}/CNA/Validate_CNA_calls.R --spn_id ${SPN} --purity ${PURITY} --coverage ${COVERAGE}
 """
 
 if (__name__ == '__main__'):
@@ -189,25 +190,22 @@ if (__name__ == '__main__'):
         job_id = result.stdout.decode().strip()
 
     
-    # if "cna" not in args.skip.split(","):
+    if "cna" not in args.skip.split(","):
 
-    #     ## Run final CNA report
+        ## Run final CNA report
 
-    #     base_scout_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"
-    #     cna_dir = os.path.join(base_scout_dir, args.SPN, "process", "cna_data")
-    #     cna_files = [f for f in os.listdir(cna_dir) if fnmatch.fnmatch(f, '*_cna.rds')]
-    #     sample_ids = [f.replace('_cna.rds', '') for f in cna_files]
-    #     print(sample_ids)
+        base_scout_dir = "/orfeo/cephfs/scratch/cdslab/shared/SCOUT/"
+        cna_dir = os.path.join(base_scout_dir, args.SPN, "process", "cna_data")
+        cna_files = [f for f in os.listdir(cna_dir) if fnmatch.fnmatch(f, '*_cna.rds')]
 
-    #     with open('validate_cna.sh', 'w') as outstream:
-    #         outstream.write(cna_report_shell_script)
-        
-    #     for sample in sample_ids:
-    #         cmd = ['sbatch', '--account={}'.format(account),
-    #             '--partition={}'.format(args.partition),
-    #             '--job-name=cna_report_{}_{}_{}'.format(sample, args.coverage,args.purity),
-    #             ('--export=SPN={},SAMPLE={},COVERAGE={},PURITY={},DIRECTORY={}').format(args.SPN,sample,
-    #                                                 args.coverage, args.purity,args.directory),
-    #             '--output={}/cna_report_{}_{}_{}.log'.format(log_dir, sample,args.coverage,args.purity),
-    #             './validate_cna.sh']
-    #         subprocess.run(cmd)
+        with open('validate_cna.sh', 'w') as outstream:
+            outstream.write(cna_report_shell_script)
+      
+        cmd = ['sbatch', '--account={}'.format(account),
+            '--partition={}'.format(args.partition),
+            '--job-name=cna_report_{}_{}_{}'.format(args.SPN, args.coverage,args.purity),
+            ('--export=SPN={},COVERAGE={},PURITY={},DIRECTORY={}').format(args.SPN,
+                                                args.coverage, args.purity,args.directory),
+            '--output={}/cna_report_{}_{}_{}.log'.format(log_dir, args.SPN,args.coverage,args.purity),
+            './validate_cna.sh']
+        subprocess.run(cmd)
