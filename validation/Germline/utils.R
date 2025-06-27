@@ -1,5 +1,48 @@
 library(caret)
 
+
+safe_cor_test <- function(x, y, min_points = 3) {
+  # Remove NA values
+  valid_idx <- !is.na(x) & !is.na(y) & is.finite(x) & is.finite(y)
+  x_clean <- x[valid_idx]
+  y_clean <- y[valid_idx]
+  
+  # Check if we have enough data points
+  if (length(x_clean) < min_points) {
+    return(NA_real_)
+  }
+  
+  # Check for zero variance (constant values)
+  if (stats::var(x_clean) == 0 || stats::var(y_clean) == 0) {
+    return(NA_real_)
+  }
+  
+  # Try correlation test with error handling
+  tryCatch({
+    cor_result <- stats::cor.test(x_clean, y_clean)
+    return(cor_result$estimate)
+  }, error = function(e) {
+    return(NA_real_)
+  })
+}
+
+# Function to safely calculate RMSE
+safe_rmse <- function(actual, predicted) {
+  # Remove NA values
+  valid_idx <- !is.na(actual) & !is.na(predicted) & is.finite(actual) & is.finite(predicted)
+  actual_clean <- actual[valid_idx]
+  predicted_clean <- predicted[valid_idx]
+  
+  # Check if we have data points
+  if (length(actual_clean) == 0) {
+    return(NA_real_)
+  }
+  
+  # Calculate RMSE
+  sqrt(mean((actual_clean - predicted_clean)^2))
+}
+
+
 plot_density_comparison_multi <- function(vec_list, labels, colors, x_label, n) {
   if (length(vec_list) != length(labels) || length(labels) != length(colors)) {
     stop("vec_list, labels, and colors must have the same length.")
