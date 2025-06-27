@@ -20,7 +20,6 @@ option_list <- list(
 param <- parse_args(OptionParser(option_list=option_list))
 dir <- '/orfeo/scratch/cdslab/shared/SCOUT/'
 spn <- param$SPN
-tool <- param$tool
 vcf <- paste0(dir, spn, "/validation/germline/vcf")
 output <- paste0(dir, spn, "/validation/germline/rds")
 report <- paste0(dir, spn, "/validation/germline/report")
