@@ -12,7 +12,6 @@ source("../../getters/process_getters.R")
 source("utils.R")
 
 ascat_df <- absolute_to_relative_coordinates(readRDS('data/ascat.rds') %>% dplyr::rename(chr=V1))
-sequenza_df <- absolute_to_relative_coordinates(readRDS('data/sequenza.rds') %>% dplyr::rename(centromere = from), centromere = T)
 cnvkit_df <- absolute_to_relative_coordinates(readRDS('data/cnvkit.rds'), centromere = T) 
 
 ############ Parse command-line arguments
@@ -108,6 +107,16 @@ for (sample_id in samples){
   CNA_sequenza = Sequenza_output[["CNA"]] 
   purity_ploidy_sequenza = Sequenza_output[["purity_ploidy"]] 
   
+  sequenza_centromere <- CNA_sequenza %>% 
+    mutate(centromere = from - c(0, CNA_sequenza$to[1:nrow(CNA_sequenza)-1])) %>% 
+    filter(centromere > 1e5) %>% select(chr, centromere)
+  
+  sequenza_df <- CNA_sequenza %>% 
+    group_by(chr) %>% 
+    summarize(start = min(from), end = max(to)) %>% 
+    left_join(sequenza_centromere)
+  sequenza_df <- absolute_to_relative_coordinates(sequenza_df, centromere = T)
+  
   
   #### CNVkit data
   message("Reading CNVkit data")
@@ -142,7 +151,8 @@ for (sample_id in samples){
     filter(from >= start) %>%  
     filter(to <= end) %>% 
     select(-start, -end) %>% 
-    filter(!(to %in% sequenza_df$centromere))
+    filter(!(to %in% sequenza_df$centromere)) %>% 
+    filter(!is.na(INFERRED_CN))
   
   joint_segmentation_sequenza[['joint_segmentation']] = joint_segmentation_sequenza[['joint_segmentation']] %>% 
     filter(to - from > 1) %>% 
@@ -150,7 +160,8 @@ for (sample_id in samples){
     filter(from >= start) %>%  
     filter(to <= end) %>% 
     select(-start, -end) %>% 
-    filter(!(to %in% sequenza_df$centromere))
+    filter(!(to %in% sequenza_df$centromere)) %>% 
+    filter(!is.na(INFERRED_CN))
   
   
   message("Create joint table ProCESS and CNVkit calls") 
@@ -345,6 +356,11 @@ for (sample_id in samples){
     
   
   saveRDS(table_metric, file = paste0(outdir, 'metrics.rds'))
+  saveRDS(list(ascat = ASCAT_output, ascat_long = joint_segmentation_ascat_long,
+               sequenza = Sequenza_output, sequenza_long = joint_segmentation_sequenza_long,
+               cnvkit = CNVkit_output, cnvkit_long = joint_segmentation_cnvkit_long), file = paste0(outdir, 'data.rds'))
+  saveRDS(sequenza_df, file = paste0(outdir, 'sequenza_bp.rds'))
+  
   message("Report saved for combination: purity=", purity, ", cov=", coverage, ', sample=', sample_id)
 }
 

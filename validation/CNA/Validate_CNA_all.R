@@ -56,7 +56,7 @@ df_metric = lapply(1:nrow(params_grid), function(i) {
 
 plt <- df_metric %>% 
   ggplot() + 
-  geom_point(aes(x = sample, y = as.numeric(true_purity) - as.numeric(purity), col = tool, size = fgs)) + 
+  geom_point(aes(x = sample, y = as.numeric(true_purity) - as.numeric(purity), col = tool), size = 2.5) + # size = fgs
   geom_hline(aes(yintercept = 0)) +
   ylab('true_purity - inferred_purity') +
   theme_bw() +
@@ -64,7 +64,7 @@ plt <- df_metric %>%
 
 df_metric %>% 
   ggplot() + 
-  geom_point(aes(x = sample, y = as.numeric(true_ploidy) - as.numeric(ploidy), col = tool, size = fgs)) + 
+  geom_point(aes(x = sample, y = as.numeric(true_ploidy) - as.numeric(ploidy), col = tool), size = 2.5) + 
   geom_hline(aes(yintercept = 0)) +
   ylab('true_ploidy - inferred_ploidy') +
   theme_bw() +
