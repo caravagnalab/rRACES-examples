@@ -37,8 +37,8 @@ germline_report_shell_script="""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem 50g
-#SBATCH --time=4:00:00
+#SBATCH --mem 100g
+#SBATCH --time=10:00:00
 
 module load R/4.4.1
 
@@ -82,7 +82,7 @@ if (__name__ == '__main__'):
     
     #curr_dir = os.getcwd()
     base_dir = args.directory
-    log_dir = '{}/validation/out/'.format(base_dir)
+    log_dir = '{}/out/'.format(base_dir)
     
     os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/vcf', exist_ok = True)
     os.makedirs(f'/orfeo/scratch/cdslab/shared/SCOUT/{args.SPN}/validation/germline/report', exist_ok = True)
