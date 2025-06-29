@@ -43,9 +43,7 @@ germline_report_shell_script="""#!/bin/bash
 module load R/4.4.1
 
 cd ${DIRECTORY}/Germline/
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'freebayes' 
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'haplotypecaller'
-Rscript ${DIRECTORY}/Germline/compare.R -s ${SPN} -t 'strelka'
+Rscript ${DIRECTORY}/Germline/compare_caller.R -s ${SPN}
 """
 
 if (__name__ == '__main__'):
